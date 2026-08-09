@@ -1,0 +1,73 @@
+@import "tailwindcss";
+
+/*
+  モードごとに配色を切り替える。
+  html 要素の data-mode 属性を lib/session.tsx が書き換えている。
+  各画面では bg-[var(--accent)] のように CSS 変数を参照すること。
+*/
+
+:root {
+  --background: #f6f6f8;
+  --surface: #ffffff;
+  --foreground: #17171b;
+  --muted: #5b5b66;
+  --line: #dedee4;
+
+  /* 既定は仕事モードの色 */
+  --accent: #1f6fa8;
+  --accent-strong: #175880;
+  --accent-soft: #e3eef6;
+}
+
+:root[data-mode="work"] {
+  --accent: #1f6fa8;
+  --accent-strong: #175880;
+  --accent-soft: #e3eef6;
+}
+
+:root[data-mode="romance"] {
+  --accent: #b0475c;
+  --accent-strong: #8d3849;
+  --accent-soft: #f7e7ea;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #131316;
+    --surface: #1b1b21;
+    --foreground: #e9e9ee;
+    --muted: #a3a3ad;
+    --line: #2e2e37;
+  }
+  :root[data-mode="work"] {
+    --accent: #6baedc;
+    --accent-strong: #8cc4e8;
+    --accent-soft: #14242f;
+  }
+  :root[data-mode="romance"] {
+    --accent: #dd8598;
+    --accent-strong: #e8a3b2;
+    --accent-soft: #2c1b20;
+  }
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-surface: var(--surface);
+  --color-foreground: var(--foreground);
+  --color-muted: var(--muted);
+  --color-line: var(--line);
+  --color-accent: var(--accent);
+  --color-accent-strong: var(--accent-strong);
+  --color-accent-soft: var(--accent-soft);
+  --font-mono: var(--font-geist-mono);
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  /* Geist は日本語を含まないので、和文はOSのゴシックにフォールバックさせる */
+  font-family: var(--font-geist-sans), "Hiragino Kaku Gothic ProN",
+    "Hiragino Sans", "Yu Gothic UI", "Yu Gothic", "Noto Sans JP", Meiryo,
+    system-ui, sans-serif;
+}
