@@ -1,0 +1,606 @@
+<title>アプリ案の候補と評価 — ハッカソン キックオフ資料</title>
+
+<style>
+  :root {
+    --paper:      #F4F5F7;
+    --surface:    #FFFFFF;
+    --surface-2:  #E8EBF0;
+    --ink:        #161A22;
+    --ink-2:      #4C5563;
+    --ink-3:      #7B8492;
+    --line:       #D2D8E1;
+    --accent:     #1E3A6E;
+    --accent-ink: #14294F;
+    --accent-bg:  #E4E9F2;
+    --good:       #17756A;
+    --good-bg:    #E1EFEC;
+    --signal:     #B4531C;
+    --signal-bg:  #FAEDE3;
+    --radius:     4px;
+
+    --sans: "Hiragino Kaku Gothic ProN", "Hiragino Sans", "Yu Gothic UI", "Yu Gothic",
+            "Noto Sans JP", Meiryo, system-ui, sans-serif;
+    --mono: ui-monospace, SFMono-Regular, "SF Mono", Consolas, Menlo,
+            "Noto Sans Mono", "Yu Gothic", monospace;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --paper:      #0F1218;
+      --surface:    #161B24;
+      --surface-2:  #1F2530;
+      --ink:        #E5E9F0;
+      --ink-2:      #A6AEBC;
+      --ink-3:      #7B8492;
+      --line:       #2B3340;
+      --accent:     #7FA0DC;
+      --accent-ink: #A3BCE8;
+      --accent-bg:  #1A2436;
+      --good:       #4FB3A3;
+      --good-bg:    #142B29;
+      --signal:     #DE8A54;
+      --signal-bg:  #2C1F17;
+    }
+  }
+  :root[data-theme="dark"] {
+    --paper:      #0F1218;
+    --surface:    #161B24;
+    --surface-2:  #1F2530;
+    --ink:        #E5E9F0;
+    --ink-2:      #A6AEBC;
+    --ink-3:      #7B8492;
+    --line:       #2B3340;
+    --accent:     #7FA0DC;
+    --accent-ink: #A3BCE8;
+    --accent-bg:  #1A2436;
+    --good:       #4FB3A3;
+    --good-bg:    #142B29;
+    --signal:     #DE8A54;
+    --signal-bg:  #2C1F17;
+  }
+  :root[data-theme="light"] {
+    --paper:      #F4F5F7;
+    --surface:    #FFFFFF;
+    --surface-2:  #E8EBF0;
+    --ink:        #161A22;
+    --ink-2:      #4C5563;
+    --ink-3:      #7B8492;
+    --line:       #D2D8E1;
+    --accent:     #1E3A6E;
+    --accent-ink: #14294F;
+    --accent-bg:  #E4E9F2;
+    --good:       #17756A;
+    --good-bg:    #E1EFEC;
+    --signal:     #B4531C;
+    --signal-bg:  #FAEDE3;
+  }
+
+  html { background: var(--paper); }
+
+  #doc {
+    font-family: var(--sans);
+    color: var(--ink);
+    background: var(--paper);
+    line-height: 1.85;
+    font-size: 16px;
+    letter-spacing: 0.01em;
+    -webkit-font-smoothing: antialiased;
+    padding: 0 0 5rem;
+  }
+  #doc p, #doc li, #doc dd { color: var(--ink-2); }
+  #doc strong { color: var(--ink); font-weight: 700; }
+  #doc a { color: var(--accent); text-underline-offset: 3px; }
+  #doc :focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+
+  .wrap { max-width: 54rem; margin: 0 auto; padding: 0 1.5rem; }
+
+  /* ── ヘッダー ── */
+  header.head { padding-top: 3.5rem; margin-bottom: 3.5rem; }
+  .eyebrow {
+    font-family: var(--mono); font-size: 0.72rem; letter-spacing: 0.18em;
+    text-transform: uppercase; color: var(--accent); margin: 0 0 1rem;
+  }
+  h1 {
+    font-size: clamp(1.9rem, 5vw, 2.6rem); line-height: 1.3; font-weight: 800;
+    letter-spacing: -0.01em; margin: 0 0 1.1rem; text-wrap: balance;
+  }
+  .lead { font-size: 1.05rem; margin: 0 0 2rem; max-width: 40em; }
+  .facts {
+    display: flex; flex-wrap: wrap; gap: 0 2.5rem;
+    border-top: 1px solid var(--line); border-bottom: 1px solid var(--line);
+    padding: 1rem 0;
+  }
+  .fact dt {
+    font-family: var(--mono); font-size: 0.68rem; letter-spacing: 0.12em;
+    text-transform: uppercase; color: var(--ink-3); margin-bottom: 0.15rem;
+  }
+  .fact dd { margin: 0; font-weight: 700; color: var(--ink); font-size: 0.95rem; }
+
+  /* ── セクション ── */
+  section { margin-bottom: 4rem; }
+  h2.sec {
+    display: flex; align-items: baseline; gap: 0.9rem;
+    font-size: 1.3rem; font-weight: 800; margin: 0 0 1.5rem;
+    padding-bottom: 0.7rem; border-bottom: 2px solid var(--ink);
+  }
+  h2.sec .n {
+    font-family: var(--mono); font-size: 0.85rem; color: var(--accent);
+    font-weight: 700; letter-spacing: 0.04em; flex: none;
+  }
+  .body { display: flex; flex-direction: column; gap: 1.3rem; }
+  h3 { font-size: 1.02rem; font-weight: 800; margin: 0.6rem 0 0; }
+
+  ul.plain { margin: 0; padding-left: 1.25rem; display: flex; flex-direction: column; gap: 0.4rem; }
+  code.inline {
+    font-family: var(--mono); font-size: 0.85em; background: var(--surface-2);
+    padding: 0.1em 0.4em; border-radius: 2px; color: var(--ink);
+  }
+
+  /* ── 表 ── */
+  .tablewrap { overflow-x: auto; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); }
+  table { border-collapse: collapse; width: 100%; min-width: 34rem; font-size: 0.92rem; }
+  th, td { text-align: left; padding: 0.7rem 0.9rem; border-bottom: 1px solid var(--line); vertical-align: top; }
+  thead th {
+    font-family: var(--mono); font-size: 0.68rem; letter-spacing: 0.1em;
+    text-transform: uppercase; color: var(--ink-3); font-weight: 500;
+    background: var(--surface-2); white-space: nowrap;
+  }
+  tbody tr:last-child td { border-bottom: 0; }
+  td.name { font-weight: 700; color: var(--ink); white-space: nowrap; }
+  td.num { font-variant-numeric: tabular-nums; }
+
+  /* ── スコア ── */
+  .score { font-family: var(--mono); letter-spacing: 0.12em; color: var(--accent); white-space: nowrap; font-size: 0.9rem; }
+  .score .off { color: var(--line); }
+
+  /* ── 案カード ── */
+  .card {
+    background: var(--surface); border: 1px solid var(--line);
+    border-radius: var(--radius); overflow: hidden;
+  }
+  .card.pick { border-color: var(--good); border-width: 2px; }
+  .card-head {
+    display: flex; align-items: baseline; gap: 0.85rem; flex-wrap: wrap;
+    padding: 1.1rem 1.4rem; border-bottom: 1px solid var(--line);
+    background: var(--surface-2);
+  }
+  .card.pick .card-head { background: var(--good-bg); }
+  .tag {
+    font-family: var(--mono); font-size: 0.78rem; font-weight: 700;
+    letter-spacing: 0.06em; color: var(--surface); background: var(--accent);
+    padding: 0.1rem 0.5rem; border-radius: 2px; flex: none;
+  }
+  .card.pick .tag { background: var(--good); }
+  .card-title { font-size: 1.1rem; font-weight: 800; color: var(--ink); margin: 0; }
+  .card-sub { font-size: 0.88rem; color: var(--ink-3); width: 100%; margin: 0; }
+  .pill {
+    font-family: var(--mono); font-size: 0.66rem; letter-spacing: 0.08em;
+    color: var(--good); border: 1px solid var(--good); border-radius: 2px;
+    padding: 0.05rem 0.45rem; flex: none; font-weight: 700;
+  }
+  .card-body { padding: 1.3rem 1.4rem; display: flex; flex-direction: column; gap: 1rem; }
+  .card-body p { margin: 0; }
+
+  .rows { display: flex; flex-direction: column; gap: 0; border-top: 1px solid var(--line); }
+  .row { display: grid; grid-template-columns: 9.5rem 1fr; gap: 0 1.2rem; padding: 0.65rem 0; border-bottom: 1px solid var(--line); }
+  .row dt {
+    font-family: var(--mono); font-size: 0.68rem; letter-spacing: 0.09em;
+    text-transform: uppercase; color: var(--ink-3); padding-top: 0.25rem;
+  }
+  .row dd { margin: 0; font-size: 0.94rem; }
+  @media (max-width: 620px) { .row { grid-template-columns: 1fr; gap: 0.15rem; } }
+
+  .scorebar { display: flex; flex-wrap: wrap; gap: 0.4rem 1.6rem; padding-top: 0.3rem; }
+  .sc { display: flex; align-items: center; gap: 0.5rem; }
+  .sc span.l { font-family: var(--mono); font-size: 0.66rem; letter-spacing: 0.08em; color: var(--ink-3); text-transform: uppercase; }
+
+  /* ── ボックス ── */
+  .note, .warn {
+    border-radius: var(--radius); padding: 1.1rem 1.3rem;
+    display: flex; flex-direction: column; gap: 0.5rem;
+  }
+  .note { background: var(--accent-bg); border: 1px solid color-mix(in srgb, var(--accent) 30%, transparent); }
+  .warn { background: var(--signal-bg); border: 1px solid color-mix(in srgb, var(--signal) 35%, transparent); }
+  .box-label { font-family: var(--mono); font-size: 0.68rem; letter-spacing: 0.12em; text-transform: uppercase; font-weight: 700; }
+  .note .box-label { color: var(--accent-ink); }
+  .warn .box-label { color: var(--signal); }
+  .note p, .warn p, .note li, .warn li { color: var(--ink); font-size: 0.94rem; margin: 0; }
+
+  /* ── ワイヤーフレーム ── */
+  .wf {
+    background: var(--surface); border: 1px solid var(--line);
+    border-radius: var(--radius); padding: 1rem; overflow-x: auto;
+  }
+  .wf-inner { min-width: 30rem; display: flex; flex-direction: column; gap: 0.5rem; }
+  .pane {
+    border: 1px dashed var(--ink-3); border-radius: 3px;
+    padding: 0.65rem 0.8rem; color: var(--ink-2); font-size: 0.82rem;
+    font-family: var(--mono); background: transparent;
+  }
+  .pane .t { display: block; color: var(--ink); font-weight: 700; font-size: 0.78rem; letter-spacing: 0.06em; margin-bottom: 0.2rem; }
+  .pane.solid { border-style: solid; border-color: var(--accent); }
+  .pane.tall { min-height: 7rem; }
+  .wf-cols { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0.5rem; }
+  .wf-cols2 { display: grid; grid-template-columns: 2fr 1fr; gap: 0.5rem; }
+  .wf-cap { font-size: 0.85rem; color: var(--ink-3); margin: 0.6rem 0 0; }
+
+  footer.foot { border-top: 1px solid var(--line); padding-top: 1.5rem; }
+  footer.foot p { color: var(--ink-3); font-size: 0.85rem; margin: 0; }
+
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
+</style>
+
+<div id="doc">
+  <header class="head">
+    <div class="wrap">
+      <p class="eyebrow">ハッカソン / キックオフ資料</p>
+      <h1>アプリ案の候補と評価</h1>
+      <p class="lead">
+        IR情報×AI という方向で、候補を5つに絞りました。<strong>この資料は決定事項ではありません。</strong>
+        会議で比べて選ぶための材料です。判断が主観の言い合いにならないよう、評価軸を先に固定してあります。
+      </p>
+      <dl class="facts">
+        <div class="fact"><dt>候補</dt><dd>5案</dd></div>
+        <div class="fact"><dt>主なデータ源</dt><dd>EDINET API（無料）</dd></div>
+        <div class="fact"><dt>決め方</dt><dd>会議で評価軸を埋める</dd></div>
+        <div class="fact"><dt>先に動くこと</dt><dd>EDINET のAPIキー登録</dd></div>
+      </dl>
+    </div>
+  </header>
+
+  <main class="wrap">
+
+    <!-- ══ 1 ══ -->
+    <section>
+      <h2 class="sec"><span class="n">01</span>判断の前提となる3つの事実</h2>
+      <div class="body">
+
+        <h3>① チャットに構造的にできないことは6つしかない</h3>
+        <p>「Claude に資料のURLを投げるのと変わらない」を避けるには、この軸のどれかに乗る必要があります。<strong>2つ以上に乗れば、アプリである理由が立ちます。</strong></p>
+        <div class="tablewrap">
+          <table>
+            <thead><tr><th>軸</th><th>中身</th></tr></thead>
+            <tbody>
+              <tr><td class="name">蓄積</td><td>会話は忘れる。アプリは前回の結果を持ち続けられる</td></tr>
+              <tr><td class="name">規模</td><td>チャットは2〜3文書が限界。アプリは数十社×数年を回せる</td></tr>
+              <tr><td class="name">スキーマ強制</td><td>全社に同じ項目を埋めさせて、初めて「比較」が成立する</td></tr>
+              <tr><td class="name">無人実行</td><td>人がプロンプトを打たなくても始まる</td></tr>
+              <tr><td class="name">決定的計算</td><td>計算はコードでやる。LLMに算数をさせない</td></tr>
+              <tr><td class="name">出典の追跡</td><td>「どこに書いてあったか」を検証できる形で残す</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h3>② IRの「数字」はもう構造化されている</h3>
+        <p>
+          EDINET API では、有価証券報告書の <strong>XBRL が CSV に変換された状態</strong>で取得できます（<code class="inline">type=5</code>）。
+          売上・利益・セグメント別数値は、パースするだけで手に入ります。
+        </p>
+        <div class="note">
+          <span class="box-label">ここが分岐点</span>
+          <p>つまり<strong>「AIに決算書を読ませて数字を出すアプリ」は、既に構造化されたデータをLLMで読み直しているだけ</strong>になり、既存の財務データサービスと正面から競合します。</p>
+          <p>手が付いていないのは<strong>テキスト</strong>です — 事業等のリスク、経営方針、対処すべき課題、MD&amp;A。ここは XBRL でも数値化されず、既存ツールの検索軸にもなっていません。<strong>LLMを使う正当性があるのはこちら側です。</strong></p>
+        </div>
+
+        <h3>③ データ源はEDINETに限定する</h3>
+        <div class="tablewrap">
+          <table>
+            <thead><tr><th>データ源</th><th>費用</th><th>判断</th></tr></thead>
+            <tbody>
+              <tr><td class="name">EDINET API（金融庁）</td><td>無料<br>要APIキー・電話番号認証</td><td>採用。有報・四半期報告書・XBRL が取れる</td></tr>
+              <tr><td class="name">TDnet API（JPX）</td><td>月24〜34万円規模</td><td><strong>除外。</strong>適時開示が必要でもEDINETで代替する</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="warn">
+          <span class="box-label">実装上の制約</span>
+          <p>EDINET API は<strong>実質3〜5秒に1リクエスト</strong>まで。短時間に叩くと接続を切られます。<strong>本番デモでAPIを叩く設計にすると必ず落ちます。</strong>対象企業のデータは事前にローカルへキャッシュしてください。</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ══ 2 ══ -->
+    <section>
+      <h2 class="sec"><span class="n">02</span>評価軸</h2>
+      <div class="body">
+        <p>5軸で評価します。各案に <span class="score">●●●●<span class="off">○</span></span> の形で付けています（5段階）。</p>
+        <div class="tablewrap">
+          <table>
+            <thead><tr><th>軸</th><th>何を見るか</th></tr></thead>
+            <tbody>
+              <tr><td class="name">実装しやすさ</td><td>ハッカソンの期間で動くところまで行けるか</td></tr>
+              <tr><td class="name">デモ映え</td><td>審査員に一言で伝わるか。画面で「おっ」となる瞬間があるか</td></tr>
+              <tr><td class="name">財務の学び</td><td>財務職に進むメンバーが、実務で使える知識を得られるか</td></tr>
+              <tr><td class="name">AIの必然性</td><td>LLMを使う理由があるか。コードだけで済むならAIハッカソンで不利</td></tr>
+              <tr><td class="name">データ確実性</td><td>必要な資料が本当にEDINETから取れるか（高いほど安全）</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="note">
+          <span class="box-label">この軸を入れた理由</span>
+          <p><strong>「財務の学び」は、審査には一切効きません。</strong>それでも軸に入れているのは、チームの誰かにとってこのハッカソンが将来の資産になるかどうかが、賞と同じくらい大事だからです。ここを最初に言語化しておかないと、実装の都合だけで案が決まります。</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ══ 3 ══ -->
+    <section>
+      <h2 class="sec"><span class="n">03</span>候補5案</h2>
+      <div class="body">
+
+        <!-- A案 -->
+        <div class="card pick">
+          <div class="card-head">
+            <span class="tag">A案</span>
+            <h3 class="card-title">「言わなくなったこと」検出器</h3>
+            <span class="pill">推奨・土台</span>
+            <p class="card-sub">同じ企業の有報を2期分つき合わせ、書き換えられた文言だけを抽出する</p>
+          </div>
+          <div class="card-body">
+            <p>IR文書は前期のコピペが土台です。だからこそ<strong>わざわざ書き換えた箇所には理由があります。</strong>リスク項目の新設、「成長」が「安定」に変わる、去年あった一文が消える。プロのアナリストが手作業でやっている読み方を自動化します。</p>
+            <dl class="rows">
+              <div class="row"><dt>チャット不可の理由</dt><dd>有報は数百ページ。2期分を入れても網羅的な差分は取れず、<strong>「見落としがない」ことを保証できない</strong>。それができるのはコードだけ</dd></div>
+              <div class="row"><dt>デモの見せ場</dt><dd>左右2画面で変更箇所をハイライト。右に<strong>「今年から言い始めたこと／言わなくなったこと」</strong>。<strong>消えた文言は人間もツールもまず気づかない</strong></dd></div>
+              <div class="row"><dt>財務の学び</dt><dd>有報テキストの精読、開示制度の理解。「どの差分が重要か」の判断そのものがアナリストの訓練になる</dd></div>
+              <div class="row"><dt>強み</dt><dd>差分抽出はコードで確定的に取れる。<strong>LLMは差分の意味づけだけ</strong>なので精度に依存せず、送るトークンも少なく安い。落ちにくい</dd></div>
+              <div class="row"><dt>伸ばし方</dt><dd>同業10社の同時期の差分を並べ、「業界全体でリスク認識が動いた」を見せる</dd></div>
+              <div class="row"><dt>評価</dt><dd>
+                <div class="scorebar">
+                  <span class="sc"><span class="l">実装</span><span class="score">●●●●●</span></span>
+                  <span class="sc"><span class="l">デモ</span><span class="score">●●●●<span class="off">○</span></span></span>
+                  <span class="sc"><span class="l">学び</span><span class="score">●●●●<span class="off">○</span></span></span>
+                  <span class="sc"><span class="l">AI必然</span><span class="score">●●●●<span class="off">○</span></span></span>
+                  <span class="sc"><span class="l">データ</span><span class="score">●●●●●</span></span>
+                </div>
+              </dd></div>
+            </dl>
+          </div>
+        </div>
+
+        <!-- D案 -->
+        <div class="card pick">
+          <div class="card-head">
+            <span class="tag">D案</span>
+            <h3 class="card-title">中期経営計画の「有言実行度」スコア</h3>
+            <span class="pill">推奨・学び最大</span>
+            <p class="card-sub">過去に掲げた数値目標を抽出し、実績と突き合わせて達成率を出す</p>
+          </div>
+          <div class="card-body">
+            <p>「売上1兆円」「ROE 10%」といった目標をテキストから抽出し、該当年度の実績（XBRL）と機械的に照合します。出力は一言で伝わります — <strong>この会社は、言ったことをやるのか。</strong></p>
+            <dl class="rows">
+              <div class="row"><dt>チャット不可の理由</dt><dd>複数年度の文書横断＋数値照合。<strong>目標はテキスト、実績はXBRL</strong>という異種データの突き合わせが必要</dd></div>
+              <div class="row"><dt>デモの見せ場</dt><dd>「この会社は過去5回の中計で目標を1回しか達成していない」。<strong>説明が要らない</strong></dd></div>
+              <div class="row"><dt>財務の学び</dt><dd><strong>5案で最も濃い。</strong>経営計画の読み方、KPIの設計、目標の信頼性評価。運用や与信の現場でそのまま使う視点</dd></div>
+              <div class="row"><dt>AIの必然性</dt><dd>目標値は表記が企業ごとにバラバラ（「1兆円」「10,000億円」「対前期比+20%」）。<strong>非定型テキストの正規化はLLMが最も効く仕事</strong></dd></div>
+              <div class="row"><dt>最大のリスク</dt><dd><strong>中期経営計画は有報ではなく決算説明資料やIRサイトにあることが多い。</strong>有報の「経営方針、経営環境及び対処すべき課題等」に数値目標が載っている企業もあるが、載っていない企業もある。<strong>着手前に5社ほどで実地確認が必要</strong></dd></div>
+              <div class="row"><dt>評価</dt><dd>
+                <div class="scorebar">
+                  <span class="sc"><span class="l">実装</span><span class="score">●●●<span class="off">○○</span></span></span>
+                  <span class="sc"><span class="l">デモ</span><span class="score">●●●●●</span></span>
+                  <span class="sc"><span class="l">学び</span><span class="score">●●●●●</span></span>
+                  <span class="sc"><span class="l">AI必然</span><span class="score">●●●●●</span></span>
+                  <span class="sc"><span class="l">データ</span><span class="score">●●<span class="off">○○○</span></span></span>
+                </div>
+              </dd></div>
+            </dl>
+          </div>
+        </div>
+
+        <!-- E案 -->
+        <div class="card">
+          <div class="card-head">
+            <span class="tag">E案</span>
+            <h3 class="card-title">財務三表シミュレーター</h3>
+            <p class="card-sub">条件を動かすとPL・BS・CFが連動して動く。黒字倒産を体験する</p>
+          </div>
+          <div class="card-body">
+            <p>「売掛金の回収が30日遅れたら」「在庫を1.5倍持ったら」をスライダーで動かすと、三表が連動して再計算されます。<strong>利益は黒字なのに現金が枯れていく</strong>のを目で見られる。</p>
+            <dl class="rows">
+              <div class="row"><dt>チャット不可の理由</dt><dd>インタラクティブな即時再計算。<strong>計算はコードでやる</strong>ので数字が常に正しい</dd></div>
+              <div class="row"><dt>デモの見せ場</dt><dd>スライダーを動かすと現金残高がゼロを割る瞬間。<strong>会場が静かになるタイプの見せ場</strong></dd></div>
+              <div class="row"><dt>財務の学び</dt><dd><strong>三表連動は財務職の基礎中の基礎で、かつ多くの人が体で理解していない領域。</strong>作った本人が一番学ぶ</dd></div>
+              <div class="row"><dt>弱点</dt><dd><strong>AIを使う理由がほぼない。</strong>AIハッカソンなら不利。実企業の有報から初期値を読み込む部分と、「なぜこうなるか」の解説生成にLLMを噛ませて補強する必要がある</dd></div>
+              <div class="row"><dt>評価</dt><dd>
+                <div class="scorebar">
+                  <span class="sc"><span class="l">実装</span><span class="score">●●●●<span class="off">○</span></span></span>
+                  <span class="sc"><span class="l">デモ</span><span class="score">●●●●●</span></span>
+                  <span class="sc"><span class="l">学び</span><span class="score">●●●●●</span></span>
+                  <span class="sc"><span class="l">AI必然</span><span class="score">●●<span class="off">○○○</span></span></span>
+                  <span class="sc"><span class="l">データ</span><span class="score">●●●●●</span></span>
+                </div>
+              </dd></div>
+            </dl>
+          </div>
+        </div>
+
+        <!-- F案 -->
+        <div class="card">
+          <div class="card-head">
+            <span class="tag">F案</span>
+            <h3 class="card-title">セグメント別 ROIC ツリー</h3>
+            <p class="card-sub">どの事業が資本コストを上回っているかを自動分解する</p>
+          </div>
+          <div class="card-body">
+            <p>有報のセグメント情報から、事業ごとの投下資本利益率を分解表示します。東証のPBR改善要請以降、日本企業の最大の関心事がここです。</p>
+            <dl class="rows">
+              <div class="row"><dt>チャット不可の理由</dt><dd>分解計算と可視化。セグメント区分は企業ごとに違うので<strong>横比較には正規化が必要</strong></dd></div>
+              <div class="row"><dt>財務の学び</dt><dd>非常に高い。ROIC・資本コスト・事業ポートフォリオ評価は、いま実務で最も問われる話題</dd></div>
+              <div class="row"><dt>弱点</dt><dd>デモが<strong>数字と木構造の絵</strong>になるため、財務が分かる人にしか刺さらない。審査員の構成に賭ける形になる</dd></div>
+              <div class="row"><dt>評価</dt><dd>
+                <div class="scorebar">
+                  <span class="sc"><span class="l">実装</span><span class="score">●●●<span class="off">○○</span></span></span>
+                  <span class="sc"><span class="l">デモ</span><span class="score">●●●<span class="off">○○</span></span></span>
+                  <span class="sc"><span class="l">学び</span><span class="score">●●●●●</span></span>
+                  <span class="sc"><span class="l">AI必然</span><span class="score">●●●<span class="off">○○</span></span></span>
+                  <span class="sc"><span class="l">データ</span><span class="score">●●●●<span class="off">○</span></span></span>
+                </div>
+              </dd></div>
+            </dl>
+          </div>
+        </div>
+
+        <!-- B案 -->
+        <div class="card">
+          <div class="card-head">
+            <span class="tag">B案</span>
+            <h3 class="card-title">テキスト由来の横断スクリーニング</h3>
+            <p class="card-sub">「人材不足をリスクに挙げている企業」で企業を絞り込める検索軸を作る</p>
+          </div>
+          <div class="card-body">
+            <p>業界N社の有報からリスク項目を同一スキーマで抽出・正規化してタグ化し、既存のスクリーナーに存在しない軸で検索できるようにします。</p>
+            <dl class="rows">
+              <div class="row"><dt>チャット不可の理由</dt><dd>規模とスキーマ強制。50社×数百ページを一貫した項目で埋めるのはチャットでは不可能</dd></div>
+              <div class="row"><dt>弱点</dt><dd><strong>事前バッチが重い。</strong>ハッカソンの期間では1業界20社程度が限界。加えて「タグが正しいか」の検証に人手がかかる</dd></div>
+              <div class="row"><dt>評価</dt><dd>
+                <div class="scorebar">
+                  <span class="sc"><span class="l">実装</span><span class="score">●●<span class="off">○○○</span></span></span>
+                  <span class="sc"><span class="l">デモ</span><span class="score">●●●<span class="off">○○</span></span></span>
+                  <span class="sc"><span class="l">学び</span><span class="score">●●●<span class="off">○○</span></span></span>
+                  <span class="sc"><span class="l">AI必然</span><span class="score">●●●●●</span></span>
+                  <span class="sc"><span class="l">データ</span><span class="score">●●●●<span class="off">○</span></span></span>
+                </div>
+              </dd></div>
+            </dl>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ══ 4 ══ -->
+    <section>
+      <h2 class="sec"><span class="n">04</span>比較マトリクス</h2>
+      <div class="body">
+        <div class="tablewrap">
+          <table>
+            <thead>
+              <tr><th>案</th><th>実装</th><th>デモ</th><th>財務の学び</th><th>AI必然</th><th>データ確実性</th></tr>
+            </thead>
+            <tbody>
+              <tr><td class="name">A 差分検出</td><td class="num"><span class="score">●●●●●</span></td><td class="num"><span class="score">●●●●<span class="off">○</span></span></td><td class="num"><span class="score">●●●●<span class="off">○</span></span></td><td class="num"><span class="score">●●●●<span class="off">○</span></span></td><td class="num"><span class="score">●●●●●</span></td></tr>
+              <tr><td class="name">D 有言実行度</td><td class="num"><span class="score">●●●<span class="off">○○</span></span></td><td class="num"><span class="score">●●●●●</span></td><td class="num"><span class="score">●●●●●</span></td><td class="num"><span class="score">●●●●●</span></td><td class="num"><span class="score">●●<span class="off">○○○</span></span></td></tr>
+              <tr><td class="name">E 三表シミュレーター</td><td class="num"><span class="score">●●●●<span class="off">○</span></span></td><td class="num"><span class="score">●●●●●</span></td><td class="num"><span class="score">●●●●●</span></td><td class="num"><span class="score">●●<span class="off">○○○</span></span></td><td class="num"><span class="score">●●●●●</span></td></tr>
+              <tr><td class="name">F ROICツリー</td><td class="num"><span class="score">●●●<span class="off">○○</span></span></td><td class="num"><span class="score">●●●<span class="off">○○</span></span></td><td class="num"><span class="score">●●●●●</span></td><td class="num"><span class="score">●●●<span class="off">○○</span></span></td><td class="num"><span class="score">●●●●<span class="off">○</span></span></td></tr>
+              <tr><td class="name">B 横断スクリーニング</td><td class="num"><span class="score">●●<span class="off">○○○</span></span></td><td class="num"><span class="score">●●●<span class="off">○○</span></span></td><td class="num"><span class="score">●●●<span class="off">○○</span></span></td><td class="num"><span class="score">●●●●●</span></td><td class="num"><span class="score">●●●●<span class="off">○</span></span></td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="note">
+          <span class="box-label">この表から読めること</span>
+          <p><strong>単独で全部が高い案はありません。</strong>A はどの軸も安全側だが突き抜けない。D と E は学びとデモが最高だが、それぞれ<strong>データ確実性</strong>と<strong>AI必然性</strong>という別々の穴を持っています。</p>
+          <p>だから提案は「A を土台にして D を載せる」です。<strong>A の差分エンジン（企業の言葉を時系列で追う仕組み）は、そのまま D の「目標値の変化を追う」機能に使えます。</strong>作るものは1つ、見せ方が2つ。A が動けば最低限の成果は確保され、D まで届けばデモが強くなります。</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ══ 5 ══ -->
+    <section>
+      <h2 class="sec"><span class="n">05</span>画面構成のたたき台</h2>
+      <div class="body">
+
+        <h3>A案：差分ビュー</h3>
+        <div class="wf">
+          <div class="wf-inner">
+            <div class="pane solid"><span class="t">ヘッダー</span>企業を選ぶ ▾ ／ 比較する年度 [2024] ⇄ [2025] ／ セクション ▾</div>
+            <div class="wf-cols2">
+              <div class="pane tall"><span class="t">差分ビュー（左右2カラム）</span>前期の本文 ｜ 当期の本文<br>変更箇所をハイライト。削除は取り消し線、追加は下線</div>
+              <div class="pane tall"><span class="t">サマリーパネル</span>▸ 今年から言い始めたこと<br>▸ 今年から言わなくなったこと<br>▸ 重要度（LLM判定）<br>各項目クリックで本文へジャンプ</div>
+            </div>
+            <div class="pane"><span class="t">出典フッター</span>クリックした記述の原典 — 書類名／提出日／ページ番号／EDINET原文リンク</div>
+          </div>
+          <p class="wf-cap">中央の左右比較が主役。<strong>右パネルの「言わなくなったこと」がこのアプリの独自価値</strong>なので、視線が最初に行く位置に置きます。</p>
+        </div>
+
+        <h3>D案：有言実行度ビュー</h3>
+        <div class="wf">
+          <div class="wf-inner">
+            <div class="pane solid"><span class="t">ヘッダー</span>企業名 ／ 有言実行度スコア（過去N回の中計の達成率）</div>
+            <div class="pane"><span class="t">タイムライン</span>中計①(2019-21) ─ 中計②(2022-24) ─ 中計③(2025-27, 進行中)</div>
+            <div class="wf-cols">
+              <div class="pane tall"><span class="t">目標（テキスト由来）</span>売上 1兆円<br>ROE 10%<br>営業利益率 12%</div>
+              <div class="pane tall"><span class="t">実績（XBRL由来）</span>8,400億円<br>7.2%<br>9.1%</div>
+              <div class="pane tall"><span class="t">達成率</span>84% ×<br>72% ×<br>76% ×<br>→ 未達の要因を要約</div>
+            </div>
+            <div class="pane"><span class="t">出典フッター</span>目標の原典（有報のどのページか）／実績の原典（XBRL項目名）</div>
+          </div>
+          <p class="wf-cap"><strong>3カラムの「目標／実績／達成率」が全て</strong>です。説明せずに伝わる形にするため、余計な要素を足さないこと。</p>
+        </div>
+
+        <div class="note">
+          <span class="box-label">両案に共通の必須要素</span>
+          <p><strong>出典フッターは省略しないでください。</strong>画面上の記述をクリックすると原典のページが分かる状態にしておくと、審査員の「それAIの作り話じゃないの？」にクリック1回で答えられます。<strong>金融ドメインでは、検証できないAIは使われません。</strong>ここの有無で評価が「面白い」から「使える」に変わります。</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ══ 6 ══ -->
+    <section>
+      <h2 class="sec"><span class="n">06</span>見送った案と、その理由</h2>
+      <div class="body">
+        <div class="tablewrap">
+          <table>
+            <thead><tr><th>案</th><th>見送る理由</th></tr></thead>
+            <tbody>
+              <tr><td class="name">粉飾・異常検知</td><td><strong>実在企業を「疑いあり」と表示するのは名誉毀損のリスクがあり、審査でも必ず突かれます。</strong>過去に確定した事例だけを扱う教育用ツールに限定すれば成立しますが、その形だとデモのインパクトが落ちます</td></tr>
+              <tr><td class="name">セグメント構造のSankey図</td><td>見た目は強いが、<strong>XBRLだけで作れてLLMを使う理由がない。</strong>差別化にならない</td></tr>
+              <tr><td class="name">経営者トーンのスコア化</td><td>グラフは映えるが<strong>主観指標なので根拠を突かれると弱い。</strong>審査で狙われる形</td></tr>
+              <tr><td class="name">新着開示の監視→Slack通知</td><td>最も「アプリらしい」が、<strong>ライブデモで何も起きない。</strong>A案のおまけ機能として「差分が出たら通知」なら成立</td></tr>
+              <tr><td class="name">個人投資家向け「わかる化」</td><td>技術的な新しさは薄い。ただし<strong>文系メンバーが主役になれる</strong>ので、チーム構成を活かす方向に振るなら再検討の価値あり</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ══ 7 ══ -->
+    <section>
+      <h2 class="sec"><span class="n">07</span>会議での決め方</h2>
+      <div class="body">
+        <p><strong>多数決にしないでください。</strong>好みの言い合いになり、決まっても誰も納得しません。評価軸を埋める作業にします。</p>
+        <div class="tablewrap">
+          <table>
+            <thead><tr><th>時間</th><th>やること</th></tr></thead>
+            <tbody>
+              <tr><td class="name">5分</td><td>この資料の <strong>01「判断の前提」</strong> だけ読み合わせる。ここが共有できていないと議論が噛み合わない</td></tr>
+              <tr><td class="name">15分</td><td>各案について「これを1週間後にデモしている自分」を想像して、引っかかる点を出す</td></tr>
+              <tr><td class="name">10分</td><td><strong>5軸のうち、今回のチームが何を優先するかを決める。</strong>案を選ぶ前に軸の優先順位を決めるのが肝</td></tr>
+              <tr><td class="name">10分</td><td>案を1つ決める。決まった瞬間に Notion のカードにする</td></tr>
+              <tr><td class="name">10分</td><td>役割分担。<strong>その場で担当者名をカードに入れる</strong></td></tr>
+              <tr><td class="name">10分</td><td>次回日程を決めてカレンダー登録。D案が候補に残るなら<strong>「5社で中計の所在を確認する」タスクを誰かに割る</strong></td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="warn">
+          <span class="box-label">Google Meet の制約</span>
+          <p>無料アカウントは<strong>3人以上の会議が60分で自動終了</strong>します（残り15分からカウントダウン表示）。切れても同じURLで入り直せばまた60分使えますが、再入室に数分かかります。<strong>上の配分は60分ぴったりなので、最後の2項目を先にやってしまうほうが安全です。</strong></p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ══ 8 ══ -->
+    <section>
+      <h2 class="sec"><span class="n">08</span>案が決まる前に着手できること</h2>
+      <div class="body">
+        <p>どの案になっても無駄にならない作業です。会議を待たずに進めてください。</p>
+        <div class="tablewrap">
+          <table>
+            <thead><tr><th>やること</th><th>なぜ今か</th></tr></thead>
+            <tbody>
+              <tr><td class="name">EDINET の APIキー登録</td><td><strong>電話番号認証があるので即日終わらない可能性がある。</strong>全案の前提</td></tr>
+              <tr><td class="name">有報1社分を手で取得してみる</td><td>データの形を1度見ておくと、会議での議論の解像度が上がる</td></tr>
+              <tr><td class="name">対象企業を5社選ぶ</td><td>「変化が起きている会社」を選べるかが、A案・D案の成否を分ける</td></tr>
+              <tr><td class="name">中計の所在確認（D案が残るなら）</td><td>有報に数値目標が載っているか。<strong>ここが崩れるとD案は成立しない</strong></td></tr>
+              <tr><td class="name">全員の環境構築</td><td>案とは無関係に必須。手順書は <code class="inline">docs/setup-guide.html</code></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <footer class="foot">
+      <p>この資料は決定事項ではなく、会議で比べるための材料です。評価の点数は作成時点の見立てなので、実地確認の結果が出たら書き換えてください。</p>
+    </footer>
+
+  </main>
+</div>
