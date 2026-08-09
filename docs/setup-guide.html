@@ -1,0 +1,667 @@
+<title>開発環境セットアップ手順書 — ハッカソン事前準備</title>
+
+<style>
+  :root {
+    --paper:      #F3F5F4;
+    --surface:    #FFFFFF;
+    --surface-2:  #E9EDEB;
+    --ink:        #14201E;
+    --ink-2:      #4A5A56;
+    --ink-3:      #788A85;
+    --line:       #D3DCD8;
+    --accent:     #0F6E66;
+    --accent-ink: #0B4F49;
+    --accent-bg:  #E2EFEC;
+    --signal:     #B4531C;
+    --signal-bg:  #FAEDE3;
+    --radius:     4px;
+
+    --sans: "Hiragino Kaku Gothic ProN", "Hiragino Sans", "Yu Gothic UI", "Yu Gothic",
+            "Noto Sans JP", Meiryo, system-ui, sans-serif;
+    --mono: ui-monospace, SFMono-Regular, "SF Mono", Consolas, Menlo,
+            "Noto Sans Mono", "Yu Gothic", monospace;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --paper:      #101614;
+      --surface:    #171F1D;
+      --surface-2:  #1F2A27;
+      --ink:        #E3EAE7;
+      --ink-2:      #A3B2AE;
+      --ink-3:      #7C8C88;
+      --line:       #2C3A36;
+      --accent:     #4FC0AE;
+      --accent-ink: #7FD6C6;
+      --accent-bg:  #16302C;
+      --signal:     #E08A50;
+      --signal-bg:  #2E2018;
+    }
+  }
+  :root[data-theme="dark"] {
+    --paper:      #101614;
+    --surface:    #171F1D;
+    --surface-2:  #1F2A27;
+    --ink:        #E3EAE7;
+    --ink-2:      #A3B2AE;
+    --ink-3:      #7C8C88;
+    --line:       #2C3A36;
+    --accent:     #4FC0AE;
+    --accent-ink: #7FD6C6;
+    --accent-bg:  #16302C;
+    --signal:     #E08A50;
+    --signal-bg:  #2E2018;
+  }
+  :root[data-theme="light"] {
+    --paper:      #F3F5F4;
+    --surface:    #FFFFFF;
+    --surface-2:  #E9EDEB;
+    --ink:        #14201E;
+    --ink-2:      #4A5A56;
+    --ink-3:      #788A85;
+    --line:       #D3DCD8;
+    --accent:     #0F6E66;
+    --accent-ink: #0B4F49;
+    --accent-bg:  #E2EFEC;
+    --signal:     #B4531C;
+    --signal-bg:  #FAEDE3;
+  }
+
+  html { background: var(--paper); }
+
+  #doc {
+    font-family: var(--sans);
+    color: var(--ink);
+    background: var(--paper);
+    line-height: 1.85;
+    font-size: 16px;
+    letter-spacing: 0.01em;
+    -webkit-font-smoothing: antialiased;
+    padding-bottom: 5rem;
+  }
+
+  #doc p, #doc li { color: var(--ink-2); }
+  #doc strong { color: var(--ink); font-weight: 700; }
+  #doc a { color: var(--accent); text-underline-offset: 3px; }
+  #doc a:hover { color: var(--accent-ink); }
+  #doc :focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 2px; }
+
+  .wrap { max-width: 50rem; margin: 0 auto; padding: 0 1.5rem; }
+
+  /* ─── OS切替バー ─────────────────────────── */
+  .osbar {
+    position: sticky; top: 0; z-index: 20;
+    background: color-mix(in srgb, var(--paper) 88%, transparent);
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid var(--line);
+  }
+  .osbar .wrap {
+    display: flex; align-items: center; gap: 1rem;
+    flex-wrap: wrap; padding-block: 0.7rem;
+  }
+  .osbar-label {
+    font-family: var(--mono); font-size: 0.7rem; letter-spacing: 0.12em;
+    text-transform: uppercase; color: var(--ink-3);
+  }
+  .seg { display: flex; gap: 0; border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; }
+  .seg button {
+    font-family: var(--sans); font-size: 0.85rem; font-weight: 700;
+    padding: 0.35rem 1.1rem; border: 0; background: var(--surface);
+    color: var(--ink-3); cursor: pointer; transition: background .15s, color .15s;
+  }
+  .seg button + button { border-left: 1px solid var(--line); }
+  .seg button:hover { color: var(--ink); }
+  .seg button[aria-pressed="true"] { background: var(--accent); color: #fff; }
+  :root[data-theme="dark"] .seg button[aria-pressed="true"],
+  :root:not([data-theme="light"]) .seg button[aria-pressed="true"] { color: var(--paper); }
+  @media (prefers-color-scheme: light) {
+    :root:not([data-theme="dark"]) .seg button[aria-pressed="true"] { color: #fff; }
+  }
+
+  /* OS別ブロック。.os-block より .os-win .only-mac のほうが詳細度が高いので隠せる。
+     ここに display を指定した要素へインラインスタイルを足すと切り替えが効かなくなる。 */
+  .os-block { display: flex; flex-direction: column; gap: 1.35rem; }
+  .os-win .only-mac { display: none; }
+  .os-mac .only-win { display: none; }
+
+  /* ─── ヘッダー ─────────────────────────── */
+  header.head { padding-top: 3.5rem; }
+  .eyebrow {
+    font-family: var(--mono); font-size: 0.72rem; letter-spacing: 0.18em;
+    text-transform: uppercase; color: var(--accent); margin: 0 0 1rem;
+  }
+  h1 {
+    font-size: clamp(1.9rem, 5vw, 2.7rem); line-height: 1.3; font-weight: 800;
+    letter-spacing: -0.01em; margin: 0 0 1.1rem; color: var(--ink); text-wrap: balance;
+  }
+  .lead { font-size: 1.05rem; margin: 0 0 2rem; max-width: 38em; }
+
+  .facts {
+    display: flex; flex-wrap: wrap; gap: 0 2.5rem;
+    border-top: 1px solid var(--line); border-bottom: 1px solid var(--line);
+    padding: 1rem 0; margin-bottom: 3rem;
+  }
+  .fact dt {
+    font-family: var(--mono); font-size: 0.68rem; letter-spacing: 0.12em;
+    text-transform: uppercase; color: var(--ink-3); margin-bottom: 0.15rem;
+  }
+  .fact dd { margin: 0; font-weight: 700; color: var(--ink); font-size: 0.95rem; }
+
+  /* ─── 目次 ─────────────────────────── */
+  .toc { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 1.5rem 1.75rem; margin-bottom: 3.5rem; }
+  .toc h2 { font-size: 0.72rem; font-family: var(--mono); letter-spacing: 0.14em; text-transform: uppercase; color: var(--ink-3); margin: 0 0 1rem; font-weight: 500; }
+  .toc ol { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 0.6rem; counter-reset: toc; }
+  .toc li { display: flex; align-items: baseline; gap: 0.85rem; counter-increment: toc; }
+  .toc li::before { content: counter(toc, decimal-leading-zero); font-family: var(--mono); font-size: 0.8rem; color: var(--accent); font-weight: 700; }
+  .toc a { font-weight: 700; color: var(--ink); text-decoration: none; }
+  .toc a:hover { color: var(--accent); text-decoration: underline; }
+  .toc .note { color: var(--ink-3); font-weight: 400; font-size: 0.85rem; }
+
+  /* ─── ステップ ─────────────────────────── */
+  .step { margin-bottom: 4.5rem; }
+  .step-head {
+    display: grid; grid-template-columns: 4.5rem 1fr; gap: 0 1.25rem;
+    align-items: start; margin-bottom: 1.75rem;
+    padding-bottom: 1.25rem; border-bottom: 2px solid var(--ink);
+  }
+  .step-num {
+    font-family: var(--mono); font-size: 3rem; line-height: 0.9; font-weight: 700;
+    color: var(--accent); letter-spacing: -0.04em; font-variant-numeric: tabular-nums;
+  }
+  .step-title { font-size: 1.45rem; font-weight: 800; margin: 0 0 0.4rem; line-height: 1.4; color: var(--ink); }
+  .step-meta { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; }
+  .badge {
+    font-family: var(--mono); font-size: 0.68rem; letter-spacing: 0.08em;
+    padding: 0.15rem 0.55rem; border-radius: 2px; font-weight: 700;
+  }
+  .badge.req { background: var(--accent); color: var(--surface); }
+  .badge.opt { background: var(--surface-2); color: var(--ink-2); border: 1px solid var(--line); }
+  .badge.time { background: transparent; color: var(--ink-3); border: 1px solid var(--line); font-weight: 400; }
+
+  .step-body { display: flex; flex-direction: column; gap: 1.35rem; }
+  @media (min-width: 720px) { .step-body { padding-left: 5.75rem; } }
+
+  h3 { font-size: 1.02rem; font-weight: 800; color: var(--ink); margin: 0.75rem 0 0; letter-spacing: 0.01em; }
+  h3 .os-tag { font-family: var(--mono); font-size: 0.7rem; color: var(--ink-3); font-weight: 400; margin-left: 0.5rem; letter-spacing: 0.06em; }
+
+  ol.steps { list-style: none; counter-reset: s; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 0.9rem; }
+  ol.steps > li { counter-increment: s; display: grid; grid-template-columns: 1.6rem 1fr; gap: 0 0.75rem; }
+  ol.steps > li::before {
+    content: counter(s) "."; font-family: var(--mono); font-weight: 700;
+    color: var(--accent); font-size: 0.9rem; padding-top: 0.15rem;
+    font-variant-numeric: tabular-nums;
+  }
+  ol.steps > li > * { grid-column: 2; }
+  ol.steps p { margin: 0; }
+  ol.steps p + p { margin-top: 0.4rem; }
+
+  ul.plain { margin: 0; padding-left: 1.2rem; display: flex; flex-direction: column; gap: 0.4rem; }
+
+  /* ─── コード ─────────────────────────── */
+  .cmd {
+    position: relative; background: var(--surface); border: 1px solid var(--line);
+    border-left: 3px solid var(--accent); border-radius: var(--radius);
+    display: flex; align-items: stretch; gap: 0.5rem;
+  }
+  .cmd pre {
+    margin: 0; padding: 0.8rem 1rem; overflow-x: auto; flex: 1;
+    font-family: var(--mono); font-size: 0.85rem; line-height: 1.7;
+    color: var(--ink); white-space: pre;
+  }
+  .cmd button {
+    flex: none; align-self: stretch; border: 0; border-left: 1px solid var(--line);
+    background: transparent; color: var(--ink-3); cursor: pointer;
+    font-family: var(--mono); font-size: 0.7rem; letter-spacing: 0.06em;
+    padding: 0 0.85rem; transition: background .15s, color .15s;
+  }
+  .cmd button:hover { background: var(--accent-bg); color: var(--accent); }
+  code.inline {
+    font-family: var(--mono); font-size: 0.85em; background: var(--surface-2);
+    padding: 0.1em 0.4em; border-radius: 2px; color: var(--ink);
+  }
+  .key {
+    font-family: var(--mono); font-size: 0.8em; border: 1px solid var(--line);
+    border-bottom-width: 2px; background: var(--surface); border-radius: 3px;
+    padding: 0.1em 0.4em; color: var(--ink); white-space: nowrap;
+  }
+
+  /* ─── ノート/注意 ─────────────────────────── */
+  .note-box, .warn-box, .term-box {
+    border-radius: var(--radius); padding: 1.1rem 1.25rem;
+    display: flex; flex-direction: column; gap: 0.5rem;
+  }
+  .note-box { background: var(--accent-bg); border: 1px solid color-mix(in srgb, var(--accent) 30%, transparent); }
+  .warn-box { background: var(--signal-bg); border: 1px solid color-mix(in srgb, var(--signal) 35%, transparent); }
+  .term-box { background: var(--surface); border: 1px dashed var(--line); }
+  .box-label {
+    font-family: var(--mono); font-size: 0.68rem; letter-spacing: 0.12em;
+    text-transform: uppercase; font-weight: 700;
+  }
+  .note-box .box-label { color: var(--accent-ink); }
+  .warn-box .box-label { color: var(--signal); }
+  .term-box .box-label { color: var(--ink-3); }
+  .note-box p, .warn-box p, .term-box p, .note-box li, .warn-box li, .term-box li { margin: 0; color: var(--ink); font-size: 0.94rem; }
+
+  /* ─── 完了チェック ─────────────────────────── */
+  .done {
+    background: var(--surface); border: 1px solid var(--line);
+    border-top: 3px solid var(--accent); border-radius: var(--radius);
+    padding: 1.1rem 1.25rem; display: flex; flex-direction: column; gap: 0.7rem;
+  }
+  .done .box-label { color: var(--accent); }
+  .done ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 0.5rem; }
+  .done li { display: flex; align-items: flex-start; gap: 0.65rem; color: var(--ink); font-size: 0.94rem; }
+  .done li::before {
+    content: "☐"; font-family: var(--mono); color: var(--accent);
+    font-size: 1rem; line-height: 1.5; flex: none;
+  }
+
+  /* ─── 用語集 ─────────────────────────── */
+  .glossary { display: grid; gap: 0; border-top: 1px solid var(--line); }
+  .gl-row { display: grid; grid-template-columns: 11rem 1fr; gap: 0 1.5rem; padding: 0.9rem 0; border-bottom: 1px solid var(--line); }
+  .gl-row dt { font-weight: 800; color: var(--ink); font-size: 0.95rem; }
+  .gl-row dd { margin: 0; color: var(--ink-2); font-size: 0.94rem; }
+  @media (max-width: 600px) { .gl-row { grid-template-columns: 1fr; gap: 0.2rem; } }
+
+  h2.section {
+    font-size: 1.35rem; font-weight: 800; color: var(--ink);
+    margin: 0 0 1.5rem; padding-bottom: 0.75rem; border-bottom: 2px solid var(--ink);
+  }
+  .section-block { margin-bottom: 4rem; }
+
+  footer.foot { border-top: 1px solid var(--line); padding-top: 1.5rem; color: var(--ink-3); font-size: 0.85rem; }
+  footer.foot p { color: var(--ink-3); margin: 0; }
+
+  @media (prefers-reduced-motion: reduce) {
+    * { transition: none !important; animation: none !important; scroll-behavior: auto !important; }
+  }
+  html { scroll-behavior: smooth; }
+</style>
+
+<div id="doc" class="os-win">
+
+  <div class="osbar">
+    <div class="wrap">
+      <span class="osbar-label">使っているパソコン</span>
+      <div class="seg" role="group" aria-label="OSの切り替え">
+        <button type="button" data-os="win" aria-pressed="true">Windows</button>
+        <button type="button" data-os="mac" aria-pressed="false">Mac</button>
+      </div>
+      <span class="osbar-label">← 選ぶと手順が切り替わります</span>
+    </div>
+  </div>
+
+  <header class="head">
+    <div class="wrap">
+      <p class="eyebrow">ハッカソン 事前準備 / 全員向け</p>
+      <h1>開発環境セットアップ手順書</h1>
+      <p class="lead">
+        当日いきなり作り始められるように、パソコンの準備だけ先に済ませておきます。
+        プログラミングの知識はいりません。書いてある順にクリックしていけば終わります。
+        <strong>途中でわからなくなったら、その画面のスクリーンショットをチームのチャットに送ってください。</strong>
+      </p>
+
+      <dl class="facts">
+        <div class="fact"><dt>所要時間</dt><dd>30〜45分</dd></div>
+        <div class="fact"><dt>必須</dt><dd>STEP 01・02</dd></div>
+        <div class="fact"><dt>できる人だけ</dt><dd>STEP 03</dd></div>
+        <div class="fact"><dt>用意するもの</dt><dd>パソコン・メール・スマホ</dd></div>
+      </dl>
+
+      <nav class="toc" aria-label="目次">
+        <h2>この手順書の流れ</h2>
+        <ol>
+          <li><a href="#step1">VS Code をインストールする</a><span class="note">— コードを書くアプリ</span></li>
+          <li><a href="#step2">GitHub のアカウントを作る</a><span class="note">— コードを共有する場所</span></li>
+          <li><a href="#step3">Git をインストールする</a><span class="note">— 余裕がある人だけ</span></li>
+          <li><a href="#trouble">つまずいたときは</a></li>
+          <li><a href="#glossary">用語集</a><span class="note">— 聞き慣れない言葉が出てきたら</span></li>
+        </ol>
+      </nav>
+
+      <div class="note-box" style="margin-bottom:4rem">
+        <span class="box-label">はじめに</span>
+        <p><strong>「VS Code」「GitHub」「Git」って何？</strong></p>
+        <p>この3つは名前が似ていますが、役割は全然違います。</p>
+        <ul class="plain">
+          <li><strong>VS Code</strong> … コードを書くためのアプリ。Word のようなもの。</li>
+          <li><strong>GitHub</strong> … 書いたコードをネット上に置いて、チームで共有する場所。Google ドライブのようなもの。</li>
+          <li><strong>Git</strong> … 手元のコードと GitHub をやりとりするための道具。VS Code の裏側で動きます。</li>
+        </ul>
+      </div>
+    </div>
+  </header>
+
+  <main class="wrap">
+
+    <!-- ══════════ STEP 1 ══════════ -->
+    <section class="step" id="step1">
+      <div class="step-head">
+        <div class="step-num">01</div>
+        <div>
+          <h2 class="step-title">VS Code をインストールする</h2>
+          <div class="step-meta">
+            <span class="badge req">必須</span>
+            <span class="badge time">約10分</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="step-body">
+        <p>Visual Studio Code（略して VS Code）は、コードを書くための無料アプリです。Microsoft が配布しています。</p>
+
+        <!-- Windows -->
+        <div class="only-win os-block">
+          <h3>インストール手順<span class="os-tag">Windows</span></h3>
+          <ol class="steps">
+            <li><p><a href="https://code.visualstudio.com/" target="_blank" rel="noopener">code.visualstudio.com</a> を開きます。</p></li>
+            <li><p>青い <strong>「Download for Windows」</strong> ボタンを押します。パソコンに合ったものが自動で選ばれるので、細かい種類は気にしなくて大丈夫です。</p></li>
+            <li><p>ダウンロードされた <code class="inline">VSCodeUserSetup-x64-〇〇.exe</code> をダブルクリックします。ブラウザの右上や、画面下の「ダウンロード」フォルダにあります。</p></li>
+            <li><p><strong>「同意する」</strong> を選んで、あとは <strong>「次へ」</strong> を押し続けます。</p>
+                <p>途中の「追加タスクの選択」画面では、<strong>「PATH への追加」にチェックが入っていること</strong>だけ確認してください（初期状態で入っています）。</p></li>
+            <li><p><strong>「インストール」</strong> → 終わったら <strong>「完了」</strong>。VS Code が起動します。</p></li>
+          </ol>
+
+          <div class="warn-box">
+            <span class="box-label">よくあるつまずき</span>
+            <p><strong>「WindowsによってPCが保護されました」</strong>という青い画面が出たら</p>
+            <p>公式サイトからダウンロードしたファイルなので問題ありません。<strong>「詳細情報」</strong>をクリック → 下に出てくる <strong>「実行」</strong> を押してください。</p>
+          </div>
+        </div>
+
+        <!-- Mac -->
+        <div class="only-mac os-block">
+          <h3>インストール手順<span class="os-tag">Mac</span></h3>
+          <ol class="steps">
+            <li><p><a href="https://code.visualstudio.com/" target="_blank" rel="noopener">code.visualstudio.com</a> を開きます。</p></li>
+            <li><p>青い <strong>「Download for macOS」</strong> ボタンを押します。M1/M2/Intel などの違いは自動で判別されるので、気にしなくて大丈夫です。</p></li>
+            <li><p>ダウンロードした zip をダブルクリックして解凍します（自動で解凍されることもあります）。</p></li>
+            <li><p>出てきた <strong>「Visual Studio Code」</strong> のアイコンを、<strong>「アプリケーション」フォルダにドラッグ＆ドロップ</strong>します。これがインストール作業です。</p>
+                <p>Finder を開いて、左側のサイドバーの「アプリケーション」に放り込めば OK です。</p></li>
+            <li><p>アプリケーションフォルダから Visual Studio Code をダブルクリックして起動します。「インターネットからダウンロードされたアプリです」と聞かれたら <strong>「開く」</strong> を押します。</p></li>
+          </ol>
+        </div>
+
+        <h3>日本語表示にする（おすすめ）</h3>
+        <p>初期状態では英語表示です。日本語化しておくと後がラクになります。</p>
+        <ol class="steps">
+          <li><p>VS Code の左端にある、四角が4つ並んだアイコン（Extensions＝拡張機能）をクリックします。<span class="only-win">ショートカットは <span class="key">Ctrl</span> + <span class="key">Shift</span> + <span class="key">X</span></span><span class="only-mac">ショートカットは <span class="key">⌘</span> + <span class="key">Shift</span> + <span class="key">X</span></span>。</p></li>
+          <li><p>検索欄に <code class="inline">Japanese</code> と入力します。</p></li>
+          <li><p>一番上に出てくる <strong>「Japanese Language Pack for Visual Studio Code」</strong> の <strong>Install</strong> を押します。</p></li>
+          <li><p>右下に「再起動しますか？」と出るので <strong>Change Language and Restart</strong> を押します。日本語になれば成功です。</p></li>
+        </ol>
+
+        <div class="done">
+          <span class="box-label">ここまでできたら OK</span>
+          <ul>
+            <li>VS Code が起動する</li>
+            <li>メニューが日本語で表示されている（日本語化した場合）</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- ══════════ STEP 2 ══════════ -->
+    <section class="step" id="step2">
+      <div class="step-head">
+        <div class="step-num">02</div>
+        <div>
+          <h2 class="step-title">GitHub のアカウントを作る</h2>
+          <div class="step-meta">
+            <span class="badge req">必須</span>
+            <span class="badge time">約15分</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="step-body">
+        <p>GitHub は、チームでコードを共有・管理するためのサービスです。ここにアカウントがないと、チームの作業に参加できません。無料です。</p>
+
+        <h3>アカウント登録</h3>
+        <ol class="steps">
+          <li><p><a href="https://github.com/signup" target="_blank" rel="noopener">github.com/signup</a> を開きます。</p></li>
+          <li><p><strong>メールアドレス</strong>を入力します。個人のアドレスで構いません。</p></li>
+          <li><p><strong>パスワード</strong>を決めます。15文字以上、または「8文字以上＋数字＋小文字」が必要です。</p></li>
+          <li><p><strong>ユーザー名</strong>を決めます。半角英数字とハイフンのみ。世界で一人ひとつなので、埋まっていたら数字などを足してください。</p>
+              <p>このユーザー名はチーム全員に見えます。<strong>あとから変えると面倒なので、無難なものにしておくのがおすすめです</strong>（例：<code class="inline">tanaka-hana</code>）。</p></li>
+          <li><p>「製品アップデートを受け取るか」は <code class="inline">n</code>（受け取らない）で構いません。</p></li>
+          <li><p><strong>パズル認証</strong>が出ます。指示どおりに画像を回転させるなどして進めてください。</p></li>
+          <li><p><strong>「Create account」</strong> を押すと、登録したメールアドレスに<strong>8桁のコード</strong>が届きます。それを入力すれば登録完了です。</p></li>
+          <li><p>そのあと「何人のチームですか？」などのアンケートが出ますが、<strong>スキップして構いません</strong>。</p></li>
+        </ol>
+
+        <h3>2段階認証（2FA）を設定する</h3>
+        <p>GitHub では、コードを扱うユーザーに2段階認証の設定が求められます。<strong>後回しにすると作業中にロックされて困るので、今のうちにやってしまいましょう。</strong>スマホを用意してください。</p>
+        <ol class="steps">
+          <li><p>右上のアイコン → <strong>Settings</strong> → 左メニューの <strong>Password and authentication</strong> を開きます。</p></li>
+          <li><p><strong>Two-factor authentication</strong> の <strong>Enable</strong> を押します。</p></li>
+          <li><p>スマホに認証アプリを入れます。<strong>Google Authenticator</strong> か <strong>Microsoft Authenticator</strong>（どちらも無料）が定番です。</p></li>
+          <li><p>画面に出た QR コードを、そのアプリでスキャンします。アプリに6桁の数字が表示されるので、GitHub の画面に入力します。</p></li>
+          <li><p><strong>リカバリーコード</strong>が表示されます。スマホをなくしたときの最後の命綱です。<strong>必ずダウンロードするか、スクリーンショットを撮って保存してください。</strong></p></li>
+        </ol>
+
+        <div class="warn-box">
+          <span class="box-label">重要</span>
+          <p>リカバリーコードを保存せずにスマホを失くすと、<strong>アカウントに二度と入れなくなります</strong>。ダウンロードしたファイルを、自分がわかる場所に置いておいてください。</p>
+        </div>
+
+        <h3>チームに参加する</h3>
+        <ol class="steps">
+          <li><p>できあがった<strong>ユーザー名をチームのチャットに送ってください。</strong>こちらから招待を送ります。</p></li>
+          <li><p>招待メールが届いたら <strong>「Join」「Accept invitation」</strong> といったボタンを押してください。これでチームのコードが見えるようになります。</p></li>
+        </ol>
+
+        <div class="done">
+          <span class="box-label">ここまでできたら OK</span>
+          <ul>
+            <li>GitHub にログインできる</li>
+            <li>2段階認証が有効になっている</li>
+            <li>リカバリーコードを保存した</li>
+            <li>チームにユーザー名を伝えた</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- ══════════ STEP 3 ══════════ -->
+    <section class="step" id="step3">
+      <div class="step-head">
+        <div class="step-num">03</div>
+        <div>
+          <h2 class="step-title">Git をインストールする</h2>
+          <div class="step-meta">
+            <span class="badge opt">できる人だけ</span>
+            <span class="badge time">約15分</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="step-body">
+        <div class="note-box">
+          <span class="box-label">ここから先について</span>
+          <p>ここは<strong>できる人だけで大丈夫です</strong>。難しそうだと感じたら STEP 02 で止めて構いません。当日みんなで一緒にやります。</p>
+        </div>
+
+        <p>Git は、手元で書いたコードを GitHub に送ったり、他の人の変更を取り込んだりするための道具です。ここからは「ターミナル」に文字を打ち込む作業が出てきます。</p>
+
+        <div class="term-box">
+          <span class="box-label">ターミナルとは</span>
+          <p>マウスの代わりに<strong>文字で命令を打ち込む画面</strong>のことです。黒い画面に文字だけが並んでいるアレです。</p>
+          <p>VS Code の中から開けます。上のメニューの <strong>「ターミナル」→「新しいターミナル」</strong> を選ぶと、画面の下半分に出てきます。<span class="only-win">ショートカットは <span class="key">Ctrl</span> + <span class="key">Shift</span> + <span class="key">@</span></span><span class="only-mac">ショートカットは <span class="key">^</span> + <span class="key">Shift</span> + <span class="key">@</span></span>。</p>
+          <p>命令は<strong>1行打つごとに <span class="key">Enter</span></strong> を押します。以下のコマンドは右側の COPY ボタンでコピーして、ターミナルに貼り付けてください。</p>
+        </div>
+
+        <!-- Windows -->
+        <div class="only-win os-block">
+          <h3>インストール手順<span class="os-tag">Windows</span></h3>
+          <p>やり方は2つあります。<strong>方法A</strong>のほうが速いですが、うまくいかなければ<strong>方法B</strong>にしてください。</p>
+
+          <p><strong>方法A：コマンドで入れる</strong></p>
+          <p>ターミナルに次を貼り付けて <span class="key">Enter</span>。</p>
+          <div class="cmd">
+            <pre><code>winget install --id Git.Git -e --source winget</code></pre>
+            <button type="button" class="copy">COPY</button>
+          </div>
+          <p>「使用許諾に同意しますか」と聞かれたら <code class="inline">Y</code> を押して <span class="key">Enter</span>。インストールが終わったら、<strong>ターミナルを一度閉じて開き直してください</strong>（そうしないと git が認識されません）。</p>
+
+          <p><strong>方法B：インストーラーで入れる</strong></p>
+          <ol class="steps">
+            <li><p><a href="https://git-scm.com/download/win" target="_blank" rel="noopener">git-scm.com/download/win</a> を開き、<strong>「64-bit Git for Windows Setup」</strong> をダウンロードします。</p></li>
+            <li><p>ダウンロードした exe を実行します。設定画面がたくさん出てきますが、<strong>基本は「Next」を押し続けて大丈夫です</strong>。</p></li>
+            <li><p>途中の <strong>「Choosing the default editor used by Git」</strong> だけは、プルダウンから <strong>「Use Visual Studio Code as Git's default editor」</strong> を選んでおくと後がラクです。</p></li>
+            <li><p>最後まで進めて <strong>「Install」→「Finish」</strong>。</p></li>
+          </ol>
+        </div>
+
+        <!-- Mac -->
+        <div class="only-mac os-block">
+          <h3>インストール手順<span class="os-tag">Mac</span></h3>
+          <p>Mac には Git を入れる仕組みが最初から用意されています。ターミナルに次を貼り付けて <span class="key">Enter</span> を押してください。</p>
+          <div class="cmd">
+            <pre><code>git --version</code></pre>
+            <button type="button" class="copy">COPY</button>
+          </div>
+          <ul class="plain">
+            <li><strong><code class="inline">git version 2.〇〇</code> のように表示されたら</strong> → すでに入っています。次の「最初の設定」へ進んでください。</li>
+            <li><strong>「コマンドラインデベロッパツールが必要です」というダイアログが出たら</strong> → <strong>「インストール」</strong> を押して待ちます（5〜10分かかります）。終わったらもう一度 <code class="inline">git --version</code> を試してください。</li>
+          </ul>
+          <p>ダイアログが出ない場合は、次のコマンドでインストーラーを呼び出せます。</p>
+          <div class="cmd">
+            <pre><code>xcode-select --install</code></pre>
+            <button type="button" class="copy">COPY</button>
+          </div>
+        </div>
+
+        <h3>インストールできたか確認する</h3>
+        <p>ターミナルで次を実行します。</p>
+        <div class="cmd">
+          <pre><code>git --version</code></pre>
+          <button type="button" class="copy">COPY</button>
+        </div>
+        <p><code class="inline">git version 2.〇〇.〇</code> のように表示されれば成功です。数字は違っていて構いません。</p>
+
+        <h3>最初の設定（名前とメールを登録する）</h3>
+        <p>「誰が変更したか」を記録するために、名前とメールアドレスを Git に教えます。<strong>この設定をしないと、後でコードを送るときにエラーになります。</strong></p>
+        <p>下のコマンドの <code class="inline">"..."</code> の中身を<strong>自分のものに書き換えてから</strong>実行してください（ダブルクォートは残します）。</p>
+        <div class="cmd">
+          <pre><code>git config --global user.name "GitHubのユーザー名"</code></pre>
+          <button type="button" class="copy">COPY</button>
+        </div>
+        <div class="cmd">
+          <pre><code>git config --global user.email "GitHubに登録したメールアドレス"</code></pre>
+          <button type="button" class="copy">COPY</button>
+        </div>
+        <p>続けて、新しく作るときの初期ブランチ名を <code class="inline">main</code> に揃えておきます（こちらは書き換え不要です）。</p>
+        <div class="cmd">
+          <pre><code>git config --global init.defaultBranch main</code></pre>
+          <button type="button" class="copy">COPY</button>
+        </div>
+        <p>設定できたか、次のコマンドで確認できます。自分の名前とメールが表示されれば OK です。</p>
+        <div class="cmd">
+          <pre><code>git config --global --list</code></pre>
+          <button type="button" class="copy">COPY</button>
+        </div>
+
+        <div class="done">
+          <span class="box-label">ここまでできたら OK</span>
+          <ul>
+            <li><code class="inline">git --version</code> でバージョンが表示される</li>
+            <li><code class="inline">git config --global --list</code> に自分の名前とメールが出る</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- ══════════ つまずいたら ══════════ -->
+    <section class="section-block" id="trouble">
+      <h2 class="section">つまずいたときは</h2>
+      <div style="display:flex;flex-direction:column;gap:1.35rem">
+        <p>詰まるのは普通のことです。ここに書いてあることだけ守ってもらえれば、あとはこちらで対応できます。</p>
+        <ol class="steps">
+          <li><p><strong>そのままの画面をスクリーンショットで撮ってください。</strong>エラーの文章は、そのまま見せてもらうのが一番早いです。<span class="only-win">Windows は <span class="key">Windows</span> + <span class="key">Shift</span> + <span class="key">S</span> で範囲を選んで撮れます。</span><span class="only-mac">Mac は <span class="key">⌘</span> + <span class="key">Shift</span> + <span class="key">4</span> で範囲を選んで撮れます。</span></p></li>
+          <li><p><strong>チームのチャットに、画像と「どのSTEPの何番でつまずいたか」を送ってください。</strong></p></li>
+          <li><p>エラーの文章を勝手に要約せず、そのまま貼ってもらえると助かります。</p></li>
+        </ol>
+        <div class="warn-box">
+          <span class="box-label">やらないでほしいこと</span>
+          <p>ネットで見つけた「解決方法」のコマンドを、意味がわからないまま実行しないでください。パソコンの設定が壊れることがあります。まず聞いてください。</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ══════════ 用語集 ══════════ -->
+    <section class="section-block" id="glossary">
+      <h2 class="section">用語集</h2>
+      <dl class="glossary">
+        <div class="gl-row"><dt>ターミナル</dt><dd>マウスではなく文字で命令を打ち込む画面。VS Code の「ターミナル」メニューから開けます。「コマンドプロンプト」「シェル」もほぼ同じ意味で使われます。</dd></div>
+        <div class="gl-row"><dt>コマンド</dt><dd>ターミナルに打ち込む命令文のこと。1行打って Enter を押すと実行されます。</dd></div>
+        <div class="gl-row"><dt>インストール</dt><dd>アプリをパソコンに入れて使える状態にすること。</dd></div>
+        <div class="gl-row"><dt>リポジトリ（repo）</dt><dd>GitHub 上の、ひとつのプロジェクト用のフォルダ。チームのコードはここに入ります。</dd></div>
+        <div class="gl-row"><dt>クローン（clone）</dt><dd>GitHub にあるリポジトリを、自分のパソコンにコピーしてくること。</dd></div>
+        <div class="gl-row"><dt>コミット（commit）</dt><dd>変更に名前をつけて記録すること。ゲームのセーブに近い作業です。</dd></div>
+        <div class="gl-row"><dt>プッシュ（push）</dt><dd>自分のパソコンでの変更を GitHub に送ること。</dd></div>
+        <div class="gl-row"><dt>プル（pull）</dt><dd>GitHub にある他の人の変更を、自分のパソコンに取り込むこと。</dd></div>
+        <div class="gl-row"><dt>ブランチ（branch）</dt><dd>作業を枝分かれさせる仕組み。他の人の作業を壊さずに自分の変更を試せます。</dd></div>
+        <div class="gl-row"><dt>拡張機能</dt><dd>VS Code に後から追加できる便利機能。日本語化もこれで行います。</dd></div>
+      </dl>
+    </section>
+
+    <footer class="foot">
+      <p>この手順書は事前準備用です。実際の使い方（クローン・コミット・プッシュ）は、ハッカソン当日に全員で一緒にやります。今日はここまでで大丈夫です。</p>
+    </footer>
+
+  </main>
+</div>
+
+<script>
+  (function () {
+    var doc = document.getElementById('doc');
+
+    // OS切り替え
+    var buttons = doc.querySelectorAll('.seg button');
+    buttons.forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var os = btn.getAttribute('data-os');
+        doc.classList.remove('os-win', 'os-mac');
+        doc.classList.add('os-' + os);
+        buttons.forEach(function (b) {
+          b.setAttribute('aria-pressed', String(b === btn));
+        });
+      });
+    });
+
+    // 閲覧環境からOSを推測して初期選択
+    if (/Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent)) {
+      var macBtn = doc.querySelector('.seg button[data-os="mac"]');
+      if (macBtn) macBtn.click();
+    }
+
+    // コマンドのコピー
+    doc.querySelectorAll('.cmd .copy').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var code = btn.parentElement.querySelector('code');
+        if (!code) return;
+        var text = code.textContent;
+        var done = function () {
+          btn.textContent = 'COPIED';
+          setTimeout(function () { btn.textContent = 'COPY'; }, 1600);
+        };
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(text).then(done, fallback);
+        } else {
+          fallback();
+        }
+        function fallback() {
+          var ta = document.createElement('textarea');
+          ta.value = text;
+          ta.style.position = 'fixed';
+          ta.style.opacity = '0';
+          document.body.appendChild(ta);
+          ta.select();
+          try { document.execCommand('copy'); done(); } catch (e) { btn.textContent = '選択してコピー'; }
+          document.body.removeChild(ta);
+        }
+      });
+    });
+  })();
+</script>
