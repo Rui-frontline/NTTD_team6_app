@@ -5,7 +5,7 @@ export default function DiscoverPage() {
     <Placeholder
       title="探す"
       branch="feat/discover"
-      note="ユーザーカードの一覧、ハート、マッチ成立の判定。表示する人と項目はモードによって変わります（getUsers(mode) を使う）。"
+      note="左にユーザーカードのグリッド＋フィルター、カードをクリックすると右ペインに詳細（ページ遷移はしない）。repository の getUsers / likeUser / passUser を使ってください。見送るは恋愛モードだけ保存され、仕事モードはリロードで戻ります。"
     />
   );
 }

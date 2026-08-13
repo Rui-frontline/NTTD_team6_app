@@ -17,7 +17,6 @@
     --romance-bg: #F7E7EA;
     --warn:       #A65420;
     --warn-bg:    #F9EDE3;
-    --ok:         #1E7A5F;
     --radius:     4px;
 
     --sans: "Hiragino Kaku Gothic ProN", "Hiragino Sans", "Yu Gothic UI", "Yu Gothic",
@@ -28,14 +27,12 @@
 
   @media (prefers-color-scheme: dark) {
     :root {
-      --paper:      #131316;  --surface:  #1A1A1F;  --surface-2: #24242B;
-      --ink:        #E8E8EC;  --ink-2:    #A8A8B2;  --ink-3:     #7C7C86;
-      --line:       #2F2F38;
-      --accent:     #A9B6CC;  --accent-bg:#1E2430;
-      --work:       #6BAEDC;  --work-bg:  #14242F;
-      --romance:    #DD8598;  --romance-bg:#2C1B20;
-      --warn:       #DE9058;  --warn-bg:  #2A1E14;
-      --ok:         #55B394;
+      --paper:#131316; --surface:#1A1A1F; --surface-2:#24242B;
+      --ink:#E8E8EC; --ink-2:#A8A8B2; --ink-3:#7C7C86; --line:#2F2F38;
+      --accent:#A9B6CC; --accent-bg:#1E2430;
+      --work:#6BAEDC; --work-bg:#14242F;
+      --romance:#DD8598; --romance-bg:#2C1B20;
+      --warn:#DE9058; --warn-bg:#2A1E14;
     }
   }
   :root[data-theme="dark"] {
@@ -44,7 +41,7 @@
     --accent:#A9B6CC; --accent-bg:#1E2430;
     --work:#6BAEDC; --work-bg:#14242F;
     --romance:#DD8598; --romance-bg:#2C1B20;
-    --warn:#DE9058; --warn-bg:#2A1E14; --ok:#55B394;
+    --warn:#DE9058; --warn-bg:#2A1E14;
   }
   :root[data-theme="light"] {
     --paper:#F4F4F6; --surface:#FFFFFF; --surface-2:#E9E9ED;
@@ -52,7 +49,7 @@
     --accent:#2B3444; --accent-bg:#E7E9ED;
     --work:#1F6FA8; --work-bg:#E3EEF6;
     --romance:#B0475C; --romance-bg:#F7E7EA;
-    --warn:#A65420; --warn-bg:#F9EDE3; --ok:#1E7A5F;
+    --warn:#A65420; --warn-bg:#F9EDE3;
   }
 
   html { background: var(--paper); scroll-behavior: smooth; }
@@ -60,7 +57,7 @@
   #doc {
     font-family: var(--sans); color: var(--ink); background: var(--paper);
     line-height: 1.85; font-size: 16px; letter-spacing: 0.01em;
-    -webkit-font-smoothing: antialiased; padding-bottom: 5rem;
+    -webkit-font-smoothing: antialiased; padding: 0 0 5rem;
   }
   #doc p, #doc li, #doc dd { color: var(--ink-2); }
   #doc strong { color: var(--ink); font-weight: 700; }
@@ -69,7 +66,6 @@
 
   .wrap { max-width: 56rem; margin: 0 auto; padding: 0 1.5rem; }
 
-  /* ── ヘッダー ── */
   header.head { padding-top: 3.5rem; margin-bottom: 3rem; }
   .eyebrow { font-family: var(--mono); font-size: 0.72rem; letter-spacing: 0.18em;
              text-transform: uppercase; color: var(--ink-3); margin: 0 0 1rem; }
@@ -82,20 +78,18 @@
              text-transform: uppercase; color: var(--ink-3); margin-bottom: 0.15rem; }
   .fact dd { margin: 0; font-weight: 700; color: var(--ink); font-size: 0.95rem; }
 
-  /* ── 目次 ── */
   .toc { background: var(--surface); border: 1px solid var(--line);
          border-radius: var(--radius); padding: 1.4rem 1.6rem; margin: 2.5rem 0 0; }
   .toc h2 { font-family: var(--mono); font-size: 0.7rem; letter-spacing: 0.14em;
             text-transform: uppercase; color: var(--ink-3); margin: 0 0 1rem; font-weight: 500; }
   .toc ol { list-style: none; margin: 0; padding: 0; display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr)); gap: 0.5rem 1.5rem; counter-reset: t; }
+            grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr)); gap: 0.5rem 1.5rem; counter-reset: t; }
   .toc li { counter-increment: t; display: flex; gap: 0.7rem; align-items: baseline; }
   .toc li::before { content: counter(t,decimal-leading-zero); font-family: var(--mono);
                     font-size: 0.75rem; color: var(--ink-3); }
   .toc a { color: var(--ink); text-decoration: none; font-weight: 700; font-size: 0.94rem; }
   .toc a:hover { color: var(--work); text-decoration: underline; }
 
-  /* ── セクション ── */
   section { margin-bottom: 4rem; }
   h2.sec { display: flex; align-items: baseline; gap: 0.9rem; font-size: 1.3rem;
            font-weight: 800; margin: 0 0 1.4rem; padding-bottom: 0.7rem;
@@ -103,16 +97,12 @@
   h2.sec .n { font-family: var(--mono); font-size: 0.85rem; color: var(--ink-3);
               font-weight: 700; flex: none; }
   h3 { font-size: 1.03rem; font-weight: 800; margin: 1.6rem 0 0; }
-  h4 { font-size: 0.94rem; font-weight: 800; margin: 1.1rem 0 0; color: var(--ink); }
   .body { display: flex; flex-direction: column; gap: 1.2rem; }
 
   ul.plain { margin: 0; padding-left: 1.25rem; display: flex; flex-direction: column; gap: 0.4rem; }
-  ol.steps { margin: 0; padding-left: 1.4rem; display: flex; flex-direction: column; gap: 0.5rem; }
-
   code.inline { font-family: var(--mono); font-size: 0.85em; background: var(--surface-2);
                 padding: 0.1em 0.4em; border-radius: 2px; color: var(--ink); }
 
-  /* ── 表 ── */
   .tablewrap { overflow-x: auto; border: 1px solid var(--line);
                border-radius: var(--radius); background: var(--surface); }
   table { border-collapse: collapse; width: 100%; min-width: 32rem; font-size: 0.91rem; }
@@ -124,21 +114,14 @@
   td.k { font-weight: 700; color: var(--ink); white-space: nowrap; }
   td.m { font-family: var(--mono); font-size: 0.85em; white-space: nowrap; }
 
-  /* ── バッジ ── */
   .badge { font-family: var(--mono); font-size: 0.66rem; letter-spacing: 0.07em;
            padding: 0.1rem 0.45rem; border-radius: 2px; font-weight: 700;
            white-space: nowrap; display: inline-block; }
-  .p0 { background: var(--ink); color: var(--paper); }
-  .p1 { background: var(--surface-2); color: var(--ink-2); border: 1px solid var(--line); }
-  .p2 { background: transparent; color: var(--ink-3); border: 1px dashed var(--line); }
   .bw { background: var(--work-bg); color: var(--work); border: 1px solid var(--work); }
   .br { background: var(--romance-bg); color: var(--romance); border: 1px solid var(--romance); }
 
-  /* ── ボックス ── */
-  .note, .warn, .modebox {
-    border-radius: var(--radius); padding: 1.1rem 1.3rem;
-    display: flex; flex-direction: column; gap: 0.5rem;
-  }
+  .note, .warn { border-radius: var(--radius); padding: 1.1rem 1.3rem;
+                 display: flex; flex-direction: column; gap: 0.5rem; }
   .note { background: var(--accent-bg); border: 1px solid color-mix(in srgb, var(--accent) 28%, transparent); }
   .warn { background: var(--warn-bg); border: 1px solid color-mix(in srgb, var(--warn) 35%, transparent); }
   .box-label { font-family: var(--mono); font-size: 0.67rem; letter-spacing: 0.12em;
@@ -147,23 +130,21 @@
   .warn .box-label { color: var(--warn); }
   .note p, .warn p, .note li, .warn li { color: var(--ink); font-size: 0.94rem; margin: 0; }
 
-  /* ── モード2枚組 ── */
   .modes { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
   @media (max-width: 640px) { .modes { grid-template-columns: 1fr; } }
   .modecard { border-radius: var(--radius); padding: 1.1rem 1.3rem; background: var(--surface);
-              display: flex; flex-direction: column; gap: 0.6rem; }
+              display: flex; flex-direction: column; gap: 0.5rem; }
   .modecard.w { border: 1px solid var(--work); border-top: 3px solid var(--work); }
   .modecard.r { border: 1px solid var(--romance); border-top: 3px solid var(--romance); }
   .modecard h4 { margin: 0; font-size: 1rem; }
   .modecard.w h4 { color: var(--work); }
   .modecard.r h4 { color: var(--romance); }
-  .modecard p, .modecard li { font-size: 0.91rem; margin: 0; }
+  .modecard p { font-size: 0.91rem; margin: 0; }
 
-  /* ── コード ── */
   pre { margin: 0; background: var(--surface); border: 1px solid var(--line);
         border-left: 3px solid var(--accent); border-radius: var(--radius);
         padding: 0.95rem 1.1rem; overflow-x: auto; font-family: var(--mono);
-        font-size: 0.83rem; line-height: 1.7; color: var(--ink); }
+        font-size: 0.82rem; line-height: 1.7; color: var(--ink); }
   pre .c { color: var(--ink-3); }
 
   footer.foot { border-top: 1px solid var(--line); padding-top: 1.4rem; }
@@ -175,33 +156,39 @@
 <div id="doc">
   <header class="head">
     <div class="wrap">
-      <p class="eyebrow">ハッカソン / 開発仕様書 v0.1</p>
+      <p class="eyebrow">ハッカソン / 仕様書 v0.2（確定版）</p>
       <h1>社内マッチングアプリ 仕様書</h1>
       <p class="lead">
         同じ会社の中で、<strong>仕事の相談相手</strong>と<strong>プライベートの相手</strong>を、
-        1つのアプリで別々に探せるサービス。2つのモードを完全に分離することで、
-        「社内で出会いを探している」ことが誰にも知られない設計にする。
+        1つのアプリで<strong>別々に</strong>探せるサービス。2つのモードを完全に分離することで、
+        <strong>「社内で出会いを探している」ことが誰にも知られない</strong>設計にします。
       </p>
       <dl class="facts">
-        <div class="fact"><dt>フロント</dt><dd>React / Next.js</dd></div>
+        <div class="fact"><dt>フロント</dt><dd>Next.js / TypeScript</dd></div>
+        <div class="fact"><dt>データベース</dt><dd>Supabase</dd></div>
+        <div class="fact"><dt>認証</dt><dd>メール＋パスワード</dd></div>
         <div class="fact"><dt>インフラ</dt><dd>Vercel</dd></div>
-        <div class="fact"><dt>データ</dt><dd>ダミー（DBなし）</dd></div>
-        <div class="fact"><dt>デモ環境</dt><dd>PC・プロジェクタ投影</dd></div>
       </dl>
+
+      <div class="note" style="margin-top:2rem">
+        <span class="box-label">この文書の位置づけ</span>
+        <p><strong>これが実装の基準です。</strong>迷ったらここを見てください。</p>
+        <p>仕様を変えたいときは、勝手に実装せず <strong>Slack で相談 → この文書を更新 → PR</strong> の順で進めます。</p>
+      </div>
 
       <nav class="toc" aria-label="目次">
         <h2>目次</h2>
         <ol>
-          <li><a href="#s1">このアプリは何か</a></li>
-          <li><a href="#s2">技術構成</a></li>
-          <li><a href="#s3">2つのモードの設計</a></li>
-          <li><a href="#s4">機能一覧と優先度</a></li>
-          <li><a href="#s5">画面仕様</a></li>
-          <li><a href="#s6">データモデル</a></li>
-          <li><a href="#s7">ダミーデータの扱い</a></li>
-          <li><a href="#s8">ディレクトリ構成</a></li>
-          <li><a href="#s9">ブランチ計画</a></li>
-          <li><a href="#s10">やらないこと</a></li>
+          <li><a href="#s1">技術構成</a></li>
+          <li><a href="#s2">画面構成</a></li>
+          <li><a href="#s3">ログイン・新規登録</a></li>
+          <li><a href="#s4">探す画面</a></li>
+          <li><a href="#s5">トーク画面</a></li>
+          <li><a href="#s6">マイページ</a></li>
+          <li><a href="#s7">モードの安全設計</a></li>
+          <li><a href="#s8">データの扱い</a></li>
+          <li><a href="#s9">スコープ外</a></li>
+          <li><a href="#s10">担当とブランチ</a></li>
           <li><a href="#s11">デモの導線</a></li>
         </ol>
       </nav>
@@ -212,207 +199,341 @@
 
     <!-- 1 -->
     <section id="s1">
-      <h2 class="sec"><span class="n">01</span>このアプリは何か</h2>
+      <h2 class="sec"><span class="n">01</span>技術構成</h2>
       <div class="body">
-        <h3>解こうとしている課題</h3>
-        <p>大きな会社では、<strong>隣の部署に誰がいるか分からない。</strong>相談したい専門知識を持つ人が社内にいても、たどり着けない。同時に、社内での出会いは「言い出しにくい」という理由だけで機会が失われている。</p>
-        <p>この2つは<strong>「社内の人とつながりたいが、きっかけがない」という同じ課題の裏表</strong>です。だから1つのアプリで扱い、モードで完全に分離します。</p>
-
-        <h3>想定利用者</h3>
         <div class="tablewrap">
           <table>
-            <thead><tr><th>誰</th><th>何のために使うか</th></tr></thead>
+            <thead><tr><th>層</th><th>採用</th></tr></thead>
             <tbody>
-              <tr><td class="k">若手社員</td><td>部署外に相談相手がほしい／社内に知り合いを増やしたい</td></tr>
-              <tr><td class="k">中堅社員</td><td>特定の技術・業務経験を持つ人を探したい</td></tr>
-              <tr><td class="k">全社員</td><td>趣味の合う人と社内でつながりたい</td></tr>
+              <tr><td class="k">フロント</td><td class="m">React / Next.js（App Router）</td></tr>
+              <tr><td class="k">言語</td><td class="m">TypeScript</td></tr>
+              <tr><td class="k">スタイル</td><td class="m">Tailwind CSS</td></tr>
+              <tr><td class="k">データベース</td><td class="m">Supabase（PostgreSQL）</td></tr>
+              <tr><td class="k">認証</td><td class="m">Supabase Auth（メール＋パスワード）</td></tr>
+              <tr><td class="k">インフラ</td><td class="m">Vercel</td></tr>
             </tbody>
           </table>
         </div>
 
-        <h3>このアプリでしか成立しないこと</h3>
-        <ul class="plain">
-          <li><strong>相互オプトイン</strong> — 恋愛モードは、ONにした人同士にしか見えない。片方だけが見ることはできない</li>
-          <li><strong>片思いが漏れない</strong> — 両想いになるまで、相手には一切通知されない</li>
-          <li><strong>社内限定</strong> — 会社のメールアドレスを持つ人だけが入れる、閉じた空間</li>
-        </ul>
+        <h3>環境変数</h3>
+        <p><code class="inline">.env.local</code> に以下2つが必要です。<strong>値はリーダーから受け取ってください。</strong></p>
+<pre><code>NEXT_PUBLIC_SUPABASE_URL=...
+NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=...</code></pre>
+        <div class="warn">
+          <span class="box-label">重要</span>
+          <p><strong>このファイルは絶対にコミットしないでください</strong>（<code class="inline">.gitignore</code> 済み）。APIキーが流出します。</p>
+        </div>
       </div>
     </section>
 
     <!-- 2 -->
     <section id="s2">
-      <h2 class="sec"><span class="n">02</span>技術構成</h2>
+      <h2 class="sec"><span class="n">02</span>画面構成</h2>
       <div class="body">
+<pre><code>┌────────────────────────────────────────────────┐
+│ ヘッダー                                        │
+│   ロゴ        [ 仕事 | 恋愛 ]      アイコン      │
+│               ↑ モード切替タブ                   │
+├──────┬─────────────────────────────────────────┤
+│ サイド│                                         │
+│ バー  │  メインコンテンツ                        │
+│      │                                         │
+│ 探す  │                                         │
+│ トーク│                                         │
+│ マイ  │                                         │
+└──────┴─────────────────────────────────────────┘</code></pre>
+
         <div class="tablewrap">
           <table>
-            <thead><tr><th>層</th><th>採用</th><th>理由</th></tr></thead>
+            <thead><tr><th>画面</th><th>パス</th><th>担当ブランチ</th></tr></thead>
             <tbody>
-              <tr><td class="k">フロント</td><td class="m">React + Next.js (App Router)</td><td>React 指定。Next.js は Vercel 製なのでデプロイ設定がほぼ不要</td></tr>
-              <tr><td class="k">言語</td><td class="m">TypeScript</td><td>型を先に決めれば、分担作業で画面がつながらない事故が減る</td></tr>
-              <tr><td class="k">バックエンド</td><td class="m">Next.js の Route Handlers</td><td><strong>別サーバーを立てない。</strong>同じプロジェクト内に API を置ける</td></tr>
-              <tr><td class="k">スタイル</td><td class="m">Tailwind CSS</td><td>CSSファイルを分けずに書けるので、分担時の衝突が起きにくい</td></tr>
-              <tr><td class="k">データ</td><td class="m">TypeScript のダミーデータ</td><td>DBなし。後述の差し替え設計で、あとから本物に交換できる形にする</td></tr>
-              <tr><td class="k">インフラ</td><td class="m">Vercel</td><td>GitHub と連携すると push で自動デプロイ</td></tr>
+              <tr><td class="k">ログイン</td><td class="m">/login</td><td class="m">feat/auth</td></tr>
+              <tr><td class="k">新規登録</td><td class="m">/signup</td><td class="m">feat/auth</td></tr>
+              <tr><td class="k">探す</td><td class="m">/discover</td><td class="m">feat/discover</td></tr>
+              <tr><td class="k">トーク</td><td class="m">/talk</td><td class="m">feat/chat</td></tr>
+              <tr><td class="k">マイページ</td><td class="m">/me</td><td class="m">feat/profile</td></tr>
             </tbody>
           </table>
         </div>
 
-        <div class="note">
-          <span class="box-label">Vercel の一番おいしい機能</span>
-          <p><strong>Pull Request を出すと、そのブランチ専用のURLが自動で発行されます（Preview Deployment）。</strong></p>
-          <p>つまり<strong>リポジトリを clone していないメンバーも、URLを開くだけで動く画面を確認できます。</strong>「ここの文言おかしい」「この導線わかりにくい」をローカル環境なしでレビューできるので、<strong>コードを書かないメンバーが実質的に参加できる</strong>形になります。ここは意識的に使ってください。</p>
-        </div>
+        <ul class="plain">
+          <li><strong>ホーム画面は作りません。</strong>ログイン後は <code class="inline">/discover</code> に直行</li>
+          <li><strong>未ログインでどの画面を開いても <code class="inline">/login</code> にリダイレクト</strong></li>
+        </ul>
 
-        <div class="warn">
-          <span class="box-label">Vercel の制約</span>
-          <p><strong>サーバー側にデータを保存できません。</strong>Vercel の関数は実行ごとに使い捨てなので、ファイルに書き込んでも次のアクセスでは消えています。</p>
-          <p>今回は DB を使わないので、<strong>投稿・チャット・ハートなどの「書き込み」はすべてブラウザ側（React の state と localStorage）で保持します。</strong>リロードしても消えないようにするなら localStorage を使ってください。</p>
-        </div>
+        <h3>サイドバー</h3>
+        <ul class="plain">
+          <li>項目は<strong>「探す」「トーク」「マイページ」の3つ</strong></li>
+          <li><strong>初期状態は開いた状態。</strong>ハンバーガーボタンで畳める</li>
+          <li>畳むとアイコンだけが残る</li>
+        </ul>
+
+        <h3>モード切替タブ</h3>
+        <ul class="plain">
+          <li><strong>ヘッダー中央に常時表示</strong></li>
+          <li>切り替えると、<strong>表示される人・プロフィールの内容・画面の配色</strong>が変わる</li>
+          <li><strong>全画面がこのモードに連動します</strong>（トーク一覧も含む）</li>
+        </ul>
       </div>
     </section>
 
     <!-- 3 -->
     <section id="s3">
-      <h2 class="sec"><span class="n">03</span>2つのモードの設計</h2>
+      <h2 class="sec"><span class="n">03</span>ログイン・新規登録<span class="badge bw" style="font-size:0.6rem">feat/auth</span></h2>
       <div class="body">
-        <p><strong>ここがこのアプリの核であり、同時に一番のリスクです。</strong>社内で恋愛の相手を探す機能は、設計を間違えるとハラスメントの装置になります。安全性の設計そのものが、このプロダクトの主張になります。</p>
+        <h3>新規登録（/signup）</h3>
+        <p>入力項目：<strong>メールアドレス / パスワード / 名前 / 部署 / 年齢</strong></p>
+<pre><code>supabase.auth.signUp()
+  ↓ 成功したら
+users に1行、profiles に2行（work / romance）を作成
+  ↓
+/me へ遷移（プロフィールを埋めてもらう）</code></pre>
+        <ul class="plain">
+          <li><strong>メール確認は不要</strong>（設定でOFFにしてあります）。登録した瞬間にログイン状態になります</li>
+          <li>ログイン画面には「会社のメールアドレスを持つ人だけが利用できます」という<strong>文言だけ置きます</strong>（ドメイン検証は今回は実装しません）</li>
+        </ul>
+
+        <h3>ログイン（/login）</h3>
+        <p>メールアドレスとパスワードを入力 → <code class="inline">supabase.auth.signInWithPassword()</code> → <code class="inline">/discover</code> へ。</p>
+
+        <h3>ログアウト</h3>
+        <p>ヘッダーのアイコンから。<code class="inline">supabase.auth.signOut()</code> → <code class="inline">/login</code> へ。</p>
+      </div>
+    </section>
+
+    <!-- 4 -->
+    <section id="s4">
+      <h2 class="sec"><span class="n">04</span>探す画面<span class="badge bw" style="font-size:0.6rem">feat/discover</span></h2>
+      <div class="body">
+<pre><code>┌──────────────────┬──────────────────────────┐
+│ [フィルター]       │  詳細プロフィール          │
+│ ─────────────    │                          │
+│ ┌────┐ ┌────┐   │   ◯ 大きいアイコン         │
+│ │カード│ │カード│   │   名前                    │
+│ └────┘ └────┘   │   部署 / 職種              │
+│ ┌────┐ ┌────┐   │   自己紹介文（全文）        │
+│ │カード│ │カード│   │   タグ（全部）             │
+│ └────┘ └────┘   │                          │
+│                  │  [ 見送る ] [ いいね ]     │
+└──────────────────┴──────────────────────────┘</code></pre>
+        <p><strong>カードをクリックすると右ペインに詳細が出ます。ページ遷移はしません。</strong></p>
+
+        <h3>カードに出す情報</h3>
+        <div class="tablewrap">
+          <table>
+            <thead><tr><th></th><th><span class="badge bw">仕事</span></th><th><span class="badge br">恋愛</span></th></tr></thead>
+            <tbody>
+              <tr><td class="k">アイコン・名前</td><td>○</td><td>○</td></tr>
+              <tr><td class="k">部署</td><td>○</td><td><strong>設定で隠せる</strong></td></tr>
+              <tr><td class="k">職種</td><td>○</td><td>○</td></tr>
+              <tr><td class="k">タグ</td><td>○</td><td>○</td></tr>
+              <tr><td class="k">自己紹介文</td><td>冒頭のみ</td><td>冒頭のみ</td></tr>
+              <tr><td class="k">年齢</td><td>—</td><td>○</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h3>一覧に出す人の条件</h3>
+        <ul class="plain">
+          <li><strong>そのモードに参加している人だけ</strong>（<code class="inline">enabled_modes</code> に含まれる）</li>
+          <li>自分は除く</li>
+          <li><strong>恋愛モードは、自分もONにしていないと誰も表示されません</strong>（相互オプトイン）</li>
+        </ul>
+
+        <h3>見送るの挙動 — モードで違うので注意</h3>
+        <div class="tablewrap">
+          <table>
+            <thead><tr><th>モード</th><th>挙動</th><th>実装</th></tr></thead>
+            <tbody>
+              <tr><td><span class="badge br">恋愛</span></td><td><strong>二度と一覧に出てこない</strong></td><td><code class="inline">reactions</code> に <code class="inline">type='pass'</code> で<strong>保存する</strong></td></tr>
+              <tr><td><span class="badge bw">仕事</span></td><td><strong>その場では消えるが、リロードすると戻る</strong></td><td><strong>保存しない。</strong>画面の状態だけで管理</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <ul class="plain">
+          <li><strong>取り消しボタンはなし</strong></li>
+          <li>見送ったことは<strong>相手に一切通知されない</strong></li>
+        </ul>
+
+        <h3>マッチ成立の判定</h3>
+        <p>いいねを押したら、<strong>相手から自分への同じモードの <code class="inline">like</code> が既にあるか</strong>を確認します。あれば <code class="inline">matches</code> に1行作って成立を画面に出します。<strong>なければ何も起きず、相手には何も伝わりません。</strong></p>
+
+        <h3>フィルター</h3>
+        <div class="tablewrap">
+          <table>
+            <thead><tr><th>モード</th><th>絞り込める項目</th></tr></thead>
+            <tbody>
+              <tr><td><span class="badge bw">仕事</span></td><td>部署 / 職種 / タグ</td></tr>
+              <tr><td><span class="badge br">恋愛</span></td><td>年齢（範囲）/ タグ</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p>複数選択できます。</p>
+      </div>
+    </section>
+
+    <!-- 5 -->
+    <section id="s5">
+      <h2 class="sec"><span class="n">05</span>トーク画面<span class="badge bw" style="font-size:0.6rem">feat/chat</span></h2>
+      <div class="body">
+<pre><code>┌──────────────┬─────────────────────┐
+│ マッチ一覧     │  トーク（スライドイン）│
+│              │                     │
+│ ◯ 田中さん    │   相手の名前          │
+│   おつかれ… 10:23                   │
+│ ◯ 佐藤さん    │   吹き出し            │
+│   ありがとう 昨日                     │
+│              │  [入力欄]  [送信]     │
+└──────────────┴─────────────────────┘</code></pre>
+
+        <h3>マッチ一覧</h3>
+        <ul class="plain">
+          <li><strong>ヘッダーで選んでいるモードのマッチだけを表示</strong>（画面内に別のタブは作りません）</li>
+          <li>1件ごとに表示するもの
+            <ul class="plain" style="margin-top:0.4rem">
+              <li>アイコン / 名前</li>
+              <li><strong>最新メッセージ</strong>（1行、長ければ省略）</li>
+              <li><strong>最新メッセージの時刻</strong>（今日 <code class="inline">10:23</code> / 昨日 <code class="inline">昨日</code> / それ以前 <code class="inline">8/9</code>）</li>
+            </ul>
+          </li>
+        </ul>
+
+        <h3>トーク</h3>
+        <ul class="plain">
+          <li><strong>一覧の項目をタップすると、右からスライドインして表示</strong></li>
+          <li>一覧は左に残ったまま</li>
+          <li>吹き出し形式（自分は右、相手は左）</li>
+          <li>閉じるボタンでスライドアウト</li>
+        </ul>
+
+        <h3>メッセージ</h3>
+        <ul class="plain">
+          <li>送信すると <code class="inline">messages</code> に保存 → <strong>リロードしても消えません</strong></li>
+          <li><strong>相手からの返信は発生しません</strong>（自動返信はしない）</li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- 6 -->
+    <section id="s6">
+      <h2 class="sec"><span class="n">06</span>マイページ<span class="badge bw" style="font-size:0.6rem">feat/profile</span></h2>
+      <div class="body">
+        <p><strong>仕事用と恋愛用の2つのプロフィールを持ちます。</strong>画面内のタブで切り替えて編集します。</p>
+
+        <div class="tablewrap">
+          <table>
+            <thead><tr><th>項目</th><th>共通 / モード別</th></tr></thead>
+            <tbody>
+              <tr><td class="k">名前</td><td><strong>共通</strong></td></tr>
+              <tr><td class="k">アイコン</td><td><strong>共通</strong></td></tr>
+              <tr><td class="k">年齢</td><td><strong>共通</strong></td></tr>
+              <tr><td class="k">部署</td><td>値は共通。<strong>モードごとに表示/非表示を選べる</strong></td></tr>
+              <tr><td class="k">職種</td><td><strong>共通</strong></td></tr>
+              <tr><td class="k">自己紹介文</td><td><strong>モード別</strong></td></tr>
+              <tr><td class="k">タグ</td><td><strong>モード別</strong></td></tr>
+              <tr><td class="k">このモードに参加する</td><td>モード別</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h3>タグ</h3>
+        <ul class="plain">
+          <li><strong>候補から選ぶ方式</strong>（自由入力ではありません）。フィルターで使うためです</li>
+          <li><strong>1モードにつき最大5個</strong></li>
+        </ul>
 
         <div class="modes">
           <div class="modecard w">
-            <h4>仕事モード</h4>
-            <p><strong>目的</strong>：業務で頼れる人・相談相手を見つける</p>
-            <p><strong>見える相手</strong>：仕事モードをONにしている全員</p>
-            <p><strong>表示項目</strong>：部署、担当業務、スキル、フリー欄</p>
-            <p><strong>ハートの意味</strong>：「話してみたい」</p>
+            <h4>仕事モードの候補</h4>
+            <p>フロントエンド / バックエンド / インフラ / データ分析 / AI・機械学習 / セキュリティ / PM / デザイン / 営業 / マーケティング / 経理・財務 / 人事 / 法務 / 新規事業 / 業務改善</p>
           </div>
           <div class="modecard r">
-            <h4>恋愛モード</h4>
-            <p><strong>目的</strong>：社内での出会い</p>
-            <p><strong>見える相手</strong>：<strong>恋愛モードをONにしている人だけ</strong></p>
-            <p><strong>表示項目</strong>：年齢、趣味、フリー欄（部署は任意で非表示可）</p>
-            <p><strong>ハートの意味</strong>：「気になる」</p>
+            <h4>恋愛モードの候補</h4>
+            <p>映画 / 音楽 / 読書 / カフェ巡り / 料理 / お酒 / サウナ / 筋トレ / ランニング / 登山 / キャンプ / 旅行 / 写真 / ゲーム / アニメ・漫画 / スポーツ観戦 / 猫 / 犬 / ボードゲーム / 美術館</p>
           </div>
         </div>
 
-        <h3>安全性のための5つの仕様</h3>
+        <h3>「このモードに参加する」</h3>
+        <p>OFF にすると、<strong>そのモードの一覧に自分が出なくなります。</strong></p>
+      </div>
+    </section>
+
+    <!-- 7 -->
+    <section id="s7">
+      <h2 class="sec"><span class="n">07</span>モードの安全設計</h2>
+      <div class="body">
+        <div class="warn">
+          <span class="box-label">仕様の核</span>
+          <p><strong>この3つは絶対に崩さないでください。</strong>このアプリの主張そのものです。</p>
+        </div>
+
         <div class="tablewrap">
           <table>
-            <thead><tr><th>#</th><th>仕様</th><th>なぜ必要か</th></tr></thead>
+            <thead><tr><th>#</th><th>仕様</th><th>理由</th></tr></thead>
             <tbody>
               <tr><td class="m">1</td><td class="k">相互オプトイン</td><td>恋愛モードをONにしていない人は、他人の恋愛プロフィールを見られないし、自分も表示されない。<strong>「見るだけ」ができない</strong></td></tr>
-              <tr><td class="m">2</td><td class="k">片思いは不可視</td><td>ハートは相互一致するまで相手に通知されない。<strong>断られたことも、断ったことも発生しない</strong></td></tr>
-              <tr><td class="m">3</td><td class="k">同部署・上下関係の除外</td><td>同じ部署／レポートラインの相手を表示しない設定。<strong>初期値はON</strong>にする</td></tr>
-              <tr><td class="m">4</td><td class="k">ブロック</td><td>ブロックすると相互に一切表示されなくなる。理由の入力は不要</td></tr>
-              <tr><td class="m">5</td><td class="k">匿名掲示板の「匿名」の定義</td><td><strong>表示が匿名なだけで、追跡不能ではない。</strong>内部には投稿者IDを保持する。この事実を利用時に明示する</td></tr>
+              <tr><td class="m">2</td><td class="k">片思いは不可視</td><td>いいねは相互一致するまで相手に通知されない。<strong>断られることも断ることも発生しない</strong></td></tr>
+              <tr><td class="m">3</td><td class="k">見送りも不可視</td><td>見送ったことは相手に一切伝わらない</td></tr>
             </tbody>
           </table>
         </div>
 
         <div class="warn">
           <span class="box-label">実装上の注意</span>
-          <p><strong>モードのON/OFF状態そのものを、他人から見えるようにしないでください。</strong>「あの人が恋愛モードをONにした」が分かる時点で、この設計は崩れます。一覧に出るかどうかだけで表現します。</p>
+          <p><strong>モードのON/OFF状態そのものを、他人から見えるようにしないでください。</strong>「あの人が恋愛モードをONにした」が分かる時点で、この設計は崩れます。</p>
         </div>
       </div>
     </section>
 
-    <!-- 4 -->
-    <section id="s4">
-      <h2 class="sec"><span class="n">04</span>機能一覧と優先度</h2>
+    <!-- 8 -->
+    <section id="s8">
+      <h2 class="sec"><span class="n">08</span>データの扱い</h2>
       <div class="body">
-        <p><strong>P0 だけで5分のデモが成立します。</strong>まず P0 を全部動かしてから P1 に進んでください。</p>
-        <div class="tablewrap">
-          <table>
-            <thead><tr><th>優先度</th><th>機能</th><th>内容</th></tr></thead>
-            <tbody>
-              <tr><td><span class="badge p0">P0</span></td><td class="k">ログイン</td><td>ダミーユーザーから選んで入る。社内メール認証の“ふり”をする画面</td></tr>
-              <tr><td><span class="badge p0">P0</span></td><td class="k">モード切替</td><td>ヘッダーに常駐。押すと一覧の中身と配色が切り替わる</td></tr>
-              <tr><td><span class="badge p0">P0</span></td><td class="k">ユーザー一覧</td><td>カード表示。モードによって表示される人と項目が変わる</td></tr>
-              <tr><td><span class="badge p0">P0</span></td><td class="k">プロフィール詳細</td><td>顔写真・基本情報・フリー欄。ハートを押せる</td></tr>
-              <tr><td><span class="badge p0">P0</span></td><td class="k">マッチ成立</td><td>相互ハートで成立。成立時だけ通知が出る</td></tr>
-              <tr><td><span class="badge p0">P0</span></td><td class="k">チャット</td><td>マッチした相手とだけ会話できる</td></tr>
-              <tr><td><span class="badge p1">P1</span></td><td class="k">プロフィール編集</td><td>自分の情報とフリー欄を編集</td></tr>
-              <tr><td><span class="badge p1">P1</span></td><td class="k">趣味グループ</td><td>共通の趣味タグでグループを表示、参加できる</td></tr>
-              <tr><td><span class="badge p1">P1</span></td><td class="k">匿名掲示板</td><td>スレッド一覧と投稿</td></tr>
-              <tr><td><span class="badge p2">P2</span></td><td class="k">同部署の除外設定</td><td>設定画面。仕様としては定義するが実装は最後</td></tr>
-              <tr><td><span class="badge p2">P2</span></td><td class="k">ブロック</td><td>同上</td></tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </section>
+        <h3>原則：画面から直接 Supabase を呼ばない</h3>
+        <p><strong>必ず <code class="inline">lib/repository.ts</code> を経由してください。</strong></p>
+<pre><code><span class="c">// ✗ やらない</span>
+const { data } = await supabase.from('users').select('*');
 
-    <!-- 5 -->
-    <section id="s5">
-      <h2 class="sec"><span class="n">05</span>画面仕様</h2>
-      <div class="body">
-        <div class="tablewrap">
-          <table>
-            <thead><tr><th>画面</th><th>パス</th><th>優先</th><th>要点</th></tr></thead>
-            <tbody>
-              <tr><td class="k">ログイン</td><td class="m">/login</td><td><span class="badge p0">P0</span></td><td>ダミーユーザーの一覧から1人選ぶ。「@会社ドメインのみ」の文言だけ置く</td></tr>
-              <tr><td class="k">探す（一覧）</td><td class="m">/discover</td><td><span class="badge p0">P0</span></td><td>カードのグリッド。<span class="badge bw">仕事</span>は部署・スキル、<span class="badge br">恋愛</span>は年齢・趣味を表示</td></tr>
-              <tr><td class="k">プロフィール詳細</td><td class="m">/users/[id]</td><td><span class="badge p0">P0</span></td><td>顔写真、基本情報、フリー欄、ハートボタン</td></tr>
-              <tr><td class="k">マッチ一覧</td><td class="m">/matches</td><td><span class="badge p0">P0</span></td><td>成立した相手の一覧。モードごとにタブで分ける</td></tr>
-              <tr><td class="k">チャット</td><td class="m">/chat/[matchId]</td><td><span class="badge p0">P0</span></td><td>吹き出し形式。送信は即座に画面へ反映（通信なし）</td></tr>
-              <tr><td class="k">自分の編集</td><td class="m">/me</td><td><span class="badge p1">P1</span></td><td>モードごとに別のプロフィールを持てる</td></tr>
-              <tr><td class="k">グループ一覧</td><td class="m">/groups</td><td><span class="badge p1">P1</span></td><td>趣味タグごとのグループカード。人数を表示</td></tr>
-              <tr><td class="k">グループ詳細</td><td class="m">/groups/[id]</td><td><span class="badge p1">P1</span></td><td>メンバー一覧と参加ボタン</td></tr>
-              <tr><td class="k">掲示板</td><td class="m">/board</td><td><span class="badge p1">P1</span></td><td>スレッド一覧</td></tr>
-              <tr><td class="k">スレッド</td><td class="m">/board/[id]</td><td><span class="badge p2">P2</span></td><td>投稿一覧と書き込み。表示名はランダム生成</td></tr>
-            </tbody>
-          </table>
+<span class="c">// ◯ こうする</span>
+const users = await getUsers(mode);</code></pre>
+        <p>呼び出しが散らばると、仕様変更のときに全画面を直すことになります。</p>
+
+        <div class="warn">
+          <span class="box-label">衝突しやすいファイル</span>
+          <p><strong><code class="inline">lib/types.ts</code> と <code class="inline">lib/repository.ts</code> は原則触らないでください。</strong>触る必要が出たら、必ず Slack で呼びかけてから作業します。</p>
         </div>
 
-        <h3>共通レイアウト</h3>
-        <ul class="plain">
-          <li><strong>ヘッダー</strong>：ロゴ／<strong>モード切替スイッチ</strong>／自分のアイコン</li>
-          <li><strong>下部ナビ</strong>：探す・マッチ・グループ・掲示板・マイページ</li>
-          <li><strong>モードで配色が変わる</strong>：仕事モードは青系、恋愛モードは赤系。<strong>切り替えたことが一目で分かるようにする</strong>（デモで一番効く演出）</li>
-        </ul>
+        <h3>型定義（lib/types.ts）</h3>
+<pre><code>export type Mode = "work" | "romance";
 
-        <div class="note">
-          <span class="box-label">画面設計の前提</span>
-          <p><strong>デモはプロジェクタ投影です。</strong>文字を小さくしない、コントラストを落とさない、細い線を使わない。スマホ表示の対応は後回しで構いません。</p>
-        </div>
-      </div>
-    </section>
-
-    <!-- 6 -->
-    <section id="s6">
-      <h2 class="sec"><span class="n">06</span>データモデル</h2>
-      <div class="body">
-        <p><strong>この型定義を最初に確定させて main に入れてください。</strong>ここが固まっていないと、分担した画面がつながりません。</p>
-<pre><code><span class="c">// lib/types.ts</span>
-
-export type Mode = "work" | "romance";
-
-export type User = {
-  id: string;
-  name: string;
-  avatarUrl: string;        <span class="c">// ダミー画像のURL</span>
-  department: string;       <span class="c">// 部署</span>
-  age: number;
-  enabledModes: Mode[];     <span class="c">// 参加しているモード</span>
-  work: {                   <span class="c">// 仕事モードのプロフィール</span>
-    role: string;           <span class="c">// 担当業務</span>
-    skills: string[];
-    bio: string;            <span class="c">// フリー欄</span>
-  };
-  romance: {                <span class="c">// 恋愛モードのプロフィール</span>
-    hobbies: string[];
-    bio: string;            <span class="c">// フリー欄</span>
-    hideDepartment: boolean;
-  };
+<span class="c">// モードごとに変わる部分</span>
+export type Profile = {
+  bio: string;
+  tags: string[];
+  showDepartment: boolean;
 };
 
-export type Like = {
+export type User = {
+  id: string;            <span class="c">// uuid</span>
+  name: string;          <span class="c">// 共通</span>
+  avatarUrl: string;     <span class="c">// 共通</span>
+  department: string;    <span class="c">// 共通（表示可否はモードごと）</span>
+  jobTitle: string;      <span class="c">// 共通</span>
+  age: number;           <span class="c">// 共通</span>
+  enabledModes: Mode[];
+  work: Profile;
+  romance: Profile;
+};
+
+export type Reaction = {
   fromUserId: string;
   toUserId: string;
   mode: Mode;
+  type: "like" | "pass";
   createdAt: string;
 };
 
-export type Match = {       <span class="c">// 相互ハートで成立</span>
+export type Match = {
   id: string;
   userIds: [string, string];
   mode: Mode;
@@ -425,166 +546,82 @@ export type Message = {
   senderId: string;
   body: string;
   createdAt: string;
-};
-
-export type Group = {
-  id: string;
-  name: string;
-  hobby: string;
-  memberIds: string[];
-};
-
-export type Post = {
-  id: string;
-  boardId: string;
-  displayName: string;      <span class="c">// 「名無しの営業部」など自動生成</span>
-  authorId: string;         <span class="c">// 内部保持のみ。画面には絶対に出さない</span>
-  body: string;
-  createdAt: string;
 };</code></pre>
 
-        <h3>マッチ成立の判定</h3>
-        <p>A が B にハート → <code class="inline">Like</code> を1件追加 → <strong>B から A への同じモードの Like が既にあるか</strong>を確認 → あれば <code class="inline">Match</code> を作成して通知。なければ何も起きず、B には何も伝わりません。</p>
-      </div>
-    </section>
-
-    <!-- 7 -->
-    <section id="s7">
-      <h2 class="sec"><span class="n">07</span>ダミーデータの扱い</h2>
-      <div class="body">
-        <h3>唯一のルール：画面から直接データを読まない</h3>
-        <p>各画面は <code class="inline">lib/data/users.ts</code> を直接 import せず、<strong>必ず <code class="inline">lib/repository.ts</code> を経由</strong>してください。</p>
-<pre><code><span class="c">// lib/repository.ts — データアクセスの唯一の入口</span>
-
-import { users } from "./data/users";
-
-export async function getUsers(mode: Mode): Promise&lt;User[]&gt; {
-  return users.filter((u) =&gt; u.enabledModes.includes(mode));
-}
-
-export async function getUser(id: string): Promise&lt;User | null&gt; {
-  return users.find((u) =&gt; u.id === id) ?? null;
-}</code></pre>
-        <p>関数を <code class="inline">async</code> にしておくのがポイントです。<strong>あとで本物のDBに差し替えるとき、直すのはこのファイルだけで済み、画面側は1行も変わりません。</strong></p>
-
-        <h3>ダミーデータの量と質</h3>
-        <div class="warn">
-          <span class="box-label">ここで手を抜くとデモが死にます</span>
-          <p><strong>「テスト太郎／テスト部」のようなデータでは、審査員に何も伝わりません。</strong>実在しそうな名前、実在しそうな部署、読んで面白いフリー欄が要ります。</p>
-          <p><strong>目安は30人分。</strong>これは<strong>プロダクトの説得力を直接決める作業</strong>なので、コードを書かないメンバーの担当として最適です。掲示板の投稿文も同様です。</p>
+        <h3>テーブル構成（参考）</h3>
+        <div class="tablewrap">
+          <table>
+            <thead><tr><th>テーブル</th><th>中身</th></tr></thead>
+            <tbody>
+              <tr><td class="m">users</td><td>名前・アイコン・部署・<strong>職種</strong>・年齢・参加モード</td></tr>
+              <tr><td class="m">profiles</td><td>モードごとの自己紹介・タグ・部署の表示可否（1ユーザー最大2行）</td></tr>
+              <tr><td class="m">reactions</td><td>いいね・見送り</td></tr>
+              <tr><td class="m">matches</td><td>相互いいねで成立したマッチ</td></tr>
+              <tr><td class="m">messages</td><td>トークのメッセージ</td></tr>
+            </tbody>
+          </table>
         </div>
-        <p>顔写真は、フリー素材か AI 生成のダミー画像を使ってください。<strong>実在の人物の写真は使わないこと。</strong></p>
-      </div>
-    </section>
-
-    <!-- 8 -->
-    <section id="s8">
-      <h2 class="sec"><span class="n">08</span>ディレクトリ構成</h2>
-      <div class="body">
-<pre><code>app/
-  layout.tsx              <span class="c">// 共通レイアウト・ヘッダー</span>
-  page.tsx                <span class="c">// /discover へリダイレクト</span>
-  login/page.tsx
-  discover/page.tsx
-  users/[id]/page.tsx
-  me/page.tsx
-  matches/page.tsx
-  chat/[matchId]/page.tsx
-  groups/page.tsx
-  groups/[id]/page.tsx
-  board/page.tsx
-  board/[id]/page.tsx
-
-components/
-  ModeSwitch.tsx          <span class="c">// モード切替スイッチ</span>
-  UserCard.tsx
-  HeartButton.tsx
-  MessageBubble.tsx
-  Header.tsx
-
-lib/
-  types.ts                <span class="c">// ← 最初に確定させる</span>
-  repository.ts           <span class="c">// ← データアクセスの唯一の入口</span>
-  session.ts              <span class="c">// ログイン中ユーザーと現在のモード</span>
-  data/
-    users.ts
-    groups.ts
-    posts.ts
-
-docs/
-  spec.html               <span class="c">// この仕様書</span>
-  setup-guide.html</code></pre>
-        <p><strong>分担のとき、1人が触るのは基本的に1つの <code class="inline">app/</code> 配下フォルダと、対応する <code class="inline">components/</code> のファイルだけ</strong>になります。この構成なら衝突がほぼ起きません。</p>
       </div>
     </section>
 
     <!-- 9 -->
     <section id="s9">
-      <h2 class="sec"><span class="n">09</span>ブランチ計画</h2>
+      <h2 class="sec"><span class="n">09</span>スコープ外</h2>
       <div class="body">
-        <h3>フェーズ0：先に1人で土台を作って main に入れる</h3>
         <div class="tablewrap">
           <table>
-            <thead><tr><th>ブランチ</th><th>やること</th></tr></thead>
+            <thead><tr><th>やらないこと</th><th>代わりに</th></tr></thead>
             <tbody>
-              <tr><td class="m">feat/setup</td><td>Next.js の初期化、Tailwind 導入、<strong><code class="inline">lib/types.ts</code> の確定</strong>、ダミーデータの雛形、共通レイアウトとヘッダー、Vercel との接続</td></tr>
+              <tr><td class="k">趣味グループ</td><td><strong>削除</strong></td></tr>
+              <tr><td class="k">匿名掲示板</td><td><strong>削除</strong></td></tr>
+              <tr><td class="k">メールドメインによる社内限定</td><td>文言のみ表示</td></tr>
+              <tr><td class="k">メール確認</td><td>無効</td></tr>
+              <tr><td class="k">パスワード再設定</td><td>なし</td></tr>
+              <tr><td class="k">ソーシャルログイン</td><td>なし</td></tr>
+              <tr><td class="k">画像アップロード</td><td>ダミー画像URL固定</td></tr>
+              <tr><td class="k">相手からの返信</td><td>自分の送信のみ表示</td></tr>
+              <tr><td class="k">通知（メール・プッシュ）</td><td>画面内のバッジのみ</td></tr>
+              <tr><td class="k">見送りの取り消し</td><td>なし</td></tr>
+              <tr><td class="k">ブロック機能</td><td>なし（見送るで代替）</td></tr>
+              <tr><td class="k">リアルタイム更新</td><td>リロードで反映</td></tr>
+              <tr><td class="k">スマホ対応の作り込み</td><td><strong>PC投影を優先。</strong>崩れない程度で十分</td></tr>
             </tbody>
           </table>
         </div>
-        <div class="warn">
-          <span class="box-label">順序を守ってください</span>
-          <p><strong>これが main に入るまで、他のブランチを切らないこと。</strong>型定義とディレクトリが決まる前に各自が作り始めると、全員が同じファイルを作って必ず衝突します。</p>
+        <div class="note">
+          <span class="box-label">判断に迷ったら</span>
+          <p><strong>スコープ外を聞かれたら「今回は対象外です」と即答してください。</strong>迷って作り始めるのが一番危険です。</p>
         </div>
-
-        <h3>フェーズ1：ここから並行作業</h3>
-        <div class="tablewrap">
-          <table>
-            <thead><tr><th>ブランチ</th><th>担当範囲</th><th>優先</th></tr></thead>
-            <tbody>
-              <tr><td class="m">feat/auth</td><td>ログイン画面、ログイン状態とモードの管理（<code class="inline">lib/session.ts</code>）</td><td><span class="badge p0">P0</span></td></tr>
-              <tr><td class="m">feat/discover</td><td>一覧画面、ユーザーカード、ハート、マッチ成立の判定</td><td><span class="badge p0">P0</span></td></tr>
-              <tr><td class="m">feat/profile</td><td>プロフィール詳細、自分のプロフィール編集</td><td><span class="badge p0">P0</span></td></tr>
-              <tr><td class="m">feat/chat</td><td>マッチ一覧、チャット画面</td><td><span class="badge p0">P0</span></td></tr>
-              <tr><td class="m">feat/groups</td><td>趣味グループの一覧・詳細</td><td><span class="badge p1">P1</span></td></tr>
-              <tr><td class="m">feat/board</td><td>匿名掲示板の一覧・スレッド</td><td><span class="badge p1">P1</span></td></tr>
-              <tr><td class="m">feat/dummy-data</td><td>ダミーデータ30人分と掲示板の投稿文</td><td><span class="badge p0">P0</span></td></tr>
-              <tr><td class="m">docs/spec</td><td>この仕様書の更新</td><td>—</td></tr>
-            </tbody>
-          </table>
-        </div>
-
-        <h3>依存関係で気をつける点</h3>
-        <ul class="plain">
-          <li><code class="inline">feat/discover</code> と <code class="inline">feat/chat</code> は <code class="inline">Match</code> 型を共有します。<strong>型は setup で確定済みなので、お互いのコードを待つ必要はありません</strong></li>
-          <li><code class="inline">feat/dummy-data</code> は <code class="inline">lib/data/</code> しか触りません。<strong>他と衝突しないので、いつマージしても安全です</strong></li>
-          <li>各ブランチは<strong>1〜2日でマージ</strong>。長引かせないこと</li>
-        </ul>
       </div>
     </section>
 
     <!-- 10 -->
     <section id="s10">
-      <h2 class="sec"><span class="n">10</span>やらないこと</h2>
+      <h2 class="sec"><span class="n">10</span>担当とブランチ</h2>
       <div class="body">
-        <p><strong>スコープ外を明示しておくことが、期間内に完成させる唯一の方法です。</strong>質問されたら「今回は対象外です」と即答してください。</p>
         <div class="tablewrap">
           <table>
-            <thead><tr><th>やらないこと</th><th>代わりにどうするか</th></tr></thead>
+            <thead><tr><th>ブランチ</th><th>範囲</th></tr></thead>
             <tbody>
-              <tr><td class="k">本物の認証（SSO・メール認証）</td><td>ダミーユーザーの一覧から選んでログイン</td></tr>
-              <tr><td class="k">データベース</td><td>TypeScript のダミーデータ＋ブラウザ側の state</td></tr>
-              <tr><td class="k">画像アップロード</td><td>ダミー画像のURLを固定で持つ</td></tr>
-              <tr><td class="k">リアルタイム通信</td><td>チャットは送信したら自分の画面にだけ即反映</td></tr>
-              <tr><td class="k">メール・プッシュ通知</td><td>画面内のバッジ表示のみ</td></tr>
-              <tr><td class="k">管理者機能・通報対応</td><td>仕様として定義するが実装しない</td></tr>
-              <tr><td class="k">スマホ対応の作り込み</td><td>PC投影を優先。崩れない程度で十分</td></tr>
+              <tr><td class="m">feat/auth</td><td>ログイン・新規登録・ログアウト・未ログイン時のリダイレクト</td></tr>
+              <tr><td class="m">feat/discover</td><td>探す画面（一覧・詳細ペイン・いいね・見送る・フィルター・マッチ判定）</td></tr>
+              <tr><td class="m">feat/chat</td><td>トーク画面（マッチ一覧・スライドインするトーク・メッセージ送信）</td></tr>
+              <tr><td class="m">feat/profile</td><td>マイページ（モード別プロフィール編集・タグ選択）</td></tr>
+              <tr><td class="m">feat/dummy-data</td><td>ダミーデータ30人分（<strong>Supabase の Table Editor から入力</strong>）</td></tr>
             </tbody>
           </table>
         </div>
-        <div class="note">
-          <span class="box-label">発表での言い方</span>
-          <p>やらなかったことは隠さず、<strong>「今回はここまで作り、次はここをやる」と明示してください。</strong>設計として理解した上で切ったことが伝われば、減点ではなく加点になります。</p>
-        </div>
+        <p><code class="inline">feat/groups</code> と <code class="inline">feat/board</code> は<strong>使いません</strong>（機能を削除したため）。</p>
+
+        <h3>作業のルール</h3>
+        <p>Git の運用の要点だけ掲載します。</p>
+        <ul class="plain">
+          <li>作業開始時に <code class="inline">git switch main</code> → <code class="inline">git pull</code> → <code class="inline">git switch feat/xxx</code> → <code class="inline">git merge main</code></li>
+          <li>PRを出したら <strong>Slack で報告</strong></li>
+          <li><strong>承認は開発系リーダーのみ。</strong>自分で自分のPRを承認しない</li>
+          <li>マージしたら <strong>Slack で報告</strong>、全員が取り込む</li>
+          <li><code class="inline">main</code> に直接 push しない</li>
+        </ul>
       </div>
     </section>
 
@@ -592,29 +629,33 @@ docs/
     <section id="s11">
       <h2 class="sec"><span class="n">11</span>デモの導線</h2>
       <div class="body">
-        <p>5分の発表で見せる順番です。<strong>この流れが動くことが P0 の定義</strong>です。</p>
+        <div class="note">
+          <span class="box-label">最優先</span>
+          <p><strong>この流れが動くことが最優先です。</strong>ここから作ってください。</p>
+        </div>
         <div class="tablewrap">
           <table>
             <thead><tr><th>#</th><th>操作</th><th>見せたいこと</th></tr></thead>
             <tbody>
               <tr><td class="m">1</td><td>ログイン</td><td>社内限定であること</td></tr>
-              <tr><td class="m">2</td><td>仕事モードで一覧を見る</td><td>部署とスキルで人が探せる</td></tr>
+              <tr><td class="m">2</td><td>仕事モードで一覧を見る</td><td>部署・職種・タグで人を探せる</td></tr>
               <tr><td class="m">3</td><td><strong>恋愛モードに切り替える</strong></td><td><strong>配色と表示される人が丸ごと変わる。ここが山場</strong></td></tr>
-              <tr><td class="m">4</td><td>ハートを押す</td><td>相手には何も通知されないことを口頭で言う</td></tr>
-              <tr><td class="m">5</td><td>相互一致 → マッチ成立</td><td>両想いになって初めてつながる</td></tr>
-              <tr><td class="m">6</td><td>チャットを開いて1通送る</td><td>ここまでが1つの体験として完結する</td></tr>
+              <tr><td class="m">4</td><td>カードをクリック</td><td>右に詳細が出る</td></tr>
+              <tr><td class="m">5</td><td>いいねを押す</td><td>相手には通知されないことを口頭で説明</td></tr>
+              <tr><td class="m">6</td><td><strong>マッチ成立</strong></td><td>両想いになって初めてつながる</td></tr>
+              <tr><td class="m">7</td><td>トークを開いて1通送る</td><td>体験として完結する</td></tr>
             </tbody>
           </table>
         </div>
         <div class="warn">
           <span class="box-label">当日の保険</span>
-          <p><strong>この6ステップを事前に画面録画しておいてください。</strong>会場のWi-Fiやデプロイの不調でライブデモが落ちた瞬間に、評価が消えます。録画があれば「では録画でご覧ください」で復帰できます。</p>
+          <p><strong>この7ステップは事前に画面録画しておきます。</strong>会場のWi-Fiやデプロイの不調でライブデモが落ちた瞬間に、評価が消えます。録画があれば「では録画でご覧ください」で復帰できます。</p>
         </div>
       </div>
     </section>
 
     <footer class="foot">
-      <p>v0.1 — 作りながら変わる前提の仕様書です。仕様が変わったら <code class="inline">docs/spec</code> ブランチで更新して、PRでチームに共有してください。決定事項が口頭だけで流れるのが、一番よくある事故です。</p>
+      <p>v0.2（確定版）— 仕様を変えたいときは、勝手に実装せず Slack で相談してください。決定事項が口頭だけで流れるのが、一番よくある事故です。</p>
     </footer>
 
   </main>
