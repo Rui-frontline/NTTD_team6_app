@@ -222,7 +222,14 @@ git push</code></pre><button type="button" class="copy">COPY</button></div>
         </ul>
 
         <div class="do-box">
-          <span class="box-label">出したら Slack で報告</span>
+          <span class="box-label">出したら① Codex を呼ぶ</span>
+          <p><strong>PR のコメント欄に、これをそのまま貼ってください。</strong>自動では動きません。</p>
+        </div>
+        <div class="cmd"><pre><code>@codex review and write all review comments in Japanese</code></pre><button type="button" class="copy">COPY</button></div>
+        <p>数分でレビューが返ってきます。<strong>日本語で返すよう指定してあります。</strong>指摘は重要なものだけなので、多くは出ません。</p>
+
+        <div class="do-box">
+          <span class="box-label">出したら② Slack で報告</span>
           <p>「〇〇のPRを出しました。レビューお願いします」<strong>＋ PRのURL</strong></p>
           <p><strong>GitHubの通知はすぐ埋もれます。</strong>Slackに流すところまでが1セットです。</p>
         </div>
@@ -239,7 +246,7 @@ git push</code></pre><button type="button" class="copy">COPY</button></div>
           <table>
             <thead><tr><th>誰が</th><th>何を見るか</th></tr></thead>
             <tbody>
-              <tr><td class="k">Codex（自動）</td><td>PRを出すと自動でレビューが付きます。<strong>何もしなくてOK</strong></td></tr>
+              <tr><td class="k">Codex</td><td>バグ・重大な問題。<strong>PRを出した人が自分で呼びます</strong>（前章のコメントを貼る）</td></tr>
               <tr><td class="k">開発系リーダー</td><td>仕様と合っているか / 使いやすいか</td></tr>
             </tbody>
           </table>
