@@ -1,0 +1,670 @@
+<title>開発環境セットアップ 当日編 — アプリを自分のPCで動かす</title>
+
+<style>
+  :root {
+    --paper:      #F3F5F4;
+    --surface:    #FFFFFF;
+    --surface-2:  #E9EDEB;
+    --ink:        #14201E;
+    --ink-2:      #4A5A56;
+    --ink-3:      #788A85;
+    --line:       #D3DCD8;
+    --accent:     #0F6E66;
+    --accent-ink: #0B4F49;
+    --accent-bg:  #E2EFEC;
+    --signal:     #B4531C;
+    --signal-bg:  #FAEDE3;
+    --radius:     4px;
+
+    --sans: "Hiragino Kaku Gothic ProN", "Hiragino Sans", "Yu Gothic UI", "Yu Gothic",
+            "Noto Sans JP", Meiryo, system-ui, sans-serif;
+    --mono: ui-monospace, SFMono-Regular, "SF Mono", Consolas, Menlo,
+            "Noto Sans Mono", "Yu Gothic", monospace;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --paper:#101614; --surface:#171F1D; --surface-2:#1F2A27;
+      --ink:#E3EAE7; --ink-2:#A3B2AE; --ink-3:#7C8C88; --line:#2C3A36;
+      --accent:#4FC0AE; --accent-ink:#7FD6C6; --accent-bg:#16302C;
+      --signal:#E08A50; --signal-bg:#2E2018;
+    }
+  }
+  :root[data-theme="dark"] {
+    --paper:#101614; --surface:#171F1D; --surface-2:#1F2A27;
+    --ink:#E3EAE7; --ink-2:#A3B2AE; --ink-3:#7C8C88; --line:#2C3A36;
+    --accent:#4FC0AE; --accent-ink:#7FD6C6; --accent-bg:#16302C;
+    --signal:#E08A50; --signal-bg:#2E2018;
+  }
+  :root[data-theme="light"] {
+    --paper:#F3F5F4; --surface:#FFFFFF; --surface-2:#E9EDEB;
+    --ink:#14201E; --ink-2:#4A5A56; --ink-3:#788A85; --line:#D3DCD8;
+    --accent:#0F6E66; --accent-ink:#0B4F49; --accent-bg:#E2EFEC;
+    --signal:#B4531C; --signal-bg:#FAEDE3;
+  }
+
+  html { background: var(--paper); scroll-behavior: smooth; }
+
+  #doc {
+    font-family: var(--sans); color: var(--ink); background: var(--paper);
+    line-height: 1.85; font-size: 16px; letter-spacing: 0.01em;
+    -webkit-font-smoothing: antialiased; padding-bottom: 5rem;
+  }
+  #doc p, #doc li { color: var(--ink-2); }
+  #doc strong { color: var(--ink); font-weight: 700; }
+  #doc a { color: var(--accent); text-underline-offset: 3px; }
+  #doc :focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 2px; }
+
+  .wrap { max-width: 50rem; margin: 0 auto; padding: 0 1.5rem; }
+
+  /* ── OS切替 ── */
+  .osbar {
+    position: sticky; top: 0; z-index: 20;
+    background: color-mix(in srgb, var(--paper) 88%, transparent);
+    backdrop-filter: blur(10px); border-bottom: 1px solid var(--line);
+  }
+  .osbar .wrap { display: flex; align-items: center; gap: 1rem; flex-wrap: wrap; padding-block: 0.7rem; }
+  .osbar-label { font-family: var(--mono); font-size: 0.7rem; letter-spacing: 0.12em;
+                 text-transform: uppercase; color: var(--ink-3); }
+  .seg { display: flex; border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; }
+  .seg button {
+    font-family: var(--sans); font-size: 0.85rem; font-weight: 700;
+    padding: 0.35rem 1.1rem; border: 0; background: var(--surface);
+    color: var(--ink-3); cursor: pointer; transition: background .15s, color .15s;
+  }
+  .seg button + button { border-left: 1px solid var(--line); }
+  .seg button:hover { color: var(--ink); }
+  .seg button[aria-pressed="true"] { background: var(--accent); color: var(--surface); }
+
+  /* OS別ブロック。ここに display を持つインラインスタイルを足すと切替が壊れる */
+  .os-block { display: flex; flex-direction: column; gap: 1.35rem; }
+  .os-win .only-mac { display: none; }
+  .os-mac .only-win { display: none; }
+
+  /* ── ヘッダー ── */
+  header.head { padding-top: 3.5rem; }
+  .eyebrow { font-family: var(--mono); font-size: 0.72rem; letter-spacing: 0.18em;
+             text-transform: uppercase; color: var(--accent); margin: 0 0 1rem; }
+  h1 { font-size: clamp(1.9rem,5vw,2.7rem); line-height: 1.3; font-weight: 800;
+       letter-spacing: -0.01em; margin: 0 0 1.1rem; text-wrap: balance; }
+  .lead { font-size: 1.05rem; margin: 0 0 2rem; max-width: 38em; }
+  .facts { display: flex; flex-wrap: wrap; gap: 0 2.5rem;
+           border-top: 1px solid var(--line); border-bottom: 1px solid var(--line);
+           padding: 1rem 0; margin-bottom: 3rem; }
+  .fact dt { font-family: var(--mono); font-size: 0.68rem; letter-spacing: 0.12em;
+             text-transform: uppercase; color: var(--ink-3); margin-bottom: 0.15rem; }
+  .fact dd { margin: 0; font-weight: 700; color: var(--ink); font-size: 0.95rem; }
+
+  /* ── 目次 ── */
+  .toc { background: var(--surface); border: 1px solid var(--line);
+         border-radius: var(--radius); padding: 1.5rem 1.75rem; margin-bottom: 3.5rem; }
+  .toc h2 { font-size: 0.72rem; font-family: var(--mono); letter-spacing: 0.14em;
+            text-transform: uppercase; color: var(--ink-3); margin: 0 0 1rem; font-weight: 500; }
+  .toc ol { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column;
+            gap: 0.6rem; counter-reset: toc; }
+  .toc li { display: flex; align-items: baseline; gap: 0.85rem; counter-increment: toc; }
+  .toc li::before { content: counter(toc, decimal-leading-zero); font-family: var(--mono);
+                    font-size: 0.8rem; color: var(--accent); font-weight: 700; }
+  .toc a { font-weight: 700; color: var(--ink); text-decoration: none; }
+  .toc a:hover { color: var(--accent); text-decoration: underline; }
+  .toc .note { color: var(--ink-3); font-weight: 400; font-size: 0.85rem; }
+
+  /* ── ステップ ── */
+  .step { margin-bottom: 4.5rem; }
+  .step-head { display: grid; grid-template-columns: 4.5rem 1fr; gap: 0 1.25rem;
+               align-items: start; margin-bottom: 1.75rem; padding-bottom: 1.25rem;
+               border-bottom: 2px solid var(--ink); }
+  .step-num { font-family: var(--mono); font-size: 3rem; line-height: 0.9; font-weight: 700;
+              color: var(--accent); letter-spacing: -0.04em; font-variant-numeric: tabular-nums; }
+  .step-title { font-size: 1.45rem; font-weight: 800; margin: 0 0 0.4rem; line-height: 1.4; color: var(--ink); }
+  .step-meta { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; }
+  .badge { font-family: var(--mono); font-size: 0.68rem; letter-spacing: 0.08em;
+           padding: 0.15rem 0.55rem; border-radius: 2px; font-weight: 700; }
+  .badge.req { background: var(--accent); color: var(--surface); }
+  .badge.opt { background: var(--surface-2); color: var(--ink-2); border: 1px solid var(--line); }
+  .badge.time { background: transparent; color: var(--ink-3); border: 1px solid var(--line); font-weight: 400; }
+  .step-body { display: flex; flex-direction: column; gap: 1.35rem; }
+  @media (min-width: 720px) { .step-body { padding-left: 5.75rem; } }
+
+  h3 { font-size: 1.02rem; font-weight: 800; color: var(--ink); margin: 0.75rem 0 0; }
+  h3 .os-tag { font-family: var(--mono); font-size: 0.7rem; color: var(--ink-3);
+               font-weight: 400; margin-left: 0.5rem; letter-spacing: 0.06em; }
+
+  ol.steps { list-style: none; counter-reset: s; margin: 0; padding: 0;
+             display: flex; flex-direction: column; gap: 0.9rem; }
+  ol.steps > li { counter-increment: s; display: grid; grid-template-columns: 1.6rem 1fr; gap: 0 0.75rem; }
+  ol.steps > li::before { content: counter(s) "."; font-family: var(--mono); font-weight: 700;
+                          color: var(--accent); font-size: 0.9rem; padding-top: 0.15rem;
+                          font-variant-numeric: tabular-nums; }
+  ol.steps > li > * { grid-column: 2; }
+  ol.steps p { margin: 0; }
+  ol.steps p + p { margin-top: 0.4rem; }
+  ul.plain { margin: 0; padding-left: 1.2rem; display: flex; flex-direction: column; gap: 0.4rem; }
+
+  /* ── コード ── */
+  .cmd { position: relative; background: var(--surface); border: 1px solid var(--line);
+         border-left: 3px solid var(--accent); border-radius: var(--radius);
+         display: flex; align-items: stretch; }
+  .cmd pre { margin: 0; padding: 0.8rem 1rem; overflow-x: auto; flex: 1;
+             font-family: var(--mono); font-size: 0.85rem; line-height: 1.7;
+             color: var(--ink); white-space: pre; }
+  .cmd button { flex: none; border: 0; border-left: 1px solid var(--line);
+                background: transparent; color: var(--ink-3); cursor: pointer;
+                font-family: var(--mono); font-size: 0.7rem; letter-spacing: 0.06em;
+                padding: 0 0.85rem; transition: background .15s, color .15s; }
+  .cmd button:hover { background: var(--accent-bg); color: var(--accent); }
+  code.inline { font-family: var(--mono); font-size: 0.85em; background: var(--surface-2);
+                padding: 0.1em 0.4em; border-radius: 2px; color: var(--ink); }
+  .key { font-family: var(--mono); font-size: 0.8em; border: 1px solid var(--line);
+         border-bottom-width: 2px; background: var(--surface); border-radius: 3px;
+         padding: 0.1em 0.4em; color: var(--ink); white-space: nowrap; }
+  .out { font-family: var(--mono); font-size: 0.82rem; background: var(--surface-2);
+         border-radius: var(--radius); padding: 0.7rem 1rem; color: var(--ink-2); overflow-x: auto; }
+
+  /* ── ボックス ── */
+  .note-box, .warn-box, .term-box {
+    border-radius: var(--radius); padding: 1.1rem 1.25rem;
+    display: flex; flex-direction: column; gap: 0.5rem;
+  }
+  .note-box { background: var(--accent-bg); border: 1px solid color-mix(in srgb, var(--accent) 30%, transparent); }
+  .warn-box { background: var(--signal-bg); border: 1px solid color-mix(in srgb, var(--signal) 35%, transparent); }
+  .term-box { background: var(--surface); border: 1px dashed var(--line); }
+  .box-label { font-family: var(--mono); font-size: 0.68rem; letter-spacing: 0.12em;
+               text-transform: uppercase; font-weight: 700; }
+  .note-box .box-label { color: var(--accent-ink); }
+  .warn-box .box-label { color: var(--signal); }
+  .term-box .box-label { color: var(--ink-3); }
+  .note-box p, .warn-box p, .term-box p,
+  .note-box li, .warn-box li, .term-box li { margin: 0; color: var(--ink); font-size: 0.94rem; }
+
+  /* ── 完了チェック ── */
+  .done { background: var(--surface); border: 1px solid var(--line);
+          border-top: 3px solid var(--accent); border-radius: var(--radius);
+          padding: 1.1rem 1.25rem; display: flex; flex-direction: column; gap: 0.7rem; }
+  .done .box-label { color: var(--accent); }
+  .done ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 0.5rem; }
+  .done li { display: flex; align-items: flex-start; gap: 0.65rem; color: var(--ink); font-size: 0.94rem; }
+  .done li::before { content: "☐"; font-family: var(--mono); color: var(--accent);
+                     font-size: 1rem; line-height: 1.5; flex: none; }
+
+  /* ── 表 ── */
+  .tablewrap { overflow-x: auto; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); }
+  table { border-collapse: collapse; width: 100%; min-width: 30rem; font-size: 0.91rem; }
+  th, td { text-align: left; padding: 0.7rem 0.9rem; border-bottom: 1px solid var(--line); vertical-align: top; }
+  thead th { font-family: var(--mono); font-size: 0.67rem; letter-spacing: 0.1em;
+             text-transform: uppercase; color: var(--ink-3); font-weight: 500;
+             background: var(--surface-2); white-space: nowrap; }
+  tbody tr:last-child td { border-bottom: 0; }
+  td.k { font-weight: 700; color: var(--ink); }
+
+  h2.section { font-size: 1.35rem; font-weight: 800; color: var(--ink);
+               margin: 0 0 1.5rem; padding-bottom: 0.75rem; border-bottom: 2px solid var(--ink); }
+  .section-block { margin-bottom: 4rem; }
+  .glossary { display: grid; border-top: 1px solid var(--line); }
+  .gl-row { display: grid; grid-template-columns: 11rem 1fr; gap: 0 1.5rem;
+            padding: 0.9rem 0; border-bottom: 1px solid var(--line); }
+  .gl-row dt { font-weight: 800; color: var(--ink); font-size: 0.95rem; }
+  .gl-row dd { margin: 0; color: var(--ink-2); font-size: 0.94rem; }
+  @media (max-width: 600px) { .gl-row { grid-template-columns: 1fr; gap: 0.2rem; } }
+
+  footer.foot { border-top: 1px solid var(--line); padding-top: 1.5rem; }
+  footer.foot p { color: var(--ink-3); font-size: 0.85rem; margin: 0; }
+
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; scroll-behavior: auto !important; } }
+</style>
+
+<div id="doc" class="os-win">
+
+  <div class="osbar">
+    <div class="wrap">
+      <span class="osbar-label">使っているパソコン</span>
+      <div class="seg" role="group" aria-label="OSの切り替え">
+        <button type="button" data-os="win" aria-pressed="true">Windows</button>
+        <button type="button" data-os="mac" aria-pressed="false">Mac</button>
+      </div>
+      <span class="osbar-label">← 選ぶと手順が切り替わります</span>
+    </div>
+  </div>
+
+  <header class="head">
+    <div class="wrap">
+      <p class="eyebrow">開発環境セットアップ 当日編 / 手順書その2</p>
+      <h1>アプリを自分のPCで動かす</h1>
+      <p class="lead">
+        前回の手順書で <strong>VS Code・Git・GitHubアカウント</strong>まで準備できました。
+        ここからは<strong>実際にアプリを自分のパソコンで起動する</strong>ところまでやります。
+        当日みんなで一緒に進めるので、<strong>途中で分からなくなったらその場で手を挙げてください。</strong>
+      </p>
+      <dl class="facts">
+        <div class="fact"><dt>所要時間</dt><dd>25〜40分</dd></div>
+        <div class="fact"><dt>前提</dt><dd>手順書その1が完了</dd></div>
+        <div class="fact"><dt>ゴール</dt><dd>ブラウザでアプリが動く</dd></div>
+        <div class="fact"><dt>進め方</dt><dd>全員でそろって</dd></div>
+      </dl>
+
+      <nav class="toc" aria-label="目次">
+        <h2>この手順書の流れ</h2>
+        <ol>
+          <li><a href="#step1">Node.js を入れる</a><span class="note">— アプリを動かす土台</span></li>
+          <li><a href="#step2">プロジェクトをコピーする</a><span class="note">— clone</span></li>
+          <li><a href="#step3">必要な部品を取り込む</a><span class="note">— npm install</span></li>
+          <li><a href="#step4">アプリを起動する</a><span class="note">— ここでやっと画面が出ます</span></li>
+          <li><a href="#step5">自分のブランチに移る</a><span class="note">— コードを書く人だけ</span></li>
+          <li><a href="#trouble">うまくいかないとき</a></li>
+          <li><a href="#glossary">用語集</a></li>
+        </ol>
+      </nav>
+
+      <div class="note-box" style="margin-bottom:4rem">
+        <span class="box-label">今日やることの全体像</span>
+        <p>アプリを動かすには、4つのものが自分のパソコンに必要です。</p>
+        <ul class="plain">
+          <li><strong>Node.js</strong> … JavaScript をパソコン上で動かすための土台。これがないと何も始まりません</li>
+          <li><strong>プロジェクトのコード</strong> … GitHub にあるものを自分のPCにコピーしてきます</li>
+          <li><strong>部品（パッケージ）</strong> … 他の人が作った便利な部品。コマンド1つで自動でそろいます</li>
+          <li><strong>開発サーバー</strong> … 自分のPCの中だけで動く、確認用のサーバー</li>
+        </ul>
+        <p><strong>上から順にやれば必ず動きます。飛ばさないでください。</strong></p>
+      </div>
+    </div>
+  </header>
+
+  <main class="wrap">
+
+    <!-- STEP 1 -->
+    <section class="step" id="step1">
+      <div class="step-head">
+        <div class="step-num">01</div>
+        <div>
+          <h2 class="step-title">Node.js を入れる</h2>
+          <div class="step-meta">
+            <span class="badge req">必須</span>
+            <span class="badge time">約10分</span>
+          </div>
+        </div>
+      </div>
+      <div class="step-body">
+        <p><strong>Node.js（ノードジェイエス）</strong>は、JavaScript というプログラミング言語をパソコン上で動かすための土台です。今回のアプリはこれがないと1行も動きません。</p>
+
+        <div class="only-win os-block">
+          <h3>インストール手順<span class="os-tag">Windows</span></h3>
+          <ol class="steps">
+            <li><p><a href="https://nodejs.org/ja" target="_blank" rel="noopener">nodejs.org</a> を開きます。</p></li>
+            <li><p><strong>「LTS」と書かれた緑のボタン</strong>を押します。</p>
+                <p>LTS は「長期サポート版」という意味で、<strong>安定していて安全な版</strong>です。隣に新しい番号のボタンがありますが、そちらは選ばないでください。</p></li>
+            <li><p>ダウンロードされた <code class="inline">node-v〇〇-x64.msi</code> をダブルクリックします。</p></li>
+            <li><p><strong>「Next」を押し続けます。</strong>途中で設定を変える必要はありません。使用許諾に同意するチェックだけ入れてください。</p></li>
+            <li><p>「Tools for Native Modules」という画面が出たら、<strong>チェックは入れずに Next</strong> で構いません。</p></li>
+            <li><p><strong>「Install」→「Finish」</strong>で完了です。</p></li>
+          </ol>
+        </div>
+
+        <div class="only-mac os-block">
+          <h3>インストール手順<span class="os-tag">Mac</span></h3>
+          <ol class="steps">
+            <li><p><a href="https://nodejs.org/ja" target="_blank" rel="noopener">nodejs.org</a> を開きます。</p></li>
+            <li><p><strong>「LTS」と書かれた緑のボタン</strong>を押します。</p>
+                <p>LTS は「長期サポート版」という意味で、<strong>安定していて安全な版</strong>です。隣に新しい番号のボタンがありますが、そちらは選ばないでください。</p></li>
+            <li><p>ダウンロードされた <code class="inline">node-v〇〇.pkg</code> をダブルクリックします。</p></li>
+            <li><p><strong>「続ける」を押し続けます。</strong>設定を変える必要はありません。</p></li>
+            <li><p>最後にMacのパスワードを求められるので入力して <strong>「ソフトウェアをインストール」</strong>。</p></li>
+          </ol>
+        </div>
+
+        <div class="warn-box">
+          <span class="box-label">ここが一番の落とし穴</span>
+          <p><strong>インストールが終わったら、VS Code とターミナルを一度すべて閉じて開き直してください。</strong></p>
+          <p>再起動しないと、パソコンが Node.js の存在に気づきません。<strong>「入れたのに認識されない」の9割はこれが原因</strong>です。</p>
+        </div>
+
+        <h3>入ったか確認する</h3>
+        <p>VS Code を開き、上のメニューから <strong>「ターミナル」→「新しいターミナル」</strong> を選びます。画面の下半分に黒い領域が出てきます。</p>
+        <p>そこに次を貼り付けて <span class="key">Enter</span> を押してください。</p>
+        <div class="cmd"><pre><code>node -v</code></pre><button type="button" class="copy">COPY</button></div>
+        <p>続けてもう1つ。</p>
+        <div class="cmd"><pre><code>npm -v</code></pre><button type="button" class="copy">COPY</button></div>
+        <p>こんな感じで<strong>数字が2つとも表示されれば成功</strong>です。番号は違っていて構いません。</p>
+        <div class="out">v24.17.0<br>11.13.0</div>
+
+        <div class="warn-box only-win">
+          <span class="box-label">Windows：ここで止まる人が多いです</span>
+          <p><code class="inline">node -v</code> は通ったのに <code class="inline">npm -v</code> だけこう出た場合：</p>
+          <div class="out">npm : このシステムではスクリプトの実行が無効になっているため、<br>ファイル C:\Program Files\nodejs\npm.ps1 を読み込むことができません。</div>
+          <p><strong>故障ではありません。Windows の初期設定です。</strong>ターミナルを切り替えるだけで直ります。</p>
+          <ol class="steps">
+            <li><p>ターミナル画面の<strong>右上にある「＋」の横の下向き矢印（∨）</strong>をクリック。</p></li>
+            <li><p>リストから <strong>「Command Prompt」</strong> を選ぶ。</p></li>
+            <li><p>新しく開いたターミナルで、もう一度 <code class="inline">npm -v</code> を実行。</p></li>
+          </ol>
+          <p><strong>さらに、これを既定にしておいてください。</strong>やらないと次に開いたときに同じことが起きます。</p>
+          <ol class="steps">
+            <li><p><span class="key">Ctrl</span> + <span class="key">Shift</span> + <span class="key">P</span> を押す。</p></li>
+            <li><p><code class="inline">Terminal: Select Default Profile</code> と入力して選ぶ。</p></li>
+            <li><p><strong>Command Prompt</strong> を選ぶ。</p></li>
+          </ol>
+          <p>以降のコマンドはすべて Command Prompt で問題なく動きます。<strong>システムの設定を変える必要はありません。</strong></p>
+        </div>
+
+        <div class="note-box">
+          <span class="box-label">これはエラーではありません</span>
+          <p>バージョンの下にこういう表示が出ることがあります。</p>
+          <div class="out">npm notice New major version of npm available!<br>npm notice To update run: npm install -g npm@...</div>
+          <p><strong>「新しい版がありますよ」というお知らせです。1行目にバージョンが出ていれば成功なので、無視して次に進んでください。</strong>更新する必要もありません。</p>
+        </div>
+
+        <div class="note-box">
+          <span class="box-label">バージョンの条件</span>
+          <p>今回のアプリは <strong>Node.js 20.9 以上</strong>が必要です。<code class="inline">node -v</code> の表示が <code class="inline">v20</code> より小さい場合は、上の手順でもう一度 LTS 版を入れ直してください。</p>
+        </div>
+
+        <div class="done">
+          <span class="box-label">ここまでできたら OK</span>
+          <ul>
+            <li><code class="inline">node -v</code> でバージョンが出る（v20 以上）</li>
+            <li><code class="inline">npm -v</code> でバージョンが出る</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- STEP 2 -->
+    <section class="step" id="step2">
+      <div class="step-head">
+        <div class="step-num">02</div>
+        <div>
+          <h2 class="step-title">プロジェクトを自分のPCにコピーする</h2>
+          <div class="step-meta">
+            <span class="badge req">必須</span>
+            <span class="badge time">約5分</span>
+          </div>
+        </div>
+      </div>
+      <div class="step-body">
+        <p>GitHub にあるコードを、自分のパソコンに丸ごとコピーしてきます。この作業を <strong>クローン（clone）</strong>と呼びます。</p>
+
+        <div class="note-box">
+          <span class="box-label">チームのリポジトリURL</span>
+          <p><strong>このURLを使います。右の COPY ボタンでコピーしてください。</strong>GitHub で探す必要はありません。</p>
+          <div class="cmd"><pre><code>https://github.com/Rui-frontline/NTTD_team6_app.git</code></pre><button type="button" class="copy">COPY</button></div>
+          <p>コピーできたら、下のどちらかの方法に進んでください。<strong>不安な人は方法A</strong>がおすすめです。</p>
+        </div>
+
+        <h3>方法A：VS Code の画面だけで行う（おすすめ）</h3>
+        <p><strong>ターミナルを使いません。</strong>不安な人はこちらでどうぞ。</p>
+        <ol class="steps">
+          <li><p>VS Code を開きます。何もフォルダを開いていない状態で構いません。</p></li>
+          <li><p>左のバーの<strong>枝アイコン（ソース管理）</strong>をクリックします。</p></li>
+          <li><p><strong>「リポジトリのクローン」</strong>ボタンを押します。</p></li>
+          <li><p>画面上部に入力欄が出るので、<strong>上のURLを貼り付けて</strong> <span class="key">Enter</span>。</p></li>
+          <li><p><strong>保存先のフォルダを選ぶ</strong>画面が出ます。「ドキュメント」など分かりやすい場所を選んでください。</p>
+              <p>選んだフォルダの<strong>中に</strong>プロジェクト用のフォルダが自動で作られます。</p></li>
+          <li><p><strong>GitHubへのサインインを求められたら「許可」</strong>を押し、ブラウザで承認してください。private リポジトリなので、この認証が必要です。</p></li>
+          <li><p>終わると「開きますか？」と聞かれるので <strong>「開く」</strong> を押します。</p></li>
+        </ol>
+
+        <h3>方法B：ターミナルで行う</h3>
+        <p>まず、保存したい場所へ移動します。「ドキュメント」に置く場合はこちら。</p>
+        <div class="cmd"><pre><code>cd ~/Documents</code></pre><button type="button" class="copy">COPY</button></div>
+        <p class="only-win"><strong>エラーが出る場合</strong>（OneDrive を使っていると場所が違います）は、この行は飛ばして構いません。今いる場所にそのままコピーされます。</p>
+        <p><strong>そのまま貼り付けて実行できます。</strong>書き換える箇所はありません。</p>
+        <div class="cmd"><pre><code>git clone https://github.com/Rui-frontline/NTTD_team6_app.git</code></pre><button type="button" class="copy">COPY</button></div>
+        <p>できたフォルダの中に入ります。</p>
+        <div class="cmd"><pre><code>cd NTTD_team6_app</code></pre><button type="button" class="copy">COPY</button></div>
+        <p>最後に、VS Code でこのフォルダを開きます。</p>
+        <div class="cmd"><pre><code>code .</code></pre><button type="button" class="copy">COPY</button></div>
+
+        <div class="done">
+          <span class="box-label">ここまでできたら OK</span>
+          <ul>
+            <li><code class="inline">NTTD_team6_app</code> というフォルダができている</li>
+            <li>VS Code の左側に <code class="inline">app</code> <code class="inline">components</code> <code class="inline">lib</code> <code class="inline">docs</code> などのフォルダが見えている</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- STEP 3 -->
+    <section class="step" id="step3">
+      <div class="step-head">
+        <div class="step-num">03</div>
+        <div>
+          <h2 class="step-title">必要な部品を取り込む</h2>
+          <div class="step-meta">
+            <span class="badge req">必須</span>
+            <span class="badge time">約5分</span>
+          </div>
+        </div>
+      </div>
+      <div class="step-body">
+        <p>アプリは、他の人が作った<strong>部品（パッケージ）</strong>をたくさん使って動いています。その部品は GitHub には入っていないので、自分で取り込む必要があります。</p>
+        <p><strong>コマンド1つで全部自動でそろいます。</strong></p>
+
+        <div class="term-box">
+          <span class="box-label">VS Code でターミナルを開く</span>
+          <p>上のメニューの <strong>「ターミナル」→「新しいターミナル」</strong>。画面の下半分に出てきます。</p>
+          <p><strong>プロジェクトのフォルダを開いた状態で開いてください。</strong>別の場所で実行すると失敗します。</p>
+        </div>
+
+        <div class="cmd"><pre><code>npm install</code></pre><button type="button" class="copy">COPY</button></div>
+
+        <div class="note-box">
+          <span class="box-label">実行中に知っておくこと</span>
+          <ul class="plain">
+            <li><strong>2〜5分かかります。</strong>文字がたくさん流れますが、待っていれば終わります</li>
+            <li><strong>黄色い warning（警告）はすべて無視して構いません。</strong>赤い error だけ気にしてください</li>
+            <li>終わると <code class="inline">node_modules</code> という巨大なフォルダができます。これが部品の置き場です。<strong>GitHubには送られない設定になっている</strong>ので、気にしなくて大丈夫です</li>
+          </ul>
+        </div>
+
+        <p>最後にこんな表示が出れば成功です。</p>
+        <div class="out">added 358 packages, and audited 359 packages in 40s<br><br>found 0 vulnerabilities</div>
+
+        <div class="done">
+          <span class="box-label">ここまでできたら OK</span>
+          <ul>
+            <li><code class="inline">added ○○ packages</code> と表示された</li>
+            <li>左のファイル一覧に <code class="inline">node_modules</code> ができている</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- STEP 4 -->
+    <section class="step" id="step4">
+      <div class="step-head">
+        <div class="step-num">04</div>
+        <div>
+          <h2 class="step-title">アプリを起動する</h2>
+          <div class="step-meta">
+            <span class="badge req">必須</span>
+            <span class="badge time">約2分</span>
+          </div>
+        </div>
+      </div>
+      <div class="step-body">
+        <p><strong>ここでやっと画面が出ます。</strong></p>
+        <div class="cmd"><pre><code>npm run dev</code></pre><button type="button" class="copy">COPY</button></div>
+
+        <p>数秒待つと、こんな表示が出ます。</p>
+        <div class="out">▲ Next.js 16.3.0<br>- Local: http://localhost:3000<br><br>✓ Ready in 1.8s</div>
+
+        <p>ブラウザで <strong>http://localhost:3000</strong> を開いてください。<strong>ターミナルに出ている <code class="inline">http://localhost:3000</code> を <span class="key">Ctrl</span> を押しながらクリック</strong>しても開けます。</p>
+        <p>「社内マッチング」というログイン画面が出れば<strong>成功です。おつかれさまでした。</strong></p>
+
+        <div class="note-box">
+          <span class="box-label">動かしている間の話</span>
+          <ul class="plain">
+            <li><strong>起動している間、ターミナルは操作できません。</strong>これは正常です。別のコマンドを打ちたいときは、ターミナルを新しくもう1つ開いてください</li>
+            <li><strong>止めるときは、ターミナルをクリックしてから <span class="key">Ctrl</span> + <span class="key">C</span></strong>。これは Windows も Mac も同じです</li>
+            <li><strong>起動したままコードを書き換えると、画面が自動で更新されます。</strong>いちいち止める必要はありません</li>
+            <li><code class="inline">localhost</code> は「自分のパソコンの中」という意味です。<strong>他の人からは見えません</strong></li>
+          </ul>
+        </div>
+
+        <div class="done">
+          <span class="box-label">ここまでできたら OK</span>
+          <ul>
+            <li>ブラウザに「社内マッチング」のログイン画面が出た</li>
+            <li>誰かを選んでログインすると、上に「仕事／恋愛」の切替が出る</li>
+            <li>切り替えると色が変わる</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- STEP 5 -->
+    <section class="step" id="step5">
+      <div class="step-head">
+        <div class="step-num">05</div>
+        <div>
+          <h2 class="step-title">自分のブランチに移る</h2>
+          <div class="step-meta">
+            <span class="badge opt">コードを書く人だけ</span>
+            <span class="badge time">約2分</span>
+          </div>
+        </div>
+      </div>
+      <div class="step-body">
+        <p>担当のブランチはすでに用意してあります。<strong>作るのではなく、移るだけ</strong>です。</p>
+
+        <h3>方法A：VS Code の画面だけ（おすすめ）</h3>
+        <ol class="steps">
+          <li><p>VS Code の<strong>左下</strong>に <code class="inline">main</code> と出ています。<strong>そこをクリック</strong>。</p></li>
+          <li><p>上部にブランチの一覧が出るので、<strong>自分の担当を選ぶ</strong>だけです。</p></li>
+          <li><p>左下の表示が変われば完了です。</p></li>
+        </ol>
+
+        <h3>方法B：ターミナル</h3>
+        <p>最新のブランチ情報を取ってきます。</p>
+        <div class="cmd"><pre><code>git fetch</code></pre><button type="button" class="copy">COPY</button></div>
+        <p>自分のブランチに移ります（<code class="inline">feat/discover</code> の部分を自分の担当に置き換えてください）。</p>
+        <div class="cmd"><pre><code>git switch feat/discover</code></pre><button type="button" class="copy">COPY</button></div>
+
+        <div class="warn-box">
+          <span class="box-label">守ってほしいこと</span>
+          <p><strong>main では作業しないでください。</strong>必ず自分のブランチに移ってから編集を始めます。</p>
+          <p>迷ったら<strong>左下のブランチ名を見る癖</strong>をつけてください。<code class="inline">main</code> と出ていたら、まだ移れていません。</p>
+        </div>
+
+        <div class="note-box">
+          <span class="box-label">ダミーデータ担当の人へ</span>
+          <p><strong>ここまでの作業、実は不要です。</strong>編集するファイルが1つだけなので、もっと簡単な方法があります。</p>
+          <p>GitHub でリポジトリを開き、ブランチを <code class="inline">feat/dummy-data</code> に切り替えて、<strong>キーボードで <span class="key">.</span>（ピリオド）を1回押してください。</strong></p>
+          <p><strong>ブラウザの中に VS Code がそのまま開きます。</strong>インストールもクローンも要りません。編集して左の枝アイコンからコミットすれば、それで完了です。</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- トラブル -->
+    <section class="section-block" id="trouble">
+      <h2 class="section">うまくいかないとき</h2>
+      <div class="tablewrap">
+        <table>
+          <thead><tr><th>症状</th><th>対処</th></tr></thead>
+          <tbody>
+            <tr>
+              <td class="k">「node は認識されていません」<br>「command not found: node」</td>
+              <td><strong>VS Code とターミナルを全部閉じて開き直してください。</strong>それでも直らなければ、Node.js のインストールが完了していません</td>
+            </tr>
+            <tr>
+              <td class="k">Windows で<br>「このシステムではスクリプトの実行が無効になっている」</td>
+              <td>PowerShell の制限です。<strong>ターミナル画面の右上にある「+」の横の下向き矢印から「Command Prompt」を選んで</strong>、新しいターミナルを開き直してください。そちらなら動きます</td>
+            </tr>
+            <tr>
+              <td class="k">「Port 3000 is already in use」</td>
+              <td>すでにアプリが起動しています。<strong>前のターミナルで <span class="key">Ctrl</span> + <span class="key">C</span></strong> を押して止めるか、表示された別のポート番号（3001など）でブラウザを開いてください</td>
+            </tr>
+            <tr>
+              <td class="k">npm install が終わらない</td>
+              <td><strong>5分程度は正常です。</strong>10分以上かかるならネットワークを確認。それでもダメなら <span class="key">Ctrl</span> + <span class="key">C</span> で止めて、もう一度 <code class="inline">npm install</code></td>
+            </tr>
+            <tr>
+              <td class="k">画面が真っ白／エラー表示</td>
+              <td><strong>ターミナルに出ている赤い文字をそのままスクショして共有してください。</strong>自分で直そうとしなくて大丈夫です</td>
+            </tr>
+            <tr>
+              <td class="k">GitHubのサインインが通らない</td>
+              <td>ブラウザで GitHub にログインしているか確認してください。リポジトリへの招待を受諾していない可能性もあります</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="warn-box" style="margin-top:1.35rem">
+        <span class="box-label">お願い</span>
+        <p><strong>詰まったら5分以内に声をかけてください。</strong>一人で粘る時間がもったいないです。エラーの文字は要約せず、スクショでそのまま見せてください。</p>
+        <p>ネットで見つけたコマンドを、意味が分からないまま実行しないこと。<strong>パソコンの設定が壊れることがあります。</strong></p>
+      </div>
+    </section>
+
+    <!-- 用語集 -->
+    <section class="section-block" id="glossary">
+      <h2 class="section">用語集</h2>
+      <dl class="glossary">
+        <div class="gl-row"><dt>Node.js</dt><dd>JavaScript をパソコン上で動かすための土台。今回のアプリの動作に必須です。</dd></div>
+        <div class="gl-row"><dt>npm</dt><dd>Node.js と一緒に入る、部品を取り寄せる道具。<code class="inline">npm install</code> で使います。</dd></div>
+        <div class="gl-row"><dt>パッケージ</dt><dd>他の人が作った再利用できる部品。自分で全部作らずに済みます。</dd></div>
+        <div class="gl-row"><dt>node_modules</dt><dd>取り寄せた部品の置き場。巨大ですが GitHub には送りません。消しても <code class="inline">npm install</code> で復活します。</dd></div>
+        <div class="gl-row"><dt>クローン（clone）</dt><dd>GitHub のコードを自分のパソコンにコピーしてくること。</dd></div>
+        <div class="gl-row"><dt>ローカル</dt><dd>「自分のパソコンの中」という意味。</dd></div>
+        <div class="gl-row"><dt>localhost</dt><dd>自分のパソコンの中で動いているサーバーの住所。他の人からは見えません。</dd></div>
+        <div class="gl-row"><dt>ポート</dt><dd>サーバーの入り口の番号。今回は 3000 番を使います。</dd></div>
+        <div class="gl-row"><dt>開発サーバー</dt><dd>確認用に自分のPCで動かすサーバー。<code class="inline">npm run dev</code> で起動します。</dd></div>
+      </dl>
+    </section>
+
+    <footer class="foot">
+      <p>この手順書は当日みんなで一緒に進める前提で書いています。分からないところは飛ばさず、その場で聞いてください。全員が動く状態になってから開発を始めます。</p>
+    </footer>
+
+  </main>
+</div>
+
+<script>
+  (function () {
+    var doc = document.getElementById('doc');
+
+    var buttons = doc.querySelectorAll('.seg button');
+    buttons.forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var os = btn.getAttribute('data-os');
+        doc.classList.remove('os-win', 'os-mac');
+        doc.classList.add('os-' + os);
+        buttons.forEach(function (b) {
+          b.setAttribute('aria-pressed', String(b === btn));
+        });
+      });
+    });
+
+    if (/Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent)) {
+      var macBtn = doc.querySelector('.seg button[data-os="mac"]');
+      if (macBtn) macBtn.click();
+    }
+
+    doc.querySelectorAll('.cmd .copy').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var code = btn.parentElement.querySelector('code');
+        if (!code) return;
+        var text = code.textContent;
+        var done = function () {
+          btn.textContent = 'COPIED';
+          setTimeout(function () { btn.textContent = 'COPY'; }, 1600);
+        };
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(text).then(done, fallback);
+        } else {
+          fallback();
+        }
+        function fallback() {
+          var ta = document.createElement('textarea');
+          ta.value = text;
+          ta.style.position = 'fixed';
+          ta.style.opacity = '0';
+          document.body.appendChild(ta);
+          ta.select();
+          try { document.execCommand('copy'); done(); } catch (e) { btn.textContent = '選択してコピー'; }
+          document.body.removeChild(ta);
+        }
+      });
+    });
+  })();
+</script>

@@ -1,0 +1,404 @@
+<title>チーム開発ルール — Git運用</title>
+
+<style>
+  :root {
+    --paper:   #F5F4F1;
+    --surface: #FFFFFF;
+    --surface-2:#EAE8E3;
+    --ink:     #1C1B18;
+    --ink-2:   #55534C;
+    --ink-3:   #86837A;
+    --line:    #DAD7D0;
+    --accent:  #3A3833;
+    --do:      #2E6B4F;
+    --do-bg:   #E4EFE9;
+    --dont:    #A63D2F;
+    --dont-bg: #F8E8E4;
+    --radius:  4px;
+
+    --sans: "Hiragino Kaku Gothic ProN", "Hiragino Sans", "Yu Gothic UI", "Yu Gothic",
+            "Noto Sans JP", Meiryo, system-ui, sans-serif;
+    --mono: ui-monospace, SFMono-Regular, "SF Mono", Consolas, Menlo,
+            "Noto Sans Mono", "Yu Gothic", monospace;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --paper:#151412; --surface:#1D1C19; --surface-2:#272521;
+      --ink:#EAE8E3; --ink-2:#AEABA3; --ink-3:#807D75; --line:#33312C;
+      --accent:#C4C0B6;
+      --do:#5FB48C; --do-bg:#15271F;
+      --dont:#DE7C68; --dont-bg:#2B1A16;
+    }
+  }
+  :root[data-theme="dark"] {
+    --paper:#151412; --surface:#1D1C19; --surface-2:#272521;
+    --ink:#EAE8E3; --ink-2:#AEABA3; --ink-3:#807D75; --line:#33312C;
+    --accent:#C4C0B6; --do:#5FB48C; --do-bg:#15271F;
+    --dont:#DE7C68; --dont-bg:#2B1A16;
+  }
+  :root[data-theme="light"] {
+    --paper:#F5F4F1; --surface:#FFFFFF; --surface-2:#EAE8E3;
+    --ink:#1C1B18; --ink-2:#55534C; --ink-3:#86837A; --line:#DAD7D0;
+    --accent:#3A3833; --do:#2E6B4F; --do-bg:#E4EFE9;
+    --dont:#A63D2F; --dont-bg:#F8E8E4;
+  }
+
+  html { background: var(--paper); }
+
+  #doc {
+    font-family: var(--sans); color: var(--ink); background: var(--paper);
+    line-height: 1.85; font-size: 16px; letter-spacing: 0.01em;
+    -webkit-font-smoothing: antialiased; padding-bottom: 4rem;
+  }
+  #doc p, #doc li { color: var(--ink-2); }
+  #doc strong { color: var(--ink); font-weight: 700; }
+  #doc :focus-visible { outline: 2px solid var(--do); outline-offset: 3px; }
+
+  .wrap { max-width: 44rem; margin: 0 auto; padding: 0 1.5rem; }
+
+  header.head { padding-top: 3.5rem; margin-bottom: 2.5rem; }
+  .eyebrow { font-family: var(--mono); font-size: 0.72rem; letter-spacing: 0.18em;
+             text-transform: uppercase; color: var(--ink-3); margin: 0 0 0.9rem; }
+  h1 { font-size: clamp(1.8rem,5vw,2.4rem); line-height: 1.3; font-weight: 800;
+       letter-spacing: -0.01em; margin: 0 0 0.9rem; text-wrap: balance; }
+  .lead { font-size: 1rem; margin: 0; max-width: 34em; }
+
+  /* 大原則 */
+  .principles { display: flex; flex-direction: column; gap: 0.7rem; margin: 2.5rem 0 3.5rem; }
+  .p-item { display: grid; grid-template-columns: 2.2rem 1fr; gap: 0 1rem;
+            background: var(--surface); border: 1px solid var(--line);
+            border-left: 4px solid var(--do); border-radius: var(--radius);
+            padding: 1rem 1.2rem; align-items: start; }
+  .p-item .num { font-family: var(--mono); font-size: 1.3rem; font-weight: 700;
+                 color: var(--do); line-height: 1.3; }
+  .p-item p { margin: 0; color: var(--ink); font-weight: 700; font-size: 1rem; line-height: 1.6; }
+
+  section { margin-bottom: 3.2rem; }
+  h2 { display: flex; align-items: baseline; gap: 0.8rem; font-size: 1.2rem;
+       font-weight: 800; margin: 0 0 1.2rem; padding-bottom: 0.6rem;
+       border-bottom: 2px solid var(--ink); }
+  h2 .n { font-family: var(--mono); font-size: 0.8rem; color: var(--ink-3); font-weight: 700; flex: none; }
+  h3 { font-size: 0.98rem; font-weight: 800; margin: 1.4rem 0 0.6rem; }
+  .body { display: flex; flex-direction: column; gap: 1rem; }
+
+  ul.plain { margin: 0; padding-left: 1.2rem; display: flex; flex-direction: column; gap: 0.35rem; }
+
+  code.inline { font-family: var(--mono); font-size: 0.85em; background: var(--surface-2);
+                padding: 0.1em 0.4em; border-radius: 2px; color: var(--ink); }
+
+  .cmd { background: var(--surface); border: 1px solid var(--line);
+         border-left: 3px solid var(--accent); border-radius: var(--radius);
+         display: flex; align-items: stretch; }
+  .cmd pre { margin: 0; padding: 0.8rem 1rem; overflow-x: auto; flex: 1;
+             font-family: var(--mono); font-size: 0.85rem; line-height: 1.75;
+             color: var(--ink); white-space: pre; }
+  .cmd button { flex: none; border: 0; border-left: 1px solid var(--line);
+                background: transparent; color: var(--ink-3); cursor: pointer;
+                font-family: var(--mono); font-size: 0.7rem; letter-spacing: 0.06em;
+                padding: 0 0.85rem; transition: background .15s, color .15s; }
+  .cmd button:hover { background: var(--do-bg); color: var(--do); }
+
+  .do-box, .dont-box {
+    border-radius: var(--radius); padding: 1rem 1.2rem;
+    display: flex; flex-direction: column; gap: 0.45rem;
+  }
+  .do-box  { background: var(--do-bg);   border: 1px solid color-mix(in srgb, var(--do) 32%, transparent); }
+  .dont-box{ background: var(--dont-bg); border: 1px solid color-mix(in srgb, var(--dont) 36%, transparent); }
+  .box-label { font-family: var(--mono); font-size: 0.66rem; letter-spacing: 0.12em;
+               text-transform: uppercase; font-weight: 700; }
+  .do-box .box-label { color: var(--do); }
+  .dont-box .box-label { color: var(--dont); }
+  .do-box p, .dont-box p, .do-box li, .dont-box li { color: var(--ink); font-size: 0.94rem; margin: 0; }
+
+  .tablewrap { overflow-x: auto; border: 1px solid var(--line);
+               border-radius: var(--radius); background: var(--surface); }
+  table { border-collapse: collapse; width: 100%; min-width: 26rem; font-size: 0.91rem; }
+  th, td { text-align: left; padding: 0.6rem 0.9rem; border-bottom: 1px solid var(--line); vertical-align: top; }
+  thead th { font-family: var(--mono); font-size: 0.66rem; letter-spacing: 0.1em;
+             text-transform: uppercase; color: var(--ink-3); font-weight: 500;
+             background: var(--surface-2); white-space: nowrap; }
+  tbody tr:last-child td { border-bottom: 0; }
+  td.k { font-weight: 700; color: var(--ink); }
+  td.m { font-family: var(--mono); font-size: 0.85em; white-space: nowrap; }
+
+  .diagram { background: var(--surface); border: 1px solid var(--line);
+             border-radius: var(--radius); padding: 1rem 1.2rem; overflow-x: auto; }
+  .diagram pre { margin: 0; font-family: var(--mono); font-size: 0.78rem;
+                 line-height: 1.7; color: var(--ink-2); white-space: pre; }
+
+  .motto { background: var(--surface); border: 1px solid var(--line);
+           border-top: 4px solid var(--do); border-radius: var(--radius);
+           padding: 1.6rem 1.4rem; text-align: center; }
+  .motto p.big { font-size: 1.15rem; font-weight: 800; color: var(--ink); margin: 0 0 0.6rem; }
+  .motto p.sub { font-size: 0.9rem; margin: 0; }
+
+  footer.foot { border-top: 1px solid var(--line); padding-top: 1.3rem; margin-top: 3rem; }
+  footer.foot p { color: var(--ink-3); font-size: 0.85rem; margin: 0; }
+
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
+</style>
+
+<div id="doc">
+  <header class="head">
+    <div class="wrap">
+      <p class="eyebrow">ハッカソン / Git運用ルール</p>
+      <h1>チーム開発のルール</h1>
+      <p class="lead">
+        全員が同じリポジトリを触るので、最低限のルールだけ決めています。
+        <strong>覚えるのは下の3つだけ。</strong>あとはこのページを見ながらで大丈夫です。
+      </p>
+
+      <div class="principles">
+        <div class="p-item">
+          <span class="num">1</span>
+          <p><code class="inline">main</code> はいつでもデモできる状態に保つ</p>
+        </div>
+        <div class="p-item">
+          <span class="num">2</span>
+          <p>作業は必ずブランチで。<code class="inline">main</code> には直接 push しない</p>
+        </div>
+        <div class="p-item">
+          <span class="num">3</span>
+          <p>困ったら触る前に聞く。5分粘ったら手を挙げる</p>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main class="wrap">
+
+    <!-- 1 -->
+    <section>
+      <h2><span class="n">01</span>作業を始めるとき</h2>
+      <div class="body">
+        <p><strong>毎回この4行から始めてください。</strong>他の人の変更を自分のブランチに取り込む作業です。</p>
+        <div class="cmd"><pre><code>git switch main
+git pull
+git switch feat/自分の担当
+git merge main</code></pre><button type="button" class="copy">COPY</button></div>
+
+        <div class="do-box">
+          <span class="box-label">これをやる理由</span>
+          <p>誰かが <code class="inline">main</code> にマージすると、<strong>自分のブランチは古いまま取り残されます。</strong></p>
+          <p><strong>放置するほど衝突が増えます。</strong>毎日やれば1〜2ファイル、3日ためると10ファイル同時に衝突します。</p>
+          <p><strong>マージしても自分の作業は消えません。</strong>相手の変更が足されるだけです。</p>
+        </div>
+
+        <div class="diagram">
+<pre>        自分の作業 ── 自分の作業 ── 合流
+       /                          /
+main ─●──────────────────────── 他の人のマージ</pre>
+        </div>
+      </div>
+    </section>
+
+    <!-- 2 -->
+    <section>
+      <h2><span class="n">02</span>コードを書いているとき</h2>
+      <div class="body">
+        <p>こまめに保存してください。何度やっても構いません。</p>
+        <div class="cmd"><pre><code>git add .
+git commit -m "何をしたか"
+git push</code></pre><button type="button" class="copy">COPY</button></div>
+        <p><strong>push しても他の人には影響しません。</strong>自分のブランチに置かれるだけです。</p>
+      </div>
+    </section>
+
+    <!-- 3 -->
+    <section>
+      <h2><span class="n">03</span>PR（プルリクエスト）を出す</h2>
+      <div class="body">
+        <div class="do-box">
+          <span class="box-label">粒度</span>
+          <p><strong>1つの機能、または1つのバグ修正が終わったら出してください。</strong>細かめでOKです。</p>
+          <p>複数の機能をまとめて出さないこと。<strong>巨大なPRは誰もレビューできません。</strong></p>
+        </div>
+
+        <ul class="plain">
+          <li><strong>タイトルは日本語で「何をしたか」</strong>（例：<code class="inline">プロフィール詳細画面を追加</code>）</li>
+          <li>説明欄は<strong>テンプレートが自動で出る</strong>ので、埋めるだけ</li>
+          <li>未完成なら、タイトルの先頭に <code class="inline">[WIP]</code> と書く</li>
+        </ul>
+
+        <div class="do-box">
+          <span class="box-label">出したら Slack で報告</span>
+          <p>「〇〇のPRを出しました。レビューお願いします」<strong>＋ PRのURL</strong></p>
+          <p><strong>GitHubの通知はすぐ埋もれます。</strong>Slackに流すところまでが1セットです。</p>
+        </div>
+
+        <p><strong>PRを出したあとも push して構いません。</strong>PRの中身は自動で更新されます。作り直し不要です。</p>
+      </div>
+    </section>
+
+    <!-- 4 -->
+    <section>
+      <h2><span class="n">04</span>レビューと承認</h2>
+      <div class="body">
+        <div class="tablewrap">
+          <table>
+            <thead><tr><th>誰が</th><th>何を見るか</th></tr></thead>
+            <tbody>
+              <tr><td class="k">Codex（自動）</td><td>PRを出すと自動でレビューが付きます。<strong>何もしなくてOK</strong></td></tr>
+              <tr><td class="k">開発系リーダー</td><td>仕様と合っているか / 使いやすいか</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="dont-box">
+          <span class="box-label">禁止</span>
+          <p><strong>自分のPRを自分で承認しないでください。</strong></p>
+          <p>承認は<strong>開発系リーダーだけ</strong>が行います。</p>
+        </div>
+
+        <p><strong>承認を待っている間は、次の作業を進めてください。</strong>手を止めて待つ必要はありません。</p>
+      </div>
+    </section>
+
+    <!-- 5 -->
+    <section>
+      <h2><span class="n">05</span>マージする</h2>
+      <div class="body">
+        <p><strong>リーダーの承認をもらってから、PRを出した本人がマージします。</strong></p>
+
+        <div class="do-box">
+          <span class="box-label">マージしたら必ず Slack で報告 ← 最重要</span>
+          <p>「feat/discover をマージしました。みんな main を取り込んでください」</p>
+        </div>
+
+        <p><strong>この報告を見たら、全員がその場で 01 の4行を実行してください。</strong>後回しにするほど面倒になります。</p>
+
+        <p>マージが終わったPRのブランチは、GitHubの「Delete branch」ボタンで消してください。</p>
+      </div>
+    </section>
+
+    <!-- 6 -->
+    <section>
+      <h2><span class="n">06</span>触らないファイル</h2>
+      <div class="body">
+        <div class="dont-box">
+          <span class="box-label">原則触らない</span>
+          <p>次の4つは<strong>複数の人が同時に触ると必ず衝突します。</strong></p>
+          <ul class="plain">
+            <li><code class="inline">lib/types.ts</code></li>
+            <li><code class="inline">lib/repository.ts</code></li>
+            <li><code class="inline">components/Header.tsx</code></li>
+            <li><code class="inline">app/layout.tsx</code></li>
+          </ul>
+          <p><strong>触る必要が出たら、必ず Slack で呼びかけてから作業してください。</strong></p>
+        </div>
+        <p>呼びかけは「<code class="inline">lib/repository.ts</code> 触ります」と書くだけです。これだけで事故が激減します。</p>
+      </div>
+    </section>
+
+    <!-- 7 -->
+    <section>
+      <h2><span class="n">07</span>やってはいけないこと</h2>
+      <div class="body">
+        <div class="tablewrap">
+          <table>
+            <thead><tr><th>禁止</th><th>なぜ</th></tr></thead>
+            <tbody>
+              <tr><td class="m">git push --force</td><td><strong>他人の作業が消えます。絶対にやらない</strong></td></tr>
+              <tr><td class="m">git reset --hard</td><td>自分の作業が消えます。自己判断で打たない</td></tr>
+              <tr><td class="k">main に直接 push</td><td>デモが壊れます</td></tr>
+              <tr><td class="k">他人のブランチに push</td><td>相手が混乱します</td></tr>
+              <tr><td class="m">.env をコミット</td><td><strong>APIキーが流出します</strong></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- 8 -->
+    <section>
+      <h2><span class="n">08</span>コンフリクトが起きたら</h2>
+      <div class="body">
+        <p><strong>失敗ではありません。</strong>同じ場所を2人が変えたときに必ず起きるものです。</p>
+        <ul class="plain">
+          <li><strong>まず落ち着く。焦って操作しない</strong></li>
+          <li>VS Code に「現在の変更を取り込む / 入力側の変更を取り込む / 両方の変更を取り込む」のボタンが出ます</li>
+          <li><strong>どちらを残すか分からなければ、そのまま声をかけてください</strong></li>
+        </ul>
+
+        <div class="dont-box">
+          <span class="box-label">やらないこと</span>
+          <p>自分の判断で<strong>相手の変更を消さない</strong></p>
+          <p><strong>ネットで見つけたコマンドを、意味が分からないまま実行しない</strong></p>
+        </div>
+
+        <p>「壊したかも」と思ったら、<strong>何かする前に相談してください。</strong>push済みの内容はGitHubに残っているので、たいていは元に戻せます。</p>
+      </div>
+    </section>
+
+    <!-- 9 -->
+    <section>
+      <h2><span class="n">09</span>発表3日前から</h2>
+      <div class="body">
+        <div class="tablewrap">
+          <table>
+            <thead><tr><th>時期</th><th>止めるもの</th><th>通せるもの</th></tr></thead>
+            <tbody>
+              <tr><td class="k">3日前〜</td><td><strong>機能追加</strong></td><td>バグ修正のみ</td></tr>
+              <tr><td class="k">前日〜</td><td>バグ修正も原則停止</td><td>致命的なものだけ（リーダー判断）</td></tr>
+              <tr><td class="k">当日</td><td><strong>すべて</strong></td><td>なし</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p><strong>直前に入れた変更で壊れると、元に戻す時間がありません。</strong>「あと1つだけ」が一番危険です。</p>
+        <p>この期間は、<strong>デモの練習・画面録画・発表資料・バグ修正</strong>に使います。<strong>間に合わなかった機能は素直に切ってください。</strong></p>
+      </div>
+    </section>
+
+    <!-- 10 -->
+    <section>
+      <h2><span class="n">10</span>困ったときのコマンド</h2>
+      <div class="body">
+        <p>いま自分がどのブランチにいるか（VS Codeの左下にも出ています）</p>
+        <div class="cmd"><pre><code>git branch --show-current</code></pre><button type="button" class="copy">COPY</button></div>
+
+        <p>何を変更したか</p>
+        <div class="cmd"><pre><code>git status</code></pre><button type="button" class="copy">COPY</button></div>
+
+        <p>間違って <code class="inline">main</code> で作業してしまった（まだコミットしていなければ、変更を持ったまま移動できます）</p>
+        <div class="cmd"><pre><code>git switch -c fix/作業中の内容</code></pre><button type="button" class="copy">COPY</button></div>
+      </div>
+    </section>
+
+    <div class="motto">
+      <p class="big">触る前に聞く。5分粘ったら手を挙げる。</p>
+      <p class="sub">一人で悩んでいる時間が、チーム全体で一番もったいない時間です。<br>「こんなことも分からないのか」と思う人はいません。聞いてください。</p>
+    </div>
+
+    <footer class="foot">
+      <p>このページは要点だけをまとめたものです。ルールを変えたくなったら、勝手に変えずに Slack で相談してください。</p>
+    </footer>
+
+  </main>
+</div>
+
+<script>
+  (function () {
+    document.querySelectorAll('.cmd .copy').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var code = btn.parentElement.querySelector('code');
+        if (!code) return;
+        var text = code.textContent;
+        var done = function () {
+          btn.textContent = 'COPIED';
+          setTimeout(function () { btn.textContent = 'COPY'; }, 1600);
+        };
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(text).then(done, fallback);
+        } else { fallback(); }
+        function fallback() {
+          var ta = document.createElement('textarea');
+          ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
+          document.body.appendChild(ta); ta.select();
+          try { document.execCommand('copy'); done(); } catch (e) { btn.textContent = '選択してコピー'; }
+          document.body.removeChild(ta);
+        }
+      });
+    });
+  })();
+</script>
