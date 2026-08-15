@@ -308,11 +308,28 @@ git push</code></pre><button type="button" class="copy">COPY</button></div>
             <tbody>
               <tr><td class="m">git push --force</td><td><strong>他人の作業が消えます。絶対にやらない</strong></td></tr>
               <tr><td class="m">git reset --hard</td><td>自分の作業が消えます。自己判断で打たない</td></tr>
-              <tr><td class="k">main に直接 push</td><td>デモが壊れます</td></tr>
+              <tr><td class="k">main に直接 push</td><td>デモが壊れます。<strong>現在はGitHubが弾きます</strong></td></tr>
               <tr><td class="k">他人のブランチに push</td><td>相手が混乱します</td></tr>
               <tr><td class="m">.env をコミット</td><td><strong>APIキーが流出します</strong></td></tr>
             </tbody>
           </table>
+        </div>
+
+        <div class="do-box">
+          <span class="box-label">main はGitHubが守っています</span>
+          <p><code class="inline">main</code> には<strong>設定で保護がかかっています。</strong>次の3つは、間違えて実行してもGitHubがエラーで止めてくれます。</p>
+          <ul class="plain" style="margin-top:0.4rem">
+            <li><code class="inline">main</code> への直接 push（<strong>必ずPR経由になります</strong>）</li>
+            <li><code class="inline">main</code> への <code class="inline">git push --force</code></li>
+            <li><code class="inline">main</code> ブランチの削除</li>
+          </ul>
+          <p><strong>「うっかり main に push してしまった」は、もう起きません。</strong>安心して作業してください。</p>
+        </div>
+
+        <div class="dont-box">
+          <span class="box-label">ただし、守られていないこと</span>
+          <p><strong>承認なしでもマージ自体はできてしまいます。</strong>GitHubは止めません。</p>
+          <p>04章の「自分のPRを自分で承認しない」は、<strong>全員の意識だけが防御です。</strong></p>
         </div>
       </div>
     </section>
