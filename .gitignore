@@ -49,4 +49,4 @@ Thumbs.db
 # Claude Code のローカル設定
 .claude/settings.local.json
 
-docs/*.md
+docs/
