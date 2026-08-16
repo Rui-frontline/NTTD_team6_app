@@ -22,6 +22,11 @@ export function TalkPanel({
 }) {
   return (
     <section
+      // 閉じている間は中身を丸ごと無効化する。
+      // aria-hidden は支援技術から隠すだけ、pointer-events-none はマウスを止めるだけで、
+      // どちらも Tab キーでの移動を止められない（画面外のボタンにフォーカスが当たってしまう）。
+      // inert なら子孫すべてがフォーカス対象から外れ、閉じた瞬間にフォーカスも外れる。
+      inert={!open}
       aria-hidden={!open}
       aria-label="トーク"
       className={[
