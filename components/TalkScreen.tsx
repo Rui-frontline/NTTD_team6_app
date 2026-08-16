@@ -67,11 +67,12 @@ export function TalkScreen() {
   // ポーリングとモード切替が重なっても、古い結果が新しい結果を上書きしない。
   const requestId = useRef(0);
 
+  // usePolling が完了を待てるように Promise を返す
   const load = useCallback(() => {
-    if (!userId) return;
+    if (!userId) return Promise.resolve();
     const id = ++requestId.current;
 
-    getMatches(userId, mode)
+    return getMatches(userId, mode)
       .then((list) => {
         if (id !== requestId.current) return;
         setResult({ mode, matches: list, error: null });
