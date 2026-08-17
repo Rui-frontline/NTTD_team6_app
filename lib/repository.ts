@@ -90,6 +90,7 @@ export type DiscoverFilter = {
  * - 自分は除く
  * - すでに「いいね」した相手は除く
  * - 恋愛モードでは「見送った」相手も除く（仕事モードは保存しないので除かない）
+ * - 相手からいいねが来ている人を優先表示（それ以外はランダム順）
  */
 export async function getUsers(
   mode: Mode,
@@ -107,7 +108,38 @@ export async function getUsers(
     (u) => u.id !== currentUserId && !excluded.has(u.id),
   );
 
-  return users.filter((u) => matchesFilter(u, mode, filter));
+  const filtered = users.filter((u) => matchesFilter(u, mode, filter));
+
+  // 相手からのいいねを取得
+  const { data: incomingLikes } = await supabase
+    .from("reactions")
+    .select("from_user_id")
+    .eq("to_user_id", currentUserId)
+    .eq("mode", mode)
+    .eq("type", "like");
+
+  const likedByIds = new Set(
+    (incomingLikes ?? []).map((r: { from_user_id: string }) => r.from_user_id),
+  );
+
+  // いいねをくれた人と、それ以外に分ける
+  const likedByYou: User[] = [];
+  const others: User[] = [];
+
+  for (const user of filtered) {
+    if (likedByIds.has(user.id)) {
+      likedByYou.push(user);
+    } else {
+      others.push(user);
+    }
+  }
+
+  // それぞれをランダムに並び替え
+  const shuffled = (arr: User[]) =>
+    arr.sort(() => Math.random() - 0.5);
+
+  // いいねをくれた人を前に、それ以外を後ろに
+  return [...shuffled(likedByYou), ...shuffled(others)];
 }
 
 /** すでに反応済みで、一覧に出したくない相手のID */
