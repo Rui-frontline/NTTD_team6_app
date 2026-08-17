@@ -77,15 +77,20 @@ export function TalkScreen() {
   );
 
   // モードが変わったらトークを閉じる。
-  // setState をレンダー中に呼ぶと無限ループになるため、effect に寄せる。
+  //
+  // effect ではなくレンダー中に調整する（React 公式の「値が変わったときに
+  // state を調整する」パターン）。effect だと一度古い状態で画面に描かれてから
+  // 直るので、モードを切り替えた瞬間にパネルが残って見える。
+  //
+  // 直前のモードを panelMode に覚えているため、無限ループにはならない。
+  // setPanelMode(mode) で条件が false になり、次のレンダーでは何もしない。
+  //
   // selected はあえて残すので、閉じるアニメーション中も相手の名前が見えたままになる。
   const [panelMode, setPanelMode] = useState(mode);
-  useEffect(() => {
-    if (panelMode !== mode) {
-      setPanelMode(mode);
-      setOpen(false);
-    }
-  }, [mode, panelMode]);
+  if (panelMode !== mode) {
+    setPanelMode(mode);
+    setOpen(false);
+  }
 
   // 何番目の問い合わせかを覚えておき、最後に投げたものの結果だけを採用する。
   // ポーリングとモード切替が重なっても、古い結果が新しい結果を上書きしない。
