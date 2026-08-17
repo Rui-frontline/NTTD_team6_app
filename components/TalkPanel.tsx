@@ -1,6 +1,10 @@
 "use client";
 
-import type { MatchSummary } from "@/lib/types";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { getMessages, sendMessage } from "@/lib/repository";
+import { useSession } from "@/lib/session";
+import { usePolling } from "@/lib/usePolling";
+import type { MatchSummary, Message } from "@/lib/types";
 
 /**
  * 右からスライドインしてくるトークパネル。
@@ -14,12 +18,73 @@ export function TalkPanel({
   open,
   summary,
   onClose,
+  onSent,
 }: {
   open: boolean;
   /** 表示する相手。閉じるアニメーション中も中身を残したいので、閉じても null にしない */
   summary: MatchSummary | null;
   onClose: () => void;
+  onSent: (created: Message) => void;
 }) {
+  const { currentUser } = useSession();
+  const matchId = summary?.match.id ?? null;
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [input, setInput] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const scrollRef = useRef<HTMLDivElement | null>(null);
+  const textareaRef = useRef<HTMLTextAreaElement | null>(null);
+
+  const load = useCallback(() => {
+    if (!matchId) return Promise.resolve();
+    return getMessages(matchId)
+      .then((list) => {
+        setMessages(list);
+        setError(null);
+      })
+      .catch((err: unknown) => {
+        const message =
+          err instanceof Error ? err.message : "メッセージの取得に失敗しました。";
+        setError(message);
+        throw err;
+      });
+  }, [matchId]);
+
+  useEffect(() => {
+    void load();
+  }, [load]);
+
+  usePolling(load, 3000, open && matchId !== null);
+
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (el) el.scrollTop = el.scrollHeight;
+  }, [messages.length]);
+
+  const handleSend = useCallback(async () => {
+    if (!matchId || !currentUser || busy) return;
+
+    const body = input.trim();
+    if (!body) return;
+
+    setBusy(true);
+    setError(null);
+
+    try {
+      const created = await sendMessage(matchId, currentUser.id, body);
+      setMessages((prev) => [...prev, created]);
+      onSent(created);
+      setInput("");
+      textareaRef.current?.focus();
+    } catch (err: unknown) {
+      const message =
+        err instanceof Error ? err.message : "メッセージの送信に失敗しました。";
+      setError(message);
+    } finally {
+      setBusy(false);
+    }
+  }, [busy, currentUser, input, matchId, onSent]);
+
   return (
     <section
       // 閉じている間は中身を丸ごと無効化する。
@@ -61,12 +126,93 @@ export function TalkPanel({
             </button>
           </header>
 
-          {/* ここに次のステップで吹き出しと入力欄を作る */}
-          <div className="flex flex-1 items-center justify-center text-sm text-muted">
-            メッセージはこの先のステップで作ります
+          <div className="flex flex-1 flex-col overflow-hidden">
+            <div ref={scrollRef} className="flex-1 overflow-y-auto px-3 py-3">
+              {messages.length === 0 ? (
+                <div className="flex h-full items-center justify-center text-sm text-muted">
+                  まだメッセージはありません。
+                </div>
+              ) : (
+                <div className="flex flex-col gap-2">
+                  {messages.map((message) => {
+                    const mine = message.senderId === currentUser?.id;
+                    return (
+                      <div
+                        key={message.id}
+                        className={[
+                          "flex w-full",
+                          mine ? "justify-end" : "justify-start",
+                        ].join(" ")}
+                      >
+                        <div
+                          className={[
+                            "flex max-w-[70%] items-end gap-2",
+                            mine ? "flex-row-reverse" : "",
+                          ].join(" ")}
+                        >
+                          <div
+                            className={[
+                              "max-w-full rounded-2xl px-3 py-2 text-sm whitespace-pre-wrap break-words",
+                              mine
+                                ? "ml-auto bg-accent text-white"
+                                : "bg-background border border-line",
+                            ].join(" ")}
+                          >
+                            {message.body}
+                          </div>
+                          <time className="shrink-0 text-[11px] text-muted">
+                            {formatBubbleTime(message.createdAt)}
+                          </time>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+
+            <div className="border-t border-line bg-surface">
+              {error ? (
+                <p className="px-3 pb-2 pt-3 text-xs text-accent">{error}</p>
+              ) : null}
+              <div className="flex items-end gap-2 p-3">
+                <textarea
+                  ref={textareaRef}
+                  value={input}
+                  onChange={(e) => setInput(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && !e.shiftKey) {
+                      e.preventDefault();
+                      void handleSend();
+                    }
+                  }}
+                  rows={1}
+                  placeholder="メッセージを入力"
+                  className="max-h-32 min-h-11 flex-1 resize-none rounded-xl border border-line bg-background px-3 py-2 text-sm outline-none placeholder:text-muted focus:border-accent"
+                />
+                <button
+                  type="button"
+                  onClick={() => {
+                    void handleSend();
+                  }}
+                  disabled={busy || input.trim() === ""}
+                  className="rounded-xl bg-accent px-3 py-2 text-sm font-bold text-white transition-opacity disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {busy ? "送信中" : "送信"}
+                </button>
+              </div>
+            </div>
           </div>
         </>
       ) : null}
     </section>
   );
+}
+
+function formatBubbleTime(iso: string): string {
+  return new Date(iso).toLocaleTimeString("ja-JP", {
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  });
 }

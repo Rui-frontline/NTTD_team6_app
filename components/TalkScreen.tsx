@@ -6,7 +6,12 @@ import { TalkPanel } from "@/components/TalkPanel";
 import { getMatches } from "@/lib/repository";
 import { useSession } from "@/lib/session";
 import { usePolling } from "@/lib/usePolling";
-import { MODE_LABEL, type MatchSummary, type Mode } from "@/lib/types";
+import {
+  MODE_LABEL,
+  type MatchSummary,
+  type Message,
+  type Mode,
+} from "@/lib/types";
 
 /** 一覧を取り直す間隔。相手の新着を拾うために定期的に叩く */
 const POLLING_INTERVAL_MS = 5000;
@@ -139,6 +144,27 @@ export function TalkScreen() {
             open={open}
             summary={selected}
             onClose={() => setOpen(false)}
+            onSent={(created: Message) => {
+              setResult((prev) => {
+                if (prev === null || prev.mode !== mode) return prev;
+
+                const matches = [...prev.matches]
+                  .map((summary) =>
+                    summary.match.id === created.matchId
+                      ? { ...summary, latestMessage: created }
+                      : summary,
+                  )
+                  .sort((a, b) => timeOf(b) - timeOf(a));
+
+                return { ...prev, matches };
+              });
+
+              setSelected((prev) =>
+                prev && prev.match.id === created.matchId
+                  ? { ...prev, latestMessage: created }
+                  : prev,
+              );
+            }}
           />
         </div>
       </div>
