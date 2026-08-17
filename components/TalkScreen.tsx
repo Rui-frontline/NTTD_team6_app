@@ -6,7 +6,12 @@ import { TalkPanel } from "@/components/TalkPanel";
 import { getMatches } from "@/lib/repository";
 import { useSession } from "@/lib/session";
 import { usePolling } from "@/lib/usePolling";
-import { MODE_LABEL, type MatchSummary, type Mode } from "@/lib/types";
+import {
+  MODE_LABEL,
+  type MatchSummary,
+  type Message,
+  type Mode,
+} from "@/lib/types";
 
 /** 一覧を取り直す間隔。相手の新着を拾うために定期的に叩く */
 const POLLING_INTERVAL_MS = 5000;
@@ -54,8 +59,14 @@ export function TalkScreen() {
   const [open, setOpen] = useState(false);
 
   // モードが変わったらトークを閉じる。
-  // effect ではなくレンダー中に調整するのが React の推奨（公式ドキュメントの
-  // 「propsが変わったときにstateを調整する」パターン）。
+  //
+  // effect ではなくレンダー中に調整する（React 公式の「値が変わったときに
+  // state を調整する」パターン）。effect だと一度古い状態で画面に描かれてから
+  // 直るので、モードを切り替えた瞬間にパネルが残って見える。
+  //
+  // 直前のモードを panelMode に覚えているため、無限ループにはならない。
+  // setPanelMode(mode) で条件が false になり、次のレンダーでは何もしない。
+  //
   // selected はあえて残すので、閉じるアニメーション中も相手の名前が見えたままになる。
   const [panelMode, setPanelMode] = useState(mode);
   if (panelMode !== mode) {
@@ -139,6 +150,27 @@ export function TalkScreen() {
             open={open}
             summary={selected}
             onClose={() => setOpen(false)}
+            onSent={(created: Message) => {
+              setResult((prev) => {
+                if (prev === null || prev.mode !== mode) return prev;
+
+                const matches = [...prev.matches]
+                  .map((summary) =>
+                    summary.match.id === created.matchId
+                      ? { ...summary, latestMessage: created }
+                      : summary,
+                  )
+                  .sort((a, b) => timeOf(b) - timeOf(a));
+
+                return { ...prev, matches };
+              });
+
+              setSelected((prev) =>
+                prev && prev.match.id === created.matchId
+                  ? { ...prev, latestMessage: created }
+                  : prev,
+              );
+            }}
           />
         </div>
       </div>
