@@ -58,24 +58,6 @@ export function TalkScreen() {
   const [selected, setSelected] = useState<MatchSummary | null>(null);
   const [open, setOpen] = useState(false);
 
-  /** いま開いている会話。閉じているときは null */
-  const openMatchId = open ? selected?.match.id ?? null : null;
-
-  // 開いている会話は読んでいる最中なので、一覧のバッジは即座に消す。
-  // 既読の保存自体は下の effect でやるが、その結果が一覧に返ってくるのは
-  // 次のポーリングのあとなので、表示側でも 0 にしておく。
-  const displayedMatches = useMemo(
-    () =>
-      openMatchId === null
-        ? matches
-        : matches.map((summary) =>
-            summary.match.id === openMatchId && summary.unreadCount !== 0
-              ? { ...summary, unreadCount: 0 }
-              : summary,
-          ),
-    [matches, openMatchId],
-  );
-
   // モードが変わったらトークを閉じる。
   //
   // effect ではなくレンダー中に調整する（React 公式の「値が変わったときに
@@ -96,6 +78,23 @@ export function TalkScreen() {
   // ポーリングとモード切替が重なっても、古い結果が新しい結果を上書きしない。
   const requestId = useRef(0);
 
+  // マッチごとに「どこまで既読にしたか」を覚えておく。
+  // 保存した直後のポーリングは、まだ古い未読数を返してくることがあるので、
+  // その結果をこちらの記録で打ち消すのに使う。
+  const readUpToRef = useRef(new Map<string, number>());
+
+  const applyLocalReads = useCallback((list: MatchSummary[]) => {
+    return list.map((summary) => {
+      if (summary.unreadCount === 0) return summary;
+      const readUpTo = readUpToRef.current.get(summary.match.id);
+      if (readUpTo === undefined) return summary;
+      const latest = summary.latestMessage
+        ? Date.parse(summary.latestMessage.createdAt)
+        : 0;
+      return latest <= readUpTo ? { ...summary, unreadCount: 0 } : summary;
+    });
+  }, []);
+
   // usePolling が完了を待てるように Promise を返す
   const load = useCallback(() => {
     if (!userId) return Promise.resolve();
@@ -104,7 +103,7 @@ export function TalkScreen() {
     return getMatches(userId, mode)
       .then((list) => {
         if (id !== requestId.current) return;
-        setResult({ mode, matches: list, error: null });
+        setResult({ mode, matches: applyLocalReads(list), error: null });
       })
       .catch((err: unknown) => {
         if (id !== requestId.current) return;
@@ -117,7 +116,7 @@ export function TalkScreen() {
           error: message,
         }));
       });
-  }, [userId, mode]);
+  }, [userId, mode, applyLocalReads]);
 
   // ログインユーザーかモードが変わったら取り直す
   useEffect(() => {
@@ -127,27 +126,47 @@ export function TalkScreen() {
   // 相手が送ったメッセージを拾うため、定期的に取り直す
   usePolling(load, POLLING_INTERVAL_MS, userId !== null);
 
-  // 開いている会話の既読位置を保存する。
-  //
-  // 記録するのは「読んだ最後のメッセージの時刻」なので、最新メッセージが増えるたびに
-  // 書き直す。こうしておくと、開いたまま相手が送ってきた分も未読に戻らない。
-  const openLatestAt =
-    matches.find((summary) => summary.match.id === openMatchId)?.latestMessage
-      ?.createdAt ?? null;
+  /**
+   * 会話が「ここまで表示できた」と知らせてきたときに既読にする。
+   *
+   * 呼ぶのは Conversation の取得が成功したときだけなので、
+   * 取得に失敗したメッセージが既読になることはない。
+   */
+  const markRead = useCallback((matchId: string, readAt: string) => {
+    const at = Date.parse(readAt);
+    const sent = readUpToRef.current.get(matchId) ?? 0;
+    // 同じ位置まで記録済みなら何もしない（ポーリングのたびに書きに行かない）
+    if (at <= sent) return;
+    readUpToRef.current.set(matchId, at);
 
-  useEffect(() => {
-    if (!userId || openMatchId === null || openLatestAt === null) return;
-    void markMatchRead(openMatchId, userId, openLatestAt).catch(
-      (err: unknown) => {
-        // 既読の保存に失敗しても会話自体は続けられるので、画面にエラーは出さない。
-        // ただし黙って消すと「バッジが消えない」原因が追えないので、ログには残す。
-        console.warn(
-          "既読位置を保存できませんでした。supabase/match_reads.sql の実行と RLS を確認してください。",
-          err,
-        );
-      },
+    // 表示できたぶんは読んだので、保存の完了を待たずにバッジを消す。
+    // 表示用の派生値ではなく取得結果そのものを更新するので、
+    // 次のポーリングを待たずに閉じてもバッジは復活しない。
+    setResult((prev) =>
+      prev === null
+        ? prev
+        : {
+            ...prev,
+            matches: prev.matches.map((summary) =>
+              summary.match.id === matchId && summary.unreadCount !== 0
+                ? { ...summary, unreadCount: 0 }
+                : summary,
+            ),
+          },
     );
-  }, [openLatestAt, openMatchId, userId]);
+
+    void markMatchRead(matchId, readAt).catch((err: unknown) => {
+      // 保存できなかったので、次の機会に書き直せるよう記録を戻す
+      if (sent === 0) readUpToRef.current.delete(matchId);
+      else readUpToRef.current.set(matchId, sent);
+      // 既読の保存に失敗しても会話自体は続けられるので、画面にエラーは出さない。
+      // ただし黙って消すと「バッジが消えない」原因が追えないので、ログには残す。
+      console.warn(
+        "既読位置を保存できませんでした。supabase/match_reads.sql の実行と RLS を確認してください。",
+        err,
+      );
+    });
+  }, []);
 
   if (!currentUser) {
     return <p className="text-sm text-muted">読み込み中…</p>;
@@ -174,7 +193,7 @@ export function TalkScreen() {
             </p>
           ) : (
             <MatchList
-              matches={displayedMatches}
+              matches={matches}
               selectedMatchId={selected?.match.id ?? null}
               onSelect={(summary) => {
                 setSelected(summary);
@@ -190,6 +209,7 @@ export function TalkScreen() {
             open={open}
             summary={selected}
             onClose={() => setOpen(false)}
+            onRead={markRead}
             onSent={(created: Message) => {
               setResult((prev) => {
                 if (prev === null || prev.mode !== mode) return prev;

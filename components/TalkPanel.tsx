@@ -19,12 +19,19 @@ export function TalkPanel({
   summary,
   onClose,
   onSent,
+  onRead,
 }: {
   open: boolean;
   /** 表示する相手。閉じるアニメーション中も中身を残したいので、閉じても null にしない */
   summary: MatchSummary | null;
   onClose: () => void;
   onSent: (created: Message) => void;
+  /**
+   * 実際に画面に出せたメッセージの、最後の createdAt を知らせる。
+   * useCallback などで参照を固定して渡すこと（Conversation の取得処理の
+   * 依存に入るので、毎回作り直すと取得が止まらなくなる）。
+   */
+  onRead: (matchId: string, readAt: string) => void;
 }) {
   return (
     <section
@@ -78,6 +85,7 @@ export function TalkPanel({
             matchId={summary.match.id}
             open={open}
             onSent={onSent}
+            onRead={onRead}
           />
         </>
       ) : null}
@@ -90,10 +98,12 @@ function Conversation({
   matchId,
   open,
   onSent,
+  onRead,
 }: {
   matchId: string;
   open: boolean;
   onSent: (created: Message) => void;
+  onRead: (matchId: string, readAt: string) => void;
 }) {
   const { currentUser } = useSession();
   const [messages, setMessages] = useState<Message[]>([]);
@@ -111,6 +121,14 @@ function Conversation({
         setMessages(list);
         setLoaded(true);
         setError(null);
+
+        // 既読にしてよいのは「実際に画面へ出せた」ぶんだけ。
+        // 取得に失敗したときや、まだ取れていない相手のメッセージまで
+        // 既読にしてしまうと、二度と未読として気づけなくなる。
+        // 送信直後にここを呼ばないのも同じ理由で、次の取得を待って
+        // 相手の新着ごと表示できてから既読にする。
+        const last = list[list.length - 1];
+        if (last) onRead(matchId, last.createdAt);
       })
       .catch((err: unknown) => {
         const message =
@@ -118,7 +136,7 @@ function Conversation({
         setError(message);
         throw err;
       });
-  }, [matchId]);
+  }, [matchId, onRead]);
 
   useEffect(() => {
     void load();

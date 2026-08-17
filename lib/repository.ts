@@ -462,20 +462,22 @@ export async function getMatches(
  * readAt には読んだ最後のメッセージの createdAt を渡す。
  * ブラウザの現在時刻ではなく DB が採番した時刻を使うので、
  * 端末の時計がずれていても未読件数が狂わない。
+ *
+ * 素の upsert ではなく mark_match_read 関数を呼ぶ。
+ * 書き込みが2つ重なったとき、古いほうが後から届いて既読位置が巻き戻るのを
+ * 防ぐため、DB 側で greatest() を取って前にしか進まないようにしている。
+ * ユーザーの指定も DB 側の auth.uid() に任せている。
+ *
+ * supabase/match_reads.sql を実行していない環境では失敗する。
  */
 export async function markMatchRead(
   matchId: string,
-  userId: string,
   readAt: string,
 ): Promise<void> {
-  const { error } = await supabase.from("match_reads").upsert(
-    {
-      match_id: Number(matchId),
-      user_id: userId,
-      last_read_at: readAt,
-    },
-    { onConflict: "match_id,user_id" },
-  );
+  const { error } = await supabase.rpc("mark_match_read", {
+    p_match_id: Number(matchId),
+    p_read_at: readAt,
+  });
   if (error) throw error;
 }
 
