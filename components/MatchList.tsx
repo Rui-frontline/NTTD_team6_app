@@ -33,7 +33,7 @@ export function MatchList({
   );
 }
 
-/** 一覧の1行。アイコン / 名前 / 最新メッセージ / 時刻 */
+/** 一覧の1行。アイコン / 名前 / 最新メッセージ / 時刻 / 未読バッジ */
 function MatchListItem({
   summary,
   selected,
@@ -43,7 +43,7 @@ function MatchListItem({
   selected: boolean;
   onSelect: (summary: MatchSummary) => void;
 }) {
-  const { partner, latestMessage } = summary;
+  const { partner, latestMessage, unreadCount } = summary;
 
   return (
     <button
@@ -73,8 +73,16 @@ function MatchListItem({
         </span>
       </span>
 
-      <span className="shrink-0 text-xs text-muted">
-        {latestMessage ? formatListTime(latestMessage.createdAt) : ""}
+      <span className="flex shrink-0 items-center gap-2 text-xs text-muted">
+        <span>{latestMessage ? formatListTime(latestMessage.createdAt) : ""}</span>
+        {unreadCount > 0 ? (
+          <span
+            aria-label={`未読 ${unreadCount} 件`}
+            className="inline-flex min-w-5 items-center justify-center rounded-full bg-accent px-1.5 py-0.5 text-[10px] font-bold text-white"
+          >
+            {unreadCount > 9 ? "9+" : unreadCount}
+          </span>
+        ) : null}
       </span>
     </button>
   );

@@ -316,7 +316,12 @@ async function findMatch(
   return data ? toMatch(data) : null;
 }
 
-/** トーク画面のマッチ一覧。相手と最新メッセージをまとめて返す */
+type MatchReadRow = {
+  match_id: number;
+  last_read_at: string;
+};
+
+/** トーク画面のマッチ一覧。相手・最新メッセージ・未読件数をまとめて返す */
 export async function getMatches(
   userId: string,
   mode: Mode,
@@ -355,11 +360,51 @@ export async function getMatches(
     .order("created_at", { ascending: false });
   if (messageError) throw messageError;
 
+  // 自分の既読位置。行が無いマッチは「一度も開いていない」＝全部未読になる
+  const { data: readRows, error: readError } = await supabase
+    .from("match_reads")
+    .select("match_id,last_read_at")
+    .eq("user_id", userId)
+    .in(
+      "match_id",
+      matches.map((m) => Number(m.id)),
+    );
+
+  // 既読位置が取れなくても、一覧そのものは出せた方がよい（未読数が出ないだけで済む）。
+  // supabase/match_reads.sql をまだ流していない環境ではここが必ず失敗するので、
+  // 一覧を丸ごとエラーにせず、警告を出して「全部未読」として続ける。
+  if (readError) {
+    console.warn(
+      "既読位置を取得できませんでした。supabase/match_reads.sql を実行してください。",
+      readError,
+    );
+  }
+
+  const lastReadByMatch = new Map<string, number>(
+    ((readRows as MatchReadRow[] | null) ?? []).map((row) => [
+      String(row.match_id),
+      Date.parse(row.last_read_at),
+    ]),
+  );
+
+  // メッセージは1回の問い合わせで全マッチ分を取ってあるので、
+  // 最新メッセージと未読件数はここでまとめて数える（マッチごとに問い合わせない）。
   const latestByMatch = new Map<string, Message>();
+  const unreadByMatch = new Map<string, number>();
   for (const row of messageRows ?? []) {
     const message = toMessage(row);
     if (!latestByMatch.has(message.matchId)) {
       latestByMatch.set(message.matchId, message);
+    }
+
+    // 自分が送ったものは未読にならない
+    if (message.senderId === userId) continue;
+    const lastReadAt = lastReadByMatch.get(message.matchId) ?? 0;
+    if (Date.parse(message.createdAt) > lastReadAt) {
+      unreadByMatch.set(
+        message.matchId,
+        (unreadByMatch.get(message.matchId) ?? 0) + 1,
+      );
     }
   }
 
@@ -373,9 +418,33 @@ export async function getMatches(
         match,
         partner,
         latestMessage: latestByMatch.get(match.id) ?? null,
+        unreadCount: unreadByMatch.get(match.id) ?? 0,
       };
     })
     .filter((m): m is MatchSummary => m !== null);
+}
+
+/**
+ * 会話を「ここまで読んだ」と記録する。
+ *
+ * readAt には読んだ最後のメッセージの createdAt を渡す。
+ * ブラウザの現在時刻ではなく DB が採番した時刻を使うので、
+ * 端末の時計がずれていても未読件数が狂わない。
+ */
+export async function markMatchRead(
+  matchId: string,
+  userId: string,
+  readAt: string,
+): Promise<void> {
+  const { error } = await supabase.from("match_reads").upsert(
+    {
+      match_id: Number(matchId),
+      user_id: userId,
+      last_read_at: readAt,
+    },
+    { onConflict: "match_id,user_id" },
+  );
+  if (error) throw error;
 }
 
 type MessageRow = {
