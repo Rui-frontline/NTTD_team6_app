@@ -114,6 +114,14 @@ function Conversation({
   const scrollRef = useRef<HTMLDivElement | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
 
+  // 取得が終わった時点で、まだ開いているかを見るために最新の open を覚えておく。
+  // usePolling を止めても実行中の getMessages は止まらないので、
+  // 開いてすぐ閉じると、その1往復ぶんの結果が後から届く。
+  const openRef = useRef(open);
+  useEffect(() => {
+    openRef.current = open;
+  }, [open]);
+
   // usePolling が完了を待てるように Promise を返す
   const load = useCallback(() => {
     return getMessages(matchId)
@@ -127,8 +135,11 @@ function Conversation({
         // 既読にしてしまうと、二度と未読として気づけなくなる。
         // 送信直後にここを呼ばないのも同じ理由で、次の取得を待って
         // 相手の新着ごと表示できてから既読にする。
+        //
+        // 取得中に閉じられていたら既読にしない。開いてすぐ閉じた場合、
+        // 中身は画面外の inert なパネルに描かれるだけで読めていないため。
         const last = list[list.length - 1];
-        if (last) onRead(matchId, last.createdAt);
+        if (last && openRef.current) onRead(matchId, last.createdAt);
       })
       .catch((err: unknown) => {
         const message =
