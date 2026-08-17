@@ -19,12 +19,19 @@ export function TalkPanel({
   summary,
   onClose,
   onSent,
+  onRead,
 }: {
   open: boolean;
   /** 表示する相手。閉じるアニメーション中も中身を残したいので、閉じても null にしない */
   summary: MatchSummary | null;
   onClose: () => void;
   onSent: (created: Message) => void;
+  /**
+   * 実際に画面に出せたメッセージの、最後の createdAt を知らせる。
+   * useCallback などで参照を固定して渡すこと（Conversation の取得処理の
+   * 依存に入るので、毎回作り直すと取得が止まらなくなる）。
+   */
+  onRead: (matchId: string, readAt: string) => void;
 }) {
   return (
     <section
@@ -78,6 +85,7 @@ export function TalkPanel({
             matchId={summary.match.id}
             open={open}
             onSent={onSent}
+            onRead={onRead}
           />
         </>
       ) : null}
@@ -90,10 +98,12 @@ function Conversation({
   matchId,
   open,
   onSent,
+  onRead,
 }: {
   matchId: string;
   open: boolean;
   onSent: (created: Message) => void;
+  onRead: (matchId: string, readAt: string) => void;
 }) {
   const { currentUser } = useSession();
   const [messages, setMessages] = useState<Message[]>([]);
@@ -104,6 +114,14 @@ function Conversation({
   const scrollRef = useRef<HTMLDivElement | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
 
+  // 取得が終わった時点で、まだ開いているかを見るために最新の open を覚えておく。
+  // usePolling を止めても実行中の getMessages は止まらないので、
+  // 開いてすぐ閉じると、その1往復ぶんの結果が後から届く。
+  const openRef = useRef(open);
+  useEffect(() => {
+    openRef.current = open;
+  }, [open]);
+
   // usePolling が完了を待てるように Promise を返す
   const load = useCallback(() => {
     return getMessages(matchId)
@@ -111,6 +129,17 @@ function Conversation({
         setMessages(list);
         setLoaded(true);
         setError(null);
+
+        // 既読にしてよいのは「実際に画面へ出せた」ぶんだけ。
+        // 取得に失敗したときや、まだ取れていない相手のメッセージまで
+        // 既読にしてしまうと、二度と未読として気づけなくなる。
+        // 送信直後にここを呼ばないのも同じ理由で、次の取得を待って
+        // 相手の新着ごと表示できてから既読にする。
+        //
+        // 取得中に閉じられていたら既読にしない。開いてすぐ閉じた場合、
+        // 中身は画面外の inert なパネルに描かれるだけで読めていないため。
+        const last = list[list.length - 1];
+        if (last && openRef.current) onRead(matchId, last.createdAt);
       })
       .catch((err: unknown) => {
         const message =
@@ -118,7 +147,7 @@ function Conversation({
         setError(message);
         throw err;
       });
-  }, [matchId]);
+  }, [matchId, onRead]);
 
   useEffect(() => {
     void load();

@@ -64,6 +64,11 @@ export type MatchSummary = {
   match: Match;
   partner: User;
   latestMessage: Message | null;
+  /**
+   * 自分がまだ読んでいない、相手からのメッセージ数。
+   * 既読位置（match_reads）より新しいものだけを数えるので、一度開けば 0 に戻る。
+   */
+  unreadCount: number;
 };
 
 /** タグの候補。マイページの選択肢とフィルターで使う */
