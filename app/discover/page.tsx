@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { useSession } from "@/lib/session";
 import { getUsers, likeUser, passUser } from "@/lib/repository";
 import type { User } from "@/lib/types";
@@ -9,10 +10,13 @@ import { TAG_OPTIONS } from "@/lib/types";
 
 export default function DiscoverPage() {
   const { currentUser, mode } = useSession();
+  const router = useRouter();
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [matchedUser, setMatchedUser] = useState<User | null>(null);
+  // 成立したマッチの id。「トークを見に行く」でこの会話を直接開くために持つ
+  const [matchedMatchId, setMatchedMatchId] = useState<string | null>(null);
   const [filter, setFilter] = useState<DiscoverFilter>({});
   const [showFilter, setShowFilter] = useState(false);
   const [showDetailProfile, setShowDetailProfile] = useState(false);
@@ -62,6 +66,7 @@ export default function DiscoverPage() {
         console.log("マッチ成立！", match);
         // モーダルを表示
         setMatchedUser(targetUser);
+        setMatchedMatchId(match.id);
       }
 
       // 次のユーザーに進む
@@ -727,7 +732,10 @@ export default function DiscoverPage() {
             justifyContent: "center",
             zIndex: 1000,
           }}
-          onClick={() => setMatchedUser(null)}
+          onClick={() => {
+            setMatchedUser(null);
+            setMatchedMatchId(null);
+          }}
         >
           <div
             style={{
@@ -748,7 +756,10 @@ export default function DiscoverPage() {
             </p>
             <div style={{ display: "flex", gap: "10px", justifyContent: "center" }}>
               <button
-                onClick={() => setMatchedUser(null)}
+                onClick={() => {
+                  setMatchedUser(null);
+                  setMatchedMatchId(null);
+                }}
                 style={{
                   padding: "10px 20px",
                   backgroundColor: "#ccc",
@@ -763,7 +774,12 @@ export default function DiscoverPage() {
               </button>
               <button
                 onClick={() => {
-                  window.location.href = "/talk";
+                  // 成立した会話を開いた状態でトーク画面へ。
+                  // window.location.href だとページ全体が再読み込みされ、
+                  // ログイン状態の復元からやり直しになるので router.push を使う。
+                  router.push(
+                    matchedMatchId ? `/talk?match=${matchedMatchId}` : "/talk",
+                  );
                 }}
                 style={{
                   padding: "10px 20px",

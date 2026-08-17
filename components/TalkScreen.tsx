@@ -32,7 +32,15 @@ type LoadResult = {
  * Supabase のセッションはブラウザ側にあるので、サーバーコンポーネントから
  * repository を呼ぶと 0 件になる。そのため必ずクライアント側で取得する。
  */
-export function TalkScreen() {
+export function TalkScreen({
+  /**
+   * 最初から開いておく会話の match id。
+   * 「探す」画面でマッチが成立したときに `/talk?match=<id>` で渡ってくる。
+   */
+  initialMatchId = null,
+}: {
+  initialMatchId?: string | null;
+}) {
   const { currentUser, mode } = useSession();
   const userId = currentUser?.id ?? null;
 
@@ -57,6 +65,26 @@ export function TalkScreen() {
   // 空のパネルが滑り出ていく不自然な動きになるため。
   const [selected, setSelected] = useState<MatchSummary | null>(null);
   const [open, setOpen] = useState(false);
+
+  // `/talk?match=<id>` で来たときは、その会話を最初から開いておく。
+  // マッチが成立した直後に、相手を一覧から探し直さずそのまま話し始められる。
+  //
+  // 一覧が届くまでは開けないので、目的のマッチが一覧に現れた最初のレンダーで一度だけ開く。
+  // effect にすると set-state-in-effect になるうえ、一度閉じた状態で描かれてから
+  // パネルが後追いで滑り出てくるので、上の panelMode と同じくレンダー中に調整する。
+  //
+  // 開いたら autoOpenedId に記録して二度と開き直さない。
+  // これが無いと、ユーザーが閉じてもポーリングのたびに勝手に開き直してしまう。
+  const [autoOpenedId, setAutoOpenedId] = useState<string | null>(null);
+  if (initialMatchId !== null && autoOpenedId !== initialMatchId) {
+    // 別モードのマッチを指されたときは一覧に無いので、見つかるまで何もしない
+    const target = matches.find((s) => s.match.id === initialMatchId);
+    if (target) {
+      setAutoOpenedId(initialMatchId);
+      setSelected(target);
+      setOpen(true);
+    }
+  }
 
   // モードが変わったらトークを閉じる。
   //
