@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { MatchList } from "@/components/MatchList";
 import { TalkPanel } from "@/components/TalkPanel";
-import { getMatches } from "@/lib/repository";
+import { getMatches, markMatchRead } from "@/lib/repository";
 import { useSession } from "@/lib/session";
 import { usePolling } from "@/lib/usePolling";
 import {
@@ -58,6 +58,24 @@ export function TalkScreen() {
   const [selected, setSelected] = useState<MatchSummary | null>(null);
   const [open, setOpen] = useState(false);
 
+  /** いま開いている会話。閉じているときは null */
+  const openMatchId = open ? selected?.match.id ?? null : null;
+
+  // 開いている会話は読んでいる最中なので、一覧のバッジは即座に消す。
+  // 既読の保存自体は下の effect でやるが、その結果が一覧に返ってくるのは
+  // 次のポーリングのあとなので、表示側でも 0 にしておく。
+  const displayedMatches = useMemo(
+    () =>
+      openMatchId === null
+        ? matches
+        : matches.map((summary) =>
+            summary.match.id === openMatchId && summary.unreadCount !== 0
+              ? { ...summary, unreadCount: 0 }
+              : summary,
+          ),
+    [matches, openMatchId],
+  );
+
   // モードが変わったらトークを閉じる。
   // setState をレンダー中に呼ぶと無限ループになるため、effect に寄せる。
   // selected はあえて残すので、閉じるアニメーション中も相手の名前が見えたままになる。
@@ -104,6 +122,28 @@ export function TalkScreen() {
   // 相手が送ったメッセージを拾うため、定期的に取り直す
   usePolling(load, POLLING_INTERVAL_MS, userId !== null);
 
+  // 開いている会話の既読位置を保存する。
+  //
+  // 記録するのは「読んだ最後のメッセージの時刻」なので、最新メッセージが増えるたびに
+  // 書き直す。こうしておくと、開いたまま相手が送ってきた分も未読に戻らない。
+  const openLatestAt =
+    matches.find((summary) => summary.match.id === openMatchId)?.latestMessage
+      ?.createdAt ?? null;
+
+  useEffect(() => {
+    if (!userId || openMatchId === null || openLatestAt === null) return;
+    void markMatchRead(openMatchId, userId, openLatestAt).catch(
+      (err: unknown) => {
+        // 既読の保存に失敗しても会話自体は続けられるので、画面にエラーは出さない。
+        // ただし黙って消すと「バッジが消えない」原因が追えないので、ログには残す。
+        console.warn(
+          "既読位置を保存できませんでした。supabase/match_reads.sql の実行と RLS を確認してください。",
+          err,
+        );
+      },
+    );
+  }, [openLatestAt, openMatchId, userId]);
+
   if (!currentUser) {
     return <p className="text-sm text-muted">読み込み中…</p>;
   }
@@ -129,7 +169,7 @@ export function TalkScreen() {
             </p>
           ) : (
             <MatchList
-              matches={matches}
+              matches={displayedMatches}
               selectedMatchId={selected?.match.id ?? null}
               onSelect={(summary) => {
                 setSelected(summary);
