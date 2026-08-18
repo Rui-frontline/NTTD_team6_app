@@ -13,10 +13,10 @@ import { TagPicker } from "./TagPicker";
  *   タブを切り替えると data-mode も切り替わり、配色も連動する。
  * - 編集内容は下書き(draft)として持ち、「保存する」を押すまで確定しない。
  * - 保存は lib/repository の updateUser / updateProfile を呼ぶ(Supabase保存)。
- *   保存後は session.login() でローカルのcurrentUserも最新化する。
+ *   保存後は session.refreshUser() でDBから読み直してローカルのcurrentUserも最新化する。
  */
 export function MyPage() {
-  const { currentUser, mode, setMode, loading, login } = useSession();
+  const { currentUser, mode, setMode, loading, refreshUser } = useSession();
   const [draft, setDraft] = useState<User | null>(currentUser);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -80,7 +80,7 @@ export function MyPage() {
         enabledModes: draft.enabledModes,
       });
       await updateProfile(draft.id, mode, modeProfile);
-      login(draft); // ローカルのcurrentUserも最新化
+      await refreshUser(); // DBから読み直してローカルのcurrentUserも最新化
     } catch (e) {
       setError("保存に失敗しました。もう一度お試しください。");
       console.error(e);
