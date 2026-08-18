@@ -2,9 +2,9 @@
 
 import { useEffect, useState } from "react";
 import { useSession } from "@/lib/session";
-import type { Mode, User } from "@/lib/types";
-import { MODE_LABEL, MODES } from "@/lib/types";
-import { getTagCandidates } from "@/constants/profileTags";
+import { updateProfile, updateUser } from "@/lib/repository";
+import type { Profile, User } from "@/lib/types";
+import { MODE_LABEL, MODES, TAG_OPTIONS } from "@/lib/types";
 import { TagPicker } from "./TagPicker";
 
 /**
@@ -12,12 +12,14 @@ import { TagPicker } from "./TagPicker";
  * - 表示中のモード(仕事/恋愛)はアプリ全体で共有されている useSession().mode を使う。
  *   タブを切り替えると data-mode も切り替わり、配色も連動する。
  * - 編集内容は下書き(draft)として持ち、「保存する」を押すまで確定しない。
- * - 保存は session.login() でローカルの currentUser を更新している(暫定対応)。
- *   実際のAPIができたら、この保存処理をAPI呼び出しに差し替える。
+ * - 保存は lib/repository の updateUser / updateProfile を呼ぶ(Supabase保存)。
+ *   保存後は session.login() でローカルのcurrentUserも最新化する。
  */
 export function MyPage() {
   const { currentUser, mode, setMode, loading, login } = useSession();
   const [draft, setDraft] = useState<User | null>(currentUser);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   // currentUserが変わった(ログイン/初期ロード完了)ら下書きを同期する
   useEffect(() => {
@@ -40,7 +42,7 @@ export function MyPage() {
     );
   }
 
-  const candidates = getTagCandidates(mode);
+  const candidates = TAG_OPTIONS[mode];
   const modeProfile = draft[mode];
   const isParticipating = draft.enabledModes.includes(mode);
 
@@ -48,7 +50,7 @@ export function MyPage() {
     setDraft((prev) => (prev ? { ...prev, [key]: value } : prev));
   };
 
-  const updateModeProfile = (patch: Partial<User["work"] & User["romance"]>) => {
+  const updateModeProfile = (patch: Partial<Profile>) => {
     setDraft((prev) =>
       prev ? { ...prev, [mode]: { ...prev[mode], ...patch } } : prev
     );
@@ -64,10 +66,27 @@ export function MyPage() {
     });
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!draft) return;
-    // TODO: バックエンドができたらここをAPI呼び出しに差し替える
-    login(draft);
+    setSaving(true);
+    setError(null);
+    try {
+      await updateUser(draft.id, {
+        name: draft.name,
+        department: draft.department,
+        jobTitle: draft.jobTitle,
+        age: draft.age,
+        avatarUrl: draft.avatarUrl,
+        enabledModes: draft.enabledModes,
+      });
+      await updateProfile(draft.id, mode, modeProfile);
+      login(draft); // ローカルのcurrentUserも最新化
+    } catch (e) {
+      setError("保存に失敗しました。もう一度お試しください。");
+      console.error(e);
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
@@ -117,6 +136,15 @@ export function MyPage() {
           />
         </Field>
 
+        <Field label="職種">
+          <input
+            type="text"
+            value={draft.jobTitle}
+            onChange={(e) => updateCommon("jobTitle", e.target.value)}
+            className="w-full rounded-md border border-[var(--line)] bg-[var(--surface)] px-3 py-2 text-sm text-[var(--foreground)] focus:border-[var(--accent)] focus:outline-none focus:ring-1 focus:ring-[var(--accent)]"
+          />
+        </Field>
+
         <Field label="部署">
           <input
             type="text"
@@ -125,7 +153,7 @@ export function MyPage() {
             className="w-full rounded-md border border-[var(--line)] bg-[var(--surface)] px-3 py-2 text-sm text-[var(--foreground)] focus:border-[var(--accent)] focus:outline-none focus:ring-1 focus:ring-[var(--accent)]"
           />
           <p className="mt-1 text-xs text-[var(--muted)]">
-            値は仕事/恋愛で共通です。恋愛モードでは非表示にできます。
+            値は仕事/恋愛で共通です。表示するかどうかは各モードのタブで設定できます。
           </p>
         </Field>
       </section>
@@ -151,20 +179,18 @@ export function MyPage() {
 
       {/* モード別項目 */}
       <section className="space-y-5">
-        {mode === "romance" && (
-          <div className="flex items-center justify-between rounded-lg border border-[var(--line)] px-4 py-3">
-            <div>
-              <p className="text-sm font-medium">部署を表示する</p>
-              <p className="text-xs text-[var(--muted)]">
-                OFFにすると恋愛モードのプロフィールで部署が隠れます
-              </p>
-            </div>
-            <Switch
-              checked={!draft.romance.hideDepartment}
-              onChange={(v) => updateModeProfile({ hideDepartment: !v })}
-            />
+        <div className="flex items-center justify-between rounded-lg border border-[var(--line)] px-4 py-3">
+          <div>
+            <p className="text-sm font-medium">部署を表示する</p>
+            <p className="text-xs text-[var(--muted)]">
+              {MODE_LABEL[mode]}モードのプロフィールに部署を表示します
+            </p>
           </div>
-        )}
+          <Switch
+            checked={modeProfile.showDepartment}
+            onChange={(v) => updateModeProfile({ showDepartment: v })}
+          />
+        </div>
 
         <Field label="自己紹介文">
           <textarea
@@ -177,12 +203,8 @@ export function MyPage() {
 
         <TagPicker
           candidates={candidates}
-          selected={mode === "work" ? draft.work.skills : draft.romance.hobbies}
-          onChange={(tags) =>
-            updateModeProfile(
-              mode === "work" ? { skills: tags } : { hobbies: tags }
-            )
-          }
+          selected={modeProfile.tags}
+          onChange={(tags) => updateModeProfile({ tags })}
         />
 
         <div className="flex items-center justify-between rounded-lg border border-[var(--line)] px-4 py-3">
@@ -196,12 +218,17 @@ export function MyPage() {
         </div>
       </section>
 
+      {error && (
+        <p className="mt-4 text-sm text-[var(--accent-strong)]">{error}</p>
+      )}
+
       <button
         type="button"
         onClick={handleSave}
-        className="mt-8 w-full rounded-lg bg-[var(--accent)] py-3 text-sm font-semibold text-white hover:bg-[var(--accent-strong)]"
+        disabled={saving}
+        className="mt-8 w-full rounded-lg bg-[var(--accent)] py-3 text-sm font-semibold text-white hover:bg-[var(--accent-strong)] disabled:opacity-60"
       >
-        保存する
+        {saving ? "保存中..." : "保存する"}
       </button>
     </div>
   );

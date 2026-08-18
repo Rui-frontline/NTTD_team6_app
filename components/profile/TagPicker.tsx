@@ -1,6 +1,6 @@
 "use client";
 
-import { MAX_TAGS_PER_MODE } from "@/constants/profileTags";
+import { MAX_TAGS } from "@/lib/types";
 
 interface TagPickerProps {
   candidates: readonly string[];
@@ -10,11 +10,11 @@ interface TagPickerProps {
 
 /**
  * タグは自由入力ではなく候補から選ぶ方式。
- * 1モードにつき最大 MAX_TAGS_PER_MODE 個まで選択できる。
+ * 1モードにつき最大 MAX_TAGS 個まで選択できる。
  * 配色はモードごとに切り替わる CSS 変数(--accent 系)を参照する。
  */
 export function TagPicker({ candidates, selected, onChange }: TagPickerProps) {
-  const isMaxed = selected.length >= MAX_TAGS_PER_MODE;
+  const isMaxed = selected.length >= MAX_TAGS;
 
   const toggleTag = (tag: string) => {
     const isSelected = selected.includes(tag);
@@ -37,7 +37,7 @@ export function TagPicker({ candidates, selected, onChange }: TagPickerProps) {
             isMaxed ? "text-[var(--accent-strong)]" : "text-[var(--muted)]"
           }`}
         >
-          {selected.length}/{MAX_TAGS_PER_MODE}
+          {selected.length}/{MAX_TAGS}
         </span>
       </div>
       <div className="flex flex-wrap gap-2">
