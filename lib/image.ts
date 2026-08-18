@@ -1,41 +1,52 @@
 // 写真をトークに載せるための変換。
 //
-// 選んだ写真はそのまま送らず、いったん canvas で縮小して JPEG の data URL にする。
-// メッセージ本文（messages.body）にそのまま入れて保存するので、
-// Supabase Storage のバケットも、DB のカラム追加も要らない。
+// 選んだ写真は canvas で縮小して JPEG にし、Supabase Storage に上げる。
+// メッセージ本文（messages.body）に入れるのは、その URL だけ。
 //
-// そのぶん本文が長くなるため、下の上限で必ず小さくしてから送ること。
+// 以前は data URL を本文にそのまま入れていたが、一覧（5秒）と会話（3秒）の
+// ポーリングが本文を毎回取り直すため、写真が溜まるほど転送量が増え続けていた。
+// URL ならブラウザがキャッシュするので、2回目以降の取得は発生しない。
+
+import { MESSAGE_IMAGE_BUCKET, uploadMessageImage } from "@/lib/repository";
 
 /** 長辺の上限。投影して見るぶんにはこれで十分 */
-const MAX_EDGE = 900;
+const MAX_EDGE = 1280;
 
 /**
- * data URL の長さの上限。
- * トーク一覧は全マッチのメッセージをまとめて取り直すので、
- * 1枚が重いと一覧の取得ごと遅くなる。画質より軽さを優先する。
+ * 保存するファイルサイズの上限。
+ * 毎回取り直されることはなくなったので、以前より余裕を持たせている。
  */
-const MAX_DATA_URL_LENGTH = 300 * 1024;
+const MAX_IMAGE_BYTES = 500 * 1024;
 
 /** 変換にかける前に弾くサイズ。巨大な写真で固まらせないための保険 */
 const MAX_FILE_BYTES = 20 * 1024 * 1024;
 
 /** 上限に収まるまで、この順に画質を落として試す */
-const QUALITY_STEPS = [0.72, 0.6, 0.5, 0.4];
+const QUALITY_STEPS = [0.82, 0.72, 0.6, 0.5, 0.4];
 
 /**
  * メッセージ本文が写真かどうか。
- * 本文が data URL なら写真として描く、というのがこの機能の唯一の約束事。
+ * 本文が画像を指していれば写真として描く、というのがこの機能の唯一の約束事。
  */
 export function isImageBody(body: string): boolean {
-  return body.startsWith("data:image/");
+  // Storage に上げるようになる前に送られた写真は本文が data URL なので、
+  // そちらも引き続き写真として扱う（既存のトークが壊れないように）。
+  if (body.startsWith("data:image/")) return true;
+  return (
+    body.startsWith("http") &&
+    body.includes(`/object/public/${MESSAGE_IMAGE_BUCKET}/`)
+  );
 }
 
 /**
- * 選ばれた写真を、そのままメッセージ本文にできる data URL に変換する。
+ * 選ばれた写真を縮小して Storage に上げ、そのまま本文にできる URL を返す。
  *
  * 失敗したときは画面にそのまま出せる日本語のメッセージを投げる。
  */
-export async function fileToMessageImage(file: File): Promise<string> {
+export async function fileToMessageImage(
+  matchId: string,
+  file: File,
+): Promise<string> {
   if (!file.type.startsWith("image/")) {
     throw new Error("画像ファイルを選んでください。");
   }
@@ -43,6 +54,12 @@ export async function fileToMessageImage(file: File): Promise<string> {
     throw new Error("写真が大きすぎます。20MB以下のものを選んでください。");
   }
 
+  const blob = await shrinkToJpeg(file);
+  return uploadMessageImage(matchId, blob);
+}
+
+/** 縮小して、上限に収まる JPEG にする */
+async function shrinkToJpeg(file: File): Promise<Blob> {
   const image = await loadImage(file);
   const { width, height } = fitInto(
     image.naturalWidth,
@@ -63,13 +80,23 @@ export async function fileToMessageImage(file: File): Promise<string> {
   context.drawImage(image, 0, 0, width, height);
 
   for (const quality of QUALITY_STEPS) {
-    const dataUrl = canvas.toDataURL("image/jpeg", quality);
-    if (dataUrl.length <= MAX_DATA_URL_LENGTH) return dataUrl;
+    const blob = await canvasToBlob(canvas, quality);
+    if (blob && blob.size <= MAX_IMAGE_BYTES) return blob;
   }
 
   throw new Error(
     "写真を十分に小さくできませんでした。別の写真を選んでください。",
   );
+}
+
+/** canvas.toBlob をそのまま await できる形にする */
+function canvasToBlob(
+  canvas: HTMLCanvasElement,
+  quality: number,
+): Promise<Blob | null> {
+  return new Promise((resolve) => {
+    canvas.toBlob(resolve, "image/jpeg", quality);
+  });
 }
 
 /**

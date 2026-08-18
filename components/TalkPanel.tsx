@@ -206,7 +206,7 @@ function Conversation({
   /**
    * 選ばれた写真を送る。
    *
-   * 縮小してから送るので、選んでから吹き出しが出るまで一拍ある。
+   * 縮小して Storage に上げてから送るので、選んでから吹き出しが出るまで一拍ある。
    * その間 busy にしておき、二重送信と文章の送信を止める。
    */
   const handleSendImage = useCallback(
@@ -217,7 +217,7 @@ function Conversation({
       setError(null);
 
       try {
-        await send(await fileToMessageImage(file));
+        await send(await fileToMessageImage(matchId, file));
       } catch (err: unknown) {
         const message =
           err instanceof Error ? err.message : "写真を送信できませんでした。";
@@ -226,7 +226,7 @@ function Conversation({
         setBusy(false);
       }
     },
-    [busy, currentUser, send],
+    [busy, currentUser, matchId, send],
   );
 
   return (
@@ -260,7 +260,8 @@ function Conversation({
                   >
                     {isImageBody(message.body) ? (
                       // 写真は吹き出しの枠を付けず、画像そのものを角丸で出す。
-                      // 本文が data URL なので next/image は使えない（最適化の対象外）。
+                      // 本文は Storage の URL（古いものは data URL）で、どちらも
+                      // next/image の設定対象外なので img をそのまま使う。
                       // eslint-disable-next-line @next/next/no-img-element
                       <img
                         src={message.body}
