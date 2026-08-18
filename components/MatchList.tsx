@@ -1,5 +1,6 @@
 "use client";
 
+import { isImageBody } from "@/lib/image";
 import type { MatchSummary } from "@/lib/types";
 
 /**
@@ -69,7 +70,9 @@ function MatchListItem({
       <span className="min-w-0 flex-1">
         <span className="block truncate text-sm font-bold">{partner.name}</span>
         <span className="block truncate text-sm text-muted">
-          {latestMessage ? latestMessage.body : "まだメッセージがありません"}
+          {latestMessage
+            ? previewText(latestMessage.body)
+            : "まだメッセージがありません"}
         </span>
       </span>
 
@@ -86,6 +89,14 @@ function MatchListItem({
       </span>
     </button>
   );
+}
+
+/**
+ * 一覧に出す1行。
+ * 写真は本文が data URL なので、そのまま出すと延々と文字列が並ぶ。
+ */
+function previewText(body: string): string {
+  return isImageBody(body) ? "写真" : body;
 }
 
 /**
