@@ -162,7 +162,12 @@ async function getExcludedUserIds(
 function matchesFilter(user: User, mode: Mode, f: DiscoverFilter): boolean {
   const profile = mode === "work" ? user.work : user.romance;
 
-  if (f.departments?.length && !f.departments.includes(user.department)) return false;
+  if (f.departments?.length) {
+    // 部署を非表示にしている人は、部署フィルターでは絶対にヒットさせない。
+    // ヒットする/しないの違いから非表示の部署を推測されるのを防ぐため。
+    if (!profile.showDepartment) return false;
+    if (!f.departments.includes(user.department)) return false;
+  }
   if (f.jobTitles?.length && !f.jobTitles.includes(user.jobTitle)) return false;
   if (f.tags?.length && !f.tags.some((t) => profile.tags.includes(t))) return false;
   if (f.minAge !== undefined && user.age < f.minAge) return false;
