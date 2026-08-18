@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { fileToMessageImage, isImageBody } from "@/lib/image";
 import { getMessages, sendMessage } from "@/lib/repository";
 import { useSession } from "@/lib/session";
 import { usePolling } from "@/lib/usePolling";
@@ -113,6 +114,8 @@ function Conversation({
   const [error, setError] = useState<string | null>(null);
   const scrollRef = useRef<HTMLDivElement | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
+  // 写真を選ぶための input。見た目はアイコンのボタンなので、本体は隠して click() で開く
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   // 取得が終わった時点で、まだ開いているかを見るために最新の open を覚えておく。
   // usePolling を止めても実行中の getMessages は止まらないので、
@@ -164,6 +167,20 @@ function Conversation({
     if (el) el.scrollTop = el.scrollHeight;
   }, [messages.length]);
 
+  /**
+   * 送信の共通部分。本文が文章でも写真の data URL でも、
+   * ここから先の扱いは同じ（messages に1行入れるだけ）。
+   */
+  const send = useCallback(
+    async (body: string) => {
+      if (!currentUser) return;
+      const created = await sendMessage(matchId, currentUser.id, body);
+      setMessages((prev) => [...prev, created]);
+      onSent(created);
+    },
+    [currentUser, matchId, onSent],
+  );
+
   const handleSend = useCallback(async () => {
     if (!currentUser || busy) return;
 
@@ -174,9 +191,7 @@ function Conversation({
     setError(null);
 
     try {
-      const created = await sendMessage(matchId, currentUser.id, body);
-      setMessages((prev) => [...prev, created]);
-      onSent(created);
+      await send(body);
       setInput("");
       textareaRef.current?.focus();
     } catch (err: unknown) {
@@ -186,7 +201,33 @@ function Conversation({
     } finally {
       setBusy(false);
     }
-  }, [busy, currentUser, input, matchId, onSent]);
+  }, [busy, currentUser, input, send]);
+
+  /**
+   * 選ばれた写真を送る。
+   *
+   * 縮小してから送るので、選んでから吹き出しが出るまで一拍ある。
+   * その間 busy にしておき、二重送信と文章の送信を止める。
+   */
+  const handleSendImage = useCallback(
+    async (file: File) => {
+      if (!currentUser || busy) return;
+
+      setBusy(true);
+      setError(null);
+
+      try {
+        await send(await fileToMessageImage(file));
+      } catch (err: unknown) {
+        const message =
+          err instanceof Error ? err.message : "写真を送信できませんでした。";
+        setError(message);
+      } finally {
+        setBusy(false);
+      }
+    },
+    [busy, currentUser, send],
+  );
 
   return (
     <div className="flex flex-1 flex-col overflow-hidden">
@@ -217,16 +258,30 @@ function Conversation({
                       mine ? "flex-row-reverse" : "",
                     ].join(" ")}
                   >
-                    <div
-                      className={[
-                        "max-w-full rounded-2xl px-3 py-2 text-sm whitespace-pre-wrap break-words",
-                        mine
-                          ? "ml-auto bg-accent text-white"
-                          : "bg-background border border-line",
-                      ].join(" ")}
-                    >
-                      {message.body}
-                    </div>
+                    {isImageBody(message.body) ? (
+                      // 写真は吹き出しの枠を付けず、画像そのものを角丸で出す。
+                      // 本文が data URL なので next/image は使えない（最適化の対象外）。
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={message.body}
+                        alt="送信された写真"
+                        className={[
+                          "max-h-64 max-w-full rounded-2xl border border-line object-contain",
+                          mine ? "ml-auto" : "",
+                        ].join(" ")}
+                      />
+                    ) : (
+                      <div
+                        className={[
+                          "max-w-full rounded-2xl px-3 py-2 text-sm whitespace-pre-wrap break-words",
+                          mine
+                            ? "ml-auto bg-accent text-white"
+                            : "bg-background border border-line",
+                        ].join(" ")}
+                      >
+                        {message.body}
+                      </div>
+                    )}
                     <time className="shrink-0 text-[11px] text-muted">
                       {formatBubbleTime(message.createdAt)}
                     </time>
@@ -243,6 +298,46 @@ function Conversation({
           <p className="px-3 pb-2 pt-3 text-xs text-accent">{error}</p>
         ) : null}
         <div className="flex items-end gap-2 p-3">
+          {/*
+            accept="image/*" にしておくと、スマホでは OS のシートに
+            「写真を選ぶ」と「カメラで撮影」の両方が並ぶ。
+          */}
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            className="hidden"
+            onChange={(event) => {
+              const file = event.target.files?.[0];
+              // 同じ写真をもう一度選んでも change が起きるよう、選択を空に戻しておく
+              event.target.value = "";
+              if (file) void handleSendImage(file);
+            }}
+          />
+          <button
+            type="button"
+            onClick={() => fileInputRef.current?.click()}
+            disabled={busy}
+            aria-label="写真を送る"
+            title="写真を送る"
+            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-line bg-background text-muted transition-colors hover:border-accent hover:text-accent disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            <svg
+              width="20"
+              height="20"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.8"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden="true"
+            >
+              <rect x="3" y="4" width="18" height="16" rx="3" />
+              <circle cx="8.5" cy="9.5" r="1.5" />
+              <path d="M21 15.5 16.5 11 7 20.5" />
+            </svg>
+          </button>
           <textarea
             ref={textareaRef}
             value={input}
