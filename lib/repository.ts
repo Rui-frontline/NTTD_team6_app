@@ -522,3 +522,35 @@ export async function sendMessage(
   if (error) throw error;
   return toMessage(data);
 }
+
+// ───────────────────────── トークに送る写真 ─────────────────────────
+
+/** 写真の置き場所。supabase/message_images.sql で作られる */
+export const MESSAGE_IMAGE_BUCKET = "message-images";
+
+/**
+ * 写真を Storage に上げて、そのまま messages.body に入れられる URL を返す。
+ *
+ * 本文に画像そのもの（data URL）を入れると、一覧と会話のポーリングが
+ * 数秒ごとに全画像を取り直すことになり、写真が溜まるほど転送量が増え続ける。
+ * URL にしておけばブラウザがキャッシュするので、再取得は起きない。
+ *
+ * supabase/message_images.sql を実行していない環境では失敗する。
+ */
+export async function uploadMessageImage(
+  matchId: string,
+  blob: Blob,
+): Promise<string> {
+  // マッチごとにフォルダを分けておくと、後で不要なぶんをまとめて消せる
+  const path = `${matchId}/${crypto.randomUUID()}.jpg`;
+
+  const { error } = await supabase.storage
+    .from(MESSAGE_IMAGE_BUCKET)
+    .upload(path, blob, { contentType: "image/jpeg" });
+  if (error) throw error;
+
+  const { data } = supabase.storage
+    .from(MESSAGE_IMAGE_BUCKET)
+    .getPublicUrl(path);
+  return data.publicUrl;
+}
