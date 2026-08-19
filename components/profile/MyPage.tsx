@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useSession } from "@/lib/session";
 import { updateProfile, updateUser } from "@/lib/repository";
+import { fileToAvatarImage } from "@/lib/image";
 import type { Profile, User } from "@/lib/types";
 import { MODE_LABEL, MODES, TAG_OPTIONS } from "@/lib/types";
 import { TagPicker } from "./TagPicker";
@@ -15,6 +16,8 @@ const AGE_OPTIONS = Array.from({ length: 99 - 18 + 1 }, (_, i) => 18 + i);
  * - 表示中のモード(仕事/恋愛)はアプリ全体で共有されている useSession().mode を使う。
  *   タブを切り替えると data-mode も切り替わり、配色も連動する。
  * - 編集内容は下書き(draft)として持ち、「保存する」を押すまで確定しない。
+ *   アイコンだけは選んだ時点で Storage に上がるが、users.avatar_url への
+ *   反映は他の項目と同じく保存時にまとめて行う。
  * - 保存は lib/repository の updateUser / updateProfile を呼ぶ(Supabase保存)。
  *   保存後は session.refreshUser() でDBから読み直してローカルのcurrentUserも最新化する。
  */
@@ -23,6 +26,10 @@ export function MyPage() {
   const [draft, setDraft] = useState<User | null>(currentUser);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // 隠しファイル入力を「アイコンを変更」ボタンから開くための参照
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
 
   // 下書きにcurrentUserを取り込むのは「表示するユーザーが変わったとき」だけにする。
   //
@@ -80,7 +87,40 @@ export function MyPage() {
     });
   };
 
-const handleSave = async () => {
+  /**
+   * 写真が選ばれたら、その場で Storage に上げて下書きのURLを差し替える。
+   *
+   * アップロードだけ先に済ませておき、users.avatar_url への保存は
+   * 他の項目と同じく「保存する」を押したときにまとめて行う。
+   * (保存せずに離れたぶんの画像は Storage に残るが、後から画面で片付けられる)
+   */
+  const handleAvatarChange = async (
+    e: React.ChangeEvent<HTMLInputElement>,
+  ) => {
+    const file = e.target.files?.[0];
+    // 同じファイルを選び直しても発火するように、値は毎回空にしておく
+    e.target.value = "";
+    if (!file || !draft) return;
+
+    setUploadingAvatar(true);
+    setError(null);
+    try {
+      const url = await fileToAvatarImage(draft.id, file);
+      updateCommon("avatarUrl", url);
+    } catch (err) {
+      // lib/image.ts が投げるのは画面にそのまま出せる日本語のメッセージ
+      setError(
+        err instanceof Error
+          ? err.message
+          : "写真をアップロードできませんでした。",
+      );
+      console.error(err);
+    } finally {
+      setUploadingAvatar(false);
+    }
+  };
+
+  const handleSave = async () => {
     if (!draft || !currentUser) return;
 
     // 新規登録で必須にしている項目は、ここでも同じ条件を守る。
@@ -178,12 +218,26 @@ const handleSave = async () => {
               </div>
             )}
           </div>
-          <button
-            type="button"
-            className="rounded-md border border-[var(--line)] px-3 py-1.5 text-sm text-[var(--foreground)] hover:bg-[var(--surface)]"
-          >
-            アイコンを変更
-          </button>
+          <div>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              onChange={handleAvatarChange}
+              className="hidden"
+            />
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={uploadingAvatar}
+              className="rounded-md border border-[var(--line)] px-3 py-1.5 text-sm text-[var(--foreground)] hover:bg-[var(--surface)] disabled:opacity-60"
+            >
+              {uploadingAvatar ? "アップロード中..." : "アイコンを変更"}
+            </button>
+            <p className="mt-1 text-xs text-[var(--muted)]">
+              保存するまで反映されません
+            </p>
+          </div>
         </div>
 
         <Field label="名前">

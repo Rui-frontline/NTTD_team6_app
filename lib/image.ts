@@ -7,7 +7,11 @@
 // ポーリングが本文を毎回取り直すため、写真が溜まるほど転送量が増え続けていた。
 // URL ならブラウザがキャッシュするので、2回目以降の取得は発生しない。
 
-import { MESSAGE_IMAGE_BUCKET, uploadMessageImage } from "@/lib/repository";
+import {
+  MESSAGE_IMAGE_BUCKET,
+  uploadAvatarImage,
+  uploadMessageImage,
+} from "@/lib/repository";
 
 /** 長辺の上限。投影して見るぶんにはこれで十分 */
 const MAX_EDGE = 1280;
@@ -57,7 +61,26 @@ export async function fileToMessageImage(
   const blob = await shrinkToJpeg(file);
   return uploadMessageImage(matchId, blob);
 }
+/**
+ * 選ばれた写真を縮小して Storage に上げ、アイコンのURLを返す。
+ * 縮小の中身はトークの写真と同じものを使い回している。
+ *
+ * 失敗したときは画面にそのまま出せる日本語のメッセージを投げる。
+ */
+export async function fileToAvatarImage(
+  userId: string,
+  file: File,
+): Promise<string> {
+  if (!file.type.startsWith("image/")) {
+    throw new Error("画像ファイルを選んでください。");
+  }
+  if (file.size > MAX_FILE_BYTES) {
+    throw new Error("写真が大きすぎます。20MB以下のものを選んでください。");
+  }
 
+  const blob = await shrinkToJpeg(file);
+  return uploadAvatarImage(userId, blob);
+}
 /** 縮小して、上限に収まる JPEG にする */
 async function shrinkToJpeg(file: File): Promise<Blob> {
   const image = await loadImage(file);
