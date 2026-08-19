@@ -559,3 +559,31 @@ export async function uploadMessageImage(
     .getPublicUrl(path);
   return data.publicUrl;
 }
+// ───────────────────────── プロフィールアイコン ─────────────────────────
+
+/** アイコンの置き場所。supabase/avatar_images.sql で設定される */
+export const AVATAR_BUCKET = "avatars";
+
+/**
+ * アイコンを Storage に上げて、users.avatar_url に入れられる URL を返す。
+ *
+ * 同じパスに上書きせず毎回ランダムな名前で置くのは、上書きすると
+ * ブラウザやCDNが古い画像をキャッシュし続けて変更が反映されないため。
+ *
+ * supabase/avatar_images.sql を実行していない環境では失敗する。
+ */
+export async function uploadAvatarImage(
+  userId: string,
+  blob: Blob,
+): Promise<string> {
+  // ユーザーごとにフォルダを分ける（ポリシーもこの前提で書かれている）
+  const path = `${userId}/${crypto.randomUUID()}.jpg`;
+
+  const { error } = await supabase.storage
+    .from(AVATAR_BUCKET)
+    .upload(path, blob, { contentType: "image/jpeg" });
+  if (error) throw error;
+
+  const { data } = supabase.storage.from(AVATAR_BUCKET).getPublicUrl(path);
+  return data.publicUrl;
+}
