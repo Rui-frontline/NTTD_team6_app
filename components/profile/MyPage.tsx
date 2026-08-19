@@ -4,6 +4,7 @@ import { useRef, useState } from "react";
 import { useSession } from "@/lib/session";
 import { updateProfile, updateUser } from "@/lib/repository";
 import { fileToAvatarImage } from "@/lib/image";
+import { PageHeading } from "@/components/PageHeading";
 import type { Profile, User } from "@/lib/types";
 import { MODE_LABEL, MODES, TAG_OPTIONS } from "@/lib/types";
 import { TagPicker } from "./TagPicker";
@@ -190,7 +191,10 @@ export function MyPage() {
 
   return (
     <div className="mx-auto max-w-xl bg-[var(--background)] px-4 py-6 text-[var(--foreground)]">
-      <h1 className="mb-6 text-xl font-bold">マイページ</h1>
+      <PageHeading
+        title="マイページ"
+        description="相手に表示されるプロフィールを編集できます。"
+      />
 
       {/*
         保存中は編集をまとめて止める。

@@ -81,7 +81,8 @@ function MatchListItem({
         {unreadCount > 0 ? (
           <span
             aria-label={`未読 ${unreadCount} 件`}
-            className="inline-flex min-w-5 items-center justify-center rounded-full bg-accent px-1.5 py-0.5 text-[10px] font-bold text-white"
+            // アクセント色と別色にしている。同じ色だと選択中の行に埋もれて気づけない
+            className="inline-flex min-w-5 items-center justify-center rounded-full bg-[var(--badge-bg)] px-1.5 py-0.5 text-[10px] font-bold text-[var(--badge-fg)]"
           >
             {unreadCount > 9 ? "9+" : unreadCount}
           </span>

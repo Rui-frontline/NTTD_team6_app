@@ -11,16 +11,20 @@
 */
 
 :root {
-  --background: #f6f6f8;
+  /* 既定は仕事モードの色 */
+  --background: #f6f3ed;
   --surface: #ffffff;
   --foreground: #17171b;
   --muted: #5b5b66;
-  --line: #dedee4;
+  --line: #e8e3d9;
 
-  /* 既定は仕事モードの色 */
-  --accent: #1f6fa8;
-  --accent-strong: #175880;
-  --accent-soft: #e3eef6;
+  --accent: #16233f;
+  --accent-strong: #0f1a2e;
+  --accent-soft: #eef2f9;
+
+  --bubble-other-bg: #f1f2f5;
+  --badge-bg: #e2622f;
+  --badge-fg: #ffffff;
 
   --sidebar-bg: #131d33;
   --sidebar-border: transparent;
@@ -45,9 +49,19 @@
 }
 
 :root[data-mode="work"] {
-  --accent: #1f6fa8;
-  --accent-strong: #175880;
-  --accent-soft: #e3eef6;
+  /* クリーム色の地に濃紺。吹き出しの自分側と送信ボタンがこの紺になる */
+  --background: #f6f3ed;
+  --line: #e8e3d9;
+
+  --accent: #16233f;
+  --accent-strong: #0f1a2e;
+  --accent-soft: #eef2f9;
+
+  /* 相手の吹き出しは地の色に埋もれないよう、少し冷たいグレーにする */
+  --bubble-other-bg: #f1f2f5;
+  /* 未読バッジだけはアクセントと別色。紺だと埋もれて気づけない */
+  --badge-bg: #e2622f;
+  --badge-fg: #ffffff;
 
   /* 濃紺の面に白文字。ロゴマークは金色 */
   --sidebar-bg: #131d33;
@@ -74,9 +88,18 @@
 }
 
 :root[data-mode="romance"] {
-  --accent: #b0475c;
-  --accent-strong: #8d3849;
-  --accent-soft: #f7e7ea;
+  /* 淡いピンクの地。デザイン案の #ef5f80 は白文字とのコントラストが
+     足りないので、吹き出しやボタンで使う --accent は少しだけ濃くしている */
+  --background: #fdf1f3;
+  --line: #f5dde2;
+
+  --accent: #e5527a;
+  --accent-strong: #cf3f66;
+  --accent-soft: #fce4ea;
+
+  --bubble-other-bg: #f8f6f7;
+  --badge-bg: #e5527a;
+  --badge-fg: #ffffff;
 
   /* ほぼ白の面に濃紺文字。ロゴマークは青とピンク */
   --sidebar-bg: #fffdfd;

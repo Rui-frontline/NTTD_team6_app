@@ -277,7 +277,7 @@ function Conversation({
                           "max-w-full rounded-2xl px-3 py-2 text-sm whitespace-pre-wrap break-words",
                           mine
                             ? "ml-auto bg-accent text-white"
-                            : "bg-background border border-line",
+                            : "bg-[var(--bubble-other-bg)] border border-line",
                         ].join(" ")}
                       >
                         {message.body}
@@ -321,7 +321,7 @@ function Conversation({
             disabled={busy}
             aria-label="写真を送る"
             title="写真を送る"
-            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-line bg-background text-muted transition-colors hover:border-accent hover:text-accent disabled:cursor-not-allowed disabled:opacity-50"
+            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-line bg-surface text-muted transition-colors hover:border-accent hover:text-accent disabled:cursor-not-allowed disabled:opacity-50"
           >
             <svg
               width="20"
@@ -351,7 +351,7 @@ function Conversation({
             }}
             rows={1}
             placeholder="メッセージを入力"
-            className="max-h-32 min-h-11 flex-1 resize-none rounded-xl border border-line bg-background px-3 py-2 text-sm outline-none placeholder:text-muted focus:border-accent"
+            className="max-h-32 min-h-11 flex-1 resize-none rounded-xl border border-line bg-surface px-3 py-2 text-sm outline-none placeholder:text-muted focus:border-accent"
           />
           <button
             type="button"
