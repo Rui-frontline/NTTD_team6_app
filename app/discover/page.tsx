@@ -122,6 +122,9 @@ export default function DiscoverPage() {
 
     {/* 背景色は指定しない。モードで切り替わる地の色（globals.css の
         --background）をそのまま使い、他の画面と揃えるため */}
+    {/* paddingTop は 60px から詰めている。右上の操作ボタンは absolute で
+        top: 20px に置かれているため、画面幅によってはカードと重なるが、
+        重なるのはテストモードなど開発用のボタンなので許容している */}
     <div style={{
       display: "flex",
       flexDirection: "column",
