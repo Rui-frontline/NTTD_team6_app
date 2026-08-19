@@ -4,6 +4,10 @@
   モードごとに配色を切り替える。
   html 要素の data-mode 属性を lib/session.tsx が書き換えている。
   各画面では bg-[var(--accent)] のように CSS 変数を参照すること。
+
+  --sidebar-* / --header-* / --tab-* は、サイドバーとヘッダーだけで使う。
+  デザイン案（pictures/）ではこの2つがモードで大きく変わるため、
+  本文側で使う --accent 系とは分けて持っている。
 */
 
 :root {
@@ -17,39 +21,91 @@
   --accent: #1f6fa8;
   --accent-strong: #175880;
   --accent-soft: #e3eef6;
+
+  --sidebar-bg: #131d33;
+  --sidebar-border: transparent;
+  --sidebar-fg: #ffffff;
+  --sidebar-muted: #93a0bb;
+  --sidebar-hover-bg: #1b2740;
+  --sidebar-active-bg: #1e2c49;
+  --sidebar-active-fg: #ffffff;
+  --sidebar-active-border: #2e3d5e;
+  --logo-ring-a: #c9b184;
+  --logo-ring-b: #c9b184;
+
+  --header-bg: #faf8f4;
+  --header-border: #e9e4d9;
+
+  --tab-shell-bg: #ffffff;
+  --tab-shell-border: #e6e0d4;
+  --tab-idle-fg: #6b6f7d;
+  --tab-active-bg: #16233f;
+  --tab-active-fg: #ffffff;
+  --tab-radius: 0.625rem;
 }
 
 :root[data-mode="work"] {
   --accent: #1f6fa8;
   --accent-strong: #175880;
   --accent-soft: #e3eef6;
+
+  /* 濃紺の面に白文字。ロゴマークは金色 */
+  --sidebar-bg: #131d33;
+  --sidebar-border: transparent;
+  --sidebar-fg: #ffffff;
+  --sidebar-muted: #93a0bb;
+  --sidebar-hover-bg: #1b2740;
+  --sidebar-active-bg: #1e2c49;
+  --sidebar-active-fg: #ffffff;
+  --sidebar-active-border: #2e3d5e;
+  --logo-ring-a: #c9b184;
+  --logo-ring-b: #c9b184;
+
+  --header-bg: #faf8f4;
+  --header-border: #e9e4d9;
+
+  --tab-shell-bg: #ffffff;
+  --tab-shell-border: #e6e0d4;
+  --tab-idle-fg: #6b6f7d;
+  --tab-active-bg: #16233f;
+  --tab-active-fg: #ffffff;
+  /* 仕事は角丸の四角、恋愛は丸型 */
+  --tab-radius: 0.625rem;
 }
 
 :root[data-mode="romance"] {
   --accent: #b0475c;
   --accent-strong: #8d3849;
   --accent-soft: #f7e7ea;
+
+  /* ほぼ白の面に濃紺文字。ロゴマークは青とピンク */
+  --sidebar-bg: #fffdfd;
+  --sidebar-border: #f5dbe1;
+  --sidebar-fg: #2b3a55;
+  --sidebar-muted: #857a7e;
+  --sidebar-hover-bg: #fdf4f6;
+  --sidebar-active-bg: #fde8ed;
+  --sidebar-active-fg: #d9557a;
+  --sidebar-active-border: #f6bccb;
+  --logo-ring-a: #4a7fd4;
+  --logo-ring-b: #f06a92;
+
+  --header-bg: #fdf2f4;
+  --header-border: #f7dde3;
+
+  --tab-shell-bg: #ffffff;
+  --tab-shell-border: #f4ccd6;
+  --tab-idle-fg: #4a4348;
+  --tab-active-bg: #ef5f80;
+  --tab-active-fg: #ffffff;
+  --tab-radius: 9999px;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #131316;
-    --surface: #1b1b21;
-    --foreground: #e9e9ee;
-    --muted: #a3a3ad;
-    --line: #2e2e37;
-  }
-  :root[data-mode="work"] {
-    --accent: #6baedc;
-    --accent-strong: #8cc4e8;
-    --accent-soft: #14242f;
-  }
-  :root[data-mode="romance"] {
-    --accent: #dd8598;
-    --accent-strong: #e8a3b2;
-    --accent-soft: #2c1b20;
-  }
-}
+/*
+  ダークモードには追従しない。
+  デザイン案がクリーム／淡いピンクのライト前提で作られており、
+  OS の設定で本文だけ暗くなると配色がちぐはぐになるため。
+*/
 
 @theme inline {
   --color-background: var(--background);
