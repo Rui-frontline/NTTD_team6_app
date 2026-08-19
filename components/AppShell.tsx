@@ -3,6 +3,7 @@
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect } from "react";
 import { Header } from "@/components/Header";
+import { RomanceDecor } from "@/components/RomanceDecor";
 import { Sidebar } from "@/components/Sidebar";
 import { useSession } from "@/lib/session";
 
@@ -48,10 +49,14 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   }
 
   // サイドバーが左端を全高で占め、ヘッダーはその右だけに乗る（デザイン案の構成）
+  //
+  // 飾りは本文より前に置き、本文側に relative z-10 を付けて上に重ねる。
+  // こうすると飾りが文字の下に回り、読みにくくならない。
   return (
     <div className="flex min-h-screen">
+      <RomanceDecor />
       <Sidebar />
-      <div className="flex min-h-screen min-w-0 flex-1 flex-col">
+      <div className="relative z-10 flex min-h-screen min-w-0 flex-1 flex-col">
         <Header />
         <main className="flex-1 px-6 py-8">{children}</main>
       </div>
