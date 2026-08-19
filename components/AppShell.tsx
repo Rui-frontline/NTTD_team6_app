@@ -47,11 +47,12 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     );
   }
 
+  // サイドバーが左端を全高で占め、ヘッダーはその右だけに乗る（デザイン案の構成）
   return (
-    <div className="flex min-h-screen flex-col">
-      <Header />
-      <div className="flex flex-1">
-        <Sidebar />
+    <div className="flex min-h-screen">
+      <Sidebar />
+      <div className="flex min-h-screen min-w-0 flex-1 flex-col">
+        <Header />
         <main className="flex-1 px-6 py-8">{children}</main>
       </div>
     </div>
