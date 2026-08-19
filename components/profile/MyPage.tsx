@@ -80,8 +80,8 @@ export function MyPage() {
     });
   };
 
-  const handleSave = async () => {
-    if (!draft) return;
+const handleSave = async () => {
+    if (!draft || !currentUser) return;
 
     // 新規登録で必須にしている項目は、ここでも同じ条件を守る。
     // 空のまま保存できると、探す画面のカードやフィルターから情報が欠落する。
@@ -100,6 +100,19 @@ export function MyPage() {
 
     setSaving(true);
     setError(null);
+
+    // updateUser成功後にupdateProfileが失敗した場合、ここに戻す値。
+    // enabledModesも含むので、「参加ONだけ通って古いプロフィールのまま
+    // 一覧に公開される」事故を防ぐために使う。
+    const previousCommon = {
+      name: currentUser.name,
+      department: currentUser.department,
+      jobTitle: currentUser.jobTitle,
+      age: currentUser.age,
+      avatarUrl: currentUser.avatarUrl,
+      enabledModes: currentUser.enabledModes,
+    };
+
     try {
       await updateUser(draft.id, {
         name,
@@ -109,7 +122,21 @@ export function MyPage() {
         avatarUrl: draft.avatarUrl,
         enabledModes: draft.enabledModes,
       });
-      await updateProfile(draft.id, mode, modeProfile);
+
+      try {
+        await updateProfile(draft.id, mode, modeProfile);
+      } catch (profileError) {
+        // 後段が失敗したので、先行したupdateUserを元の値に戻す。
+        try {
+          await updateUser(draft.id, previousCommon);
+        } catch (rollbackError) {
+          // ロールバック自体の失敗はコンソールに残すだけにする。
+          // ここで例外を投げ直すと元のエラーが握りつぶされるため。
+          console.error("ロールバックにも失敗しました", rollbackError);
+        }
+        throw profileError;
+      }
+
       await refreshUser(); // DBから読み直してローカルのcurrentUserも最新化
       // 前後の空白を落とした値で保存したので、入力欄の表示も揃えておく
       setDraft((prev) => (prev ? { ...prev, name, department, jobTitle } : prev));
