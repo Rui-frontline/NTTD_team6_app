@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { MatchList } from "@/components/MatchList";
+import { PageHeading } from "@/components/PageHeading";
 import { TalkPanel } from "@/components/TalkPanel";
 import { getMatches, markMatchRead } from "@/lib/repository";
 import { useSession } from "@/lib/session";
@@ -202,7 +203,10 @@ export function TalkScreen({
 
   return (
     <div className="flex h-[calc(100dvh-9rem)] flex-col gap-3">
-      <h1 className="text-lg font-extrabold">トーク</h1>
+      <PageHeading
+        title="トーク"
+        description="マッチした人との会話を確認できます。"
+      />
 
       {error ? (
         <p className="rounded-lg bg-accent-soft px-3 py-2 text-sm text-accent">

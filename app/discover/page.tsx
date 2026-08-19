@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { PageHeading } from "@/components/PageHeading";
 import { useSession } from "@/lib/session";
 import { getUsers, likeUser, passUser } from "@/lib/repository";
 import type { User } from "@/lib/types";
@@ -111,11 +112,20 @@ export default function DiscoverPage() {
   }
 
   return (
+    <>
+      {/* 見出しはコンテナの外に置く。中に入れるとコンテナの上下 padding のぶん
+          下がってしまい、トーク・マイページと縦位置が揃わないため */}
+      <PageHeading
+        title="あなたにおすすめ"
+        description="あなたにおすすめの人を紹介します。"
+      />
+
+    {/* 背景色は指定しない。モードで切り替わる地の色（globals.css の
+        --background）をそのまま使い、他の画面と揃えるため */}
     <div style={{
       display: "flex",
       flexDirection: "column",
-      backgroundColor: "#F7F8FC",
-      padding: "60px 0",
+      padding: "20px 0 60px",
       position: "relative",
     }}>
       {/* 右上のボタンエリア */}
@@ -798,5 +808,6 @@ export default function DiscoverPage() {
         </div>
       )}
     </div>
+    </>
   );
 }
