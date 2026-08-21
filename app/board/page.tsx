@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { PageHeading } from "@/components/PageHeading";
 import { useSession } from "@/lib/session";
 import {
@@ -19,6 +20,7 @@ import type { Board, BoardMessage, User } from "@/lib/types";
 
 export default function BoardPage() {
   const { currentUser, mode } = useSession();
+  const router = useRouter();
   const [boards, setBoards] = useState<Board[]>([]);
   const [loading, setLoading] = useState(true);
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -136,11 +138,43 @@ export default function BoardPage() {
           style={{
             textAlign: "center",
             marginTop: "80px",
-            fontSize: "18px",
-            color: "#666",
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            gap: "20px",
           }}
         >
-          まだ募集がありません
+          {/* 恋愛モードがOFFの場合の専用メッセージ */}
+          {mode === "romance" && !currentUser.enabledModes.includes("romance") ? (
+            <>
+              <p style={{ fontSize: "20px", color: "#374151", margin: 0 }}>
+                恋愛機能はOFFです
+              </p>
+              <p style={{ fontSize: "16px", color: "#6B7280", margin: 0 }}>
+                恋愛モードを利用するには、マイページで機能をONにしてください
+              </p>
+              <button
+                onClick={() => router.push("/me")}
+                style={{
+                  padding: "12px 32px",
+                  background: "linear-gradient(to right, #3B82F6, #8B5CF6)",
+                  color: "#FFFFFF",
+                  border: "none",
+                  borderRadius: "28px",
+                  cursor: "pointer",
+                  fontSize: "16px",
+                  fontWeight: "500",
+                  boxShadow: "0 4px 12px rgba(59, 130, 246, 0.3)",
+                }}
+              >
+                マイページで設定する
+              </button>
+            </>
+          ) : (
+            <p style={{ fontSize: "18px", color: "#666", margin: 0 }}>
+              まだ募集がありません
+            </p>
+          )}
         </div>
       ) : (
         <div
