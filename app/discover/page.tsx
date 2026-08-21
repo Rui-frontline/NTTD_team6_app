@@ -278,7 +278,9 @@ export default function DiscoverPage() {
                   lineHeight: "1.7",
                   whiteSpace: "pre-wrap",
                 }}>
-                  {mode === "work" ? currentUser_displayed.work.bio : currentUser_displayed.romance.bio}
+                  {/* 冒頭100文字のみ表示 */}
+                  {(mode === "work" ? currentUser_displayed.work.bio : currentUser_displayed.romance.bio).slice(0, 100)}
+                  {(mode === "work" ? currentUser_displayed.work.bio : currentUser_displayed.romance.bio).length > 100 && "..."}
                 </p>
               </div>
 
