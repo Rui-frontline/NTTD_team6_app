@@ -739,11 +739,12 @@ export default function DiscoverPage() {
             left: 0,
             right: 0,
             bottom: 0,
-            backgroundColor: "rgba(0, 0, 0, 0.5)",
+            backgroundColor: "rgba(0, 0, 0, 0.6)",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
-            zIndex: 1000,
+            zIndex: 2000,
+            animation: "fadeIn 0.3s ease-in-out",
           }}
           onClick={() => {
             setMatchedUser(null);
@@ -752,38 +753,127 @@ export default function DiscoverPage() {
         >
           <div
             style={{
-              backgroundColor: "white",
+              backgroundColor: "#FFFFFF",
               padding: "40px",
-              borderRadius: "10px",
-              textAlign: "center",
-              maxWidth: "400px",
+              borderRadius: "28px",
+              maxWidth: "650px",
+              boxShadow: "0 8px 32px rgba(0, 0, 0, 0.15)",
+              animation: "scaleIn 0.3s ease-in-out",
             }}
             onClick={(e) => e.stopPropagation()}
           >
-            <h2 style={{ fontSize: "24px", marginBottom: "20px" }}>🎉 マッチ成立！</h2>
-            <p style={{ marginBottom: "10px" }}>
-              <strong>{matchedUser.name}</strong>さんとマッチしました！
-            </p>
-            <p style={{ marginBottom: "30px", color: "#666" }}>
-              トーク画面でメッセージを送ってみましょう
-            </p>
-            <div style={{ display: "flex", gap: "10px", justifyContent: "center" }}>
+            {/* 見出し */}
+            <div style={{ textAlign: "center", marginBottom: "36px" }}>
+              <h2
+                style={{
+                  margin: "0 0 8px 0",
+                  fontSize: "28px",
+                  fontWeight: "bold",
+                  color: "#1E1B4B",
+                }}
+              >
+                マッチ成立！
+              </h2>
+              <p
+                style={{
+                  margin: 0,
+                  fontSize: "14px",
+                  color: "#6B7280",
+                }}
+              >
+                相互にいいねが送られました
+              </p>
+            </div>
+
+            {/* 写真と情報を横並び */}
+            <div style={{
+              display: "flex",
+              gap: "28px",
+              marginBottom: "36px",
+              alignItems: "center"
+            }}>
+              {/* 左：写真 */}
+              <div
+                style={{
+                  width: "160px",
+                  height: "160px",
+                  flexShrink: 0,
+                  borderRadius: "50%",
+                  overflow: "hidden",
+                  border: "3px solid #EEF2FF",
+                  boxShadow: "0 4px 12px rgba(79, 70, 229, 0.15)",
+                }}
+              >
+                <img
+                  src={matchedUser.avatarUrl}
+                  alt={matchedUser.name}
+                  style={{
+                    width: "100%",
+                    height: "100%",
+                    objectFit: "cover",
+                  }}
+                />
+              </div>
+
+              {/* 右：情報 */}
+              <div style={{ flex: 1 }}>
+                {/* 相手の名前 */}
+                <h3
+                  style={{
+                    margin: "0 0 8px 0",
+                    fontSize: "24px",
+                    fontWeight: "bold",
+                    color: "#1E1B4B",
+                  }}
+                >
+                  {matchedUser.name}
+                </h3>
+
+                {/* 部署・職種 */}
+                <p
+                  style={{
+                    margin: "0 0 16px 0",
+                    fontSize: "14px",
+                    color: "#6B7280",
+                  }}
+                >
+                  {matchedUser.department} / {matchedUser.jobTitle}
+                </p>
+
+                {/* メッセージ */}
+                <p
+                  style={{
+                    margin: 0,
+                    fontSize: "14px",
+                    color: "#374151",
+                    lineHeight: "1.6",
+                  }}
+                >
+                  トーク画面でメッセージを送ってみましょう
+                </p>
+              </div>
+            </div>
+
+            {/* ボタン */}
+            <div style={{ display: "flex", gap: "12px", justifyContent: "center" }}>
               <button
                 onClick={() => {
                   setMatchedUser(null);
                   setMatchedMatchId(null);
                 }}
                 style={{
-                  padding: "10px 20px",
-                  backgroundColor: "#ccc",
-                  color: "black",
-                  border: "none",
-                  borderRadius: "5px",
+                  padding: "12px 24px",
+                  backgroundColor: "#FFFFFF",
+                  color: "#374151",
+                  border: "1px solid #E5E7EB",
+                  borderRadius: "28px",
                   cursor: "pointer",
-                  fontSize: "16px",
+                  fontSize: "14px",
+                  fontWeight: "500",
+                  boxShadow: "0 2px 6px rgba(0, 0, 0, 0.05)",
                 }}
               >
-                閉じる
+                後で
               </button>
               <button
                 onClick={() => {
@@ -795,19 +885,42 @@ export default function DiscoverPage() {
                   );
                 }}
                 style={{
-                  padding: "10px 20px",
-                  backgroundColor: "#4CAF50",
-                  color: "white",
+                  padding: "12px 24px",
+                  background: "linear-gradient(to right, #3B82F6, #8B5CF6)",
+                  color: "#FFFFFF",
                   border: "none",
-                  borderRadius: "5px",
+                  borderRadius: "28px",
                   cursor: "pointer",
-                  fontSize: "16px",
+                  fontSize: "14px",
+                  fontWeight: "500",
+                  boxShadow: "0 4px 12px rgba(59, 130, 246, 0.3)",
                 }}
               >
-                トークを見に行く
+                トークを開く
               </button>
             </div>
           </div>
+
+          <style jsx>{`
+            @keyframes fadeIn {
+              from {
+                opacity: 0;
+              }
+              to {
+                opacity: 1;
+              }
+            }
+            @keyframes scaleIn {
+              from {
+                opacity: 0;
+                transform: scale(0.9);
+              }
+              to {
+                opacity: 1;
+                transform: scale(1);
+              }
+            }
+          `}</style>
         </div>
       )}
     </div>
