@@ -21,7 +21,7 @@ export default function DiscoverPage() {
   const [filter, setFilter] = useState<DiscoverFilter>({});
   const [showFilter, setShowFilter] = useState(false);
   const [showDetailProfile, setShowDetailProfile] = useState(false);
-  const [testMode, setTestMode] = useState(true); // テストモード（初期値ON）
+  const [testMode, setTestMode] = useState(false); // テストモード（初期値OFF、必要時はコードで変更）
 
   // 現在表示中のユーザー
   const currentUser_displayed = users[currentIndex] || null;
@@ -131,72 +131,26 @@ export default function DiscoverPage() {
       padding: "20px 0 60px",
       position: "relative",
     }}>
-      {/* 右上のボタンエリア */}
-      <div style={{
-        position: "absolute",
-        top: "20px",
-        right: "20px",
-        display: "flex",
-        gap: "10px",
-      }}>
-        {/* テストモード切り替えボタン */}
-        <button
-          onClick={() => setTestMode(!testMode)}
-          style={{
-            padding: "10px 20px",
-            backgroundColor: testMode ? "#FEF3C7" : "#FFFFFF",
-            color: testMode ? "#92400E" : "#374151",
-            border: testMode ? "1px solid #FCD34D" : "1px solid #E5E7EB",
-            borderRadius: "20px",
-            cursor: "pointer",
-            fontSize: "14px",
-            fontWeight: "500",
-            boxShadow: "0 2px 6px rgba(0, 0, 0, 0.05)",
-          }}
-        >
-          テストモード: {testMode ? "ON" : "OFF"}
-        </button>
-
-        {/* マッチ演出テストボタン */}
-        <button
-          onClick={() => {
-            if (currentUser_displayed) {
-              setMatchedUser(currentUser_displayed);
-            }
-          }}
-          style={{
-            padding: "10px 20px",
-            backgroundColor: "#FFFFFF",
-            color: "#374151",
-            border: "1px solid #E5E7EB",
-            borderRadius: "20px",
-            cursor: "pointer",
-            fontSize: "14px",
-            fontWeight: "500",
-            boxShadow: "0 2px 6px rgba(0, 0, 0, 0.05)",
-          }}
-        >
-          マッチ演出
-        </button>
-
-        {/* フィルターボタン */}
-        <button
-          onClick={() => setShowFilter(true)}
-          style={{
-            padding: "10px 20px",
-            backgroundColor: "#FFFFFF",
-            color: "#374151",
-            border: "1px solid #E5E7EB",
-            borderRadius: "20px",
-            cursor: "pointer",
-            fontSize: "14px",
-            fontWeight: "500",
-            boxShadow: "0 2px 6px rgba(0, 0, 0, 0.05)",
-          }}
-        >
-          フィルター
-        </button>
-      </div>
+      {/* フィルターボタン（右上） */}
+      <button
+        onClick={() => setShowFilter(true)}
+        style={{
+          position: "absolute",
+          top: "20px",
+          right: "20px",
+          padding: "10px 20px",
+          backgroundColor: "#FFFFFF",
+          color: "#374151",
+          border: "1px solid #E5E7EB",
+          borderRadius: "20px",
+          cursor: "pointer",
+          fontSize: "14px",
+          fontWeight: "500",
+          boxShadow: "0 2px 6px rgba(0, 0, 0, 0.05)",
+        }}
+      >
+        フィルター
+      </button>
 
       {currentUser_displayed ? (
         <div style={{
