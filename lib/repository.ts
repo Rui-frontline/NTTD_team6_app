@@ -1,10 +1,13 @@
 import { supabase } from "@/lib/supabase";
 import type {
+  Board,
+  BoardMessage,
   Match,
   MatchSummary,
   Message,
   Mode,
   Profile,
+  Reaction,
   User,
 } from "@/lib/types";
 
@@ -23,6 +26,7 @@ type UserRow = {
   job_title: string;
   age: number;
   enabled_modes: string[];
+  points: number | null;
   profiles?: ProfileRow[] | null;
 };
 
@@ -55,12 +59,15 @@ function toUser(row: UserRow): User {
     jobTitle: row.job_title,
     age: row.age,
     enabledModes: (row.enabled_modes ?? []) as Mode[],
+    // supabase/points.sql をまだ流していない環境では列が無いので 0 にしておく
+    points: row.points ?? 0,
     work: toProfile(profiles.find((p) => p.mode === "work")),
     romance: toProfile(profiles.find((p) => p.mode === "romance")),
   };
 }
 
-const USER_SELECT = "id,name,avatar_url,department,job_title,age,enabled_modes,profiles(*)";
+const USER_SELECT =
+  "id,name,avatar_url,department,job_title,age,enabled_modes,points,profiles(*)";
 
 // ───────────────────────── ユーザー ─────────────────────────
 
@@ -314,14 +321,14 @@ export async function likeUser(
 
 /**
  * 見送る。
- * 恋愛モードのみ保存する（仕事モードは保存しないので、リロードすると戻る）。
+ * 履歴機能のため、仕事モード・恋愛モード両方とも保存する。
  */
 export async function passUser(
   fromUserId: string,
   toUserId: string,
   mode: Mode,
 ): Promise<void> {
-  if (mode !== "romance") return;
+  // 仕事モードでも見送りを保存するように変更（履歴機能のため）
   const { error } = await supabase.from("reactions").insert({
     from_user_id: fromUserId,
     to_user_id: toUserId,
@@ -329,6 +336,51 @@ export async function passUser(
     type: "pass",
   });
   if (error && error.code !== "23505") throw error;
+}
+
+/**
+ * 自分がした反応（いいね・見送り）の履歴を取得する。
+ * 新しい順に返す。
+ */
+export async function getReactionHistory(
+  userId: string,
+  mode: Mode,
+): Promise<Reaction[]> {
+  const { data, error } = await supabase
+    .from("reactions")
+    .select("from_user_id, to_user_id, mode, type, created_at")
+    .eq("from_user_id", userId)
+    .eq("mode", mode)
+    .order("created_at", { ascending: false });
+
+  if (error) throw error;
+  if (!data) return [];
+
+  return data.map((row) => ({
+    fromUserId: row.from_user_id,
+    toUserId: row.to_user_id,
+    mode: row.mode as Mode,
+    type: row.type as "like" | "pass",
+    createdAt: row.created_at,
+  }));
+}
+
+/**
+ * 反応を取り消す（履歴から削除）。
+ */
+export async function deleteReaction(
+  fromUserId: string,
+  toUserId: string,
+  mode: Mode,
+): Promise<void> {
+  const { error } = await supabase
+    .from("reactions")
+    .delete()
+    .eq("from_user_id", fromUserId)
+    .eq("to_user_id", toUserId)
+    .eq("mode", mode);
+
+  if (error) throw error;
 }
 
 // ───────────────────────── マッチ・メッセージ ─────────────────────────
@@ -600,4 +652,255 @@ export async function uploadAvatarImage(
 
   const { data } = supabase.storage.from(AVATAR_BUCKET).getPublicUrl(path);
   return data.publicUrl;
+}
+// ───────────────────────── ポイント ─────────────────────────
+
+/**
+ * ポイントを増やす。戻り値は増やしたあとの残高。
+ *
+ * 対象は「いま操作している本人」で固定。誰に足すかは引数で受けず、
+ * DB 側で auth.uid() から決めている（他人のポイントを増やせないように）。
+ *
+ * 履歴（point_events）の追加と残高の更新は関数の中でまとめて行われる。
+ * 片方だけ成功して食い違うことはない。
+ *
+ * reason には 'first_message' のような、何で貯まったかが分かる文字列を渡す。
+ * supabase/points.sql を実行していない環境では失敗する。
+ */
+export async function awardPoints(
+  amount: number,
+  reason: string,
+): Promise<number> {
+  const { data, error } = await supabase.rpc("award_points", {
+    p_amount: amount,
+    p_reason: reason,
+  });
+  if (error) throw error;
+  return (data as number) ?? 0;
+}
+
+// ───────────────────────── 募集掲示板 ─────────────────────────
+
+type BoardRow = {
+  id: string;
+  user_id: string;
+  mode: string;
+  title: string;
+  description: string;
+  max_participants: number | null;
+  deadline: string | null;
+  status: string;
+  created_at: string;
+  updated_at: string;
+};
+
+function toBoard(row: BoardRow): Board {
+  return {
+    id: row.id,
+    userId: row.user_id,
+    mode: row.mode as Mode,
+    title: row.title,
+    description: row.description,
+    maxParticipants: row.max_participants,
+    deadline: row.deadline,
+    status: row.status as "募集中" | "募集終了",
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  };
+}
+
+/**
+ * 募集一覧を取得する。新しい順に返す。
+ */
+export async function getBoards(mode: Mode): Promise<Board[]> {
+  const { data, error} = await supabase
+    .from("boards")
+    .select("*")
+    .eq("mode", mode)
+    .order("created_at", { ascending: false });
+
+  if (error) throw error;
+  if (!data) return [];
+
+  return data.map(toBoard);
+}
+
+/**
+ * 募集詳細を取得する。
+ */
+export async function getBoard(id: string): Promise<Board | null> {
+  const { data, error } = await supabase
+    .from("boards")
+    .select("*")
+    .eq("id", id)
+    .single();
+
+  if (error) throw error;
+  if (!data) return null;
+
+  return toBoard(data);
+}
+
+/**
+ * 募集を作成する。
+ */
+export async function createBoard(input: {
+  userId: string;
+  mode: Mode;
+  title: string;
+  description: string;
+  maxParticipants?: number | null;
+  deadline?: string | null;
+}): Promise<Board> {
+  const { data, error } = await supabase
+    .from("boards")
+    .insert({
+      user_id: input.userId,
+      mode: input.mode,
+      title: input.title,
+      description: input.description,
+      max_participants: input.maxParticipants ?? null,
+      deadline: input.deadline ?? null,
+    })
+    .select()
+    .single();
+
+  if (error) throw error;
+  return toBoard(data);
+}
+
+/**
+ * 募集を更新する。
+ */
+export async function updateBoard(
+  id: string,
+  input: {
+    title?: string;
+    description?: string;
+    maxParticipants?: number | null;
+    deadline?: string | null;
+    status?: "募集中" | "募集終了";
+  },
+): Promise<void> {
+  const updates: any = { updated_at: new Date().toISOString() };
+  if (input.title !== undefined) updates.title = input.title;
+  if (input.description !== undefined) updates.description = input.description;
+  if (input.maxParticipants !== undefined)
+    updates.max_participants = input.maxParticipants;
+  if (input.deadline !== undefined) updates.deadline = input.deadline;
+  if (input.status !== undefined) updates.status = input.status;
+
+  const { error } = await supabase
+    .from("boards")
+    .update(updates)
+    .eq("id", id);
+
+  if (error) throw error;
+}
+
+/**
+ * 募集を削除する。
+ */
+export async function deleteBoard(id: string): Promise<void> {
+  const { error } = await supabase.from("boards").delete().eq("id", id);
+  if (error) throw error;
+}
+
+/**
+ * 募集に参加する。
+ */
+export async function joinBoard(boardId: string, userId: string): Promise<void> {
+  const { error } = await supabase.from("board_participants").insert({
+    board_id: boardId,
+    user_id: userId,
+  });
+  // 既に参加している場合はエラーを無視
+  if (error && error.code !== "23505") throw error;
+}
+
+/**
+ * 募集から退出する。
+ */
+export async function leaveBoard(
+  boardId: string,
+  userId: string,
+): Promise<void> {
+  const { error } = await supabase
+    .from("board_participants")
+    .delete()
+    .eq("board_id", boardId)
+    .eq("user_id", userId);
+
+  if (error) throw error;
+}
+
+/**
+ * 募集の参加者IDリストを取得する。
+ */
+export async function getBoardParticipantIds(
+  boardId: string,
+): Promise<string[]> {
+  const { data, error } = await supabase
+    .from("board_participants")
+    .select("user_id")
+    .eq("board_id", boardId)
+    .order("created_at");
+
+  if (error) throw error;
+  if (!data) return [];
+
+  return data.map((row) => row.user_id);
+}
+
+/**
+ * 募集のグループチャットメッセージを取得する。
+ */
+export async function getBoardMessages(
+  boardId: string,
+): Promise<BoardMessage[]> {
+  const { data, error } = await supabase
+    .from("board_messages")
+    .select("*")
+    .eq("board_id", boardId)
+    .order("created_at", { ascending: true });
+
+  if (error) throw error;
+  if (!data) return [];
+
+  return data.map((row) => ({
+    id: row.id,
+    boardId: row.board_id,
+    userId: row.user_id,
+    body: row.body,
+    createdAt: row.created_at,
+  }));
+}
+
+/**
+ * 募集のグループチャットにメッセージを送信する。
+ */
+export async function sendBoardMessage(
+  boardId: string,
+  userId: string,
+  body: string,
+): Promise<BoardMessage> {
+  const { data, error } = await supabase
+    .from("board_messages")
+    .insert({
+      board_id: boardId,
+      user_id: userId,
+      body,
+    })
+    .select()
+    .single();
+
+  if (error) throw error;
+
+  return {
+    id: data.id,
+    boardId: data.board_id,
+    userId: data.user_id,
+    body: data.body,
+    createdAt: data.created_at,
+  };
 }
