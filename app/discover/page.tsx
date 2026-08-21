@@ -219,7 +219,10 @@ export default function DiscoverPage() {
                 fontSize: "16px",
                 color: "#6B7280",
               }}>
-                {currentUser_displayed.department} / {currentUser_displayed.jobTitle}
+                {/* 恋愛モードで部署を隠す設定を確認 */}
+                {mode === "romance" && !currentUser_displayed.romance.showDepartment
+                  ? currentUser_displayed.jobTitle
+                  : `${currentUser_displayed.department} / ${currentUser_displayed.jobTitle}`}
               </p>
 
               {/* 区切り線 */}
@@ -275,7 +278,9 @@ export default function DiscoverPage() {
                   lineHeight: "1.7",
                   whiteSpace: "pre-wrap",
                 }}>
-                  {mode === "work" ? currentUser_displayed.work.bio : currentUser_displayed.romance.bio}
+                  {/* 冒頭100文字のみ表示 */}
+                  {(mode === "work" ? currentUser_displayed.work.bio : currentUser_displayed.romance.bio).slice(0, 100)}
+                  {(mode === "work" ? currentUser_displayed.work.bio : currentUser_displayed.romance.bio).length > 100 && "..."}
                 </p>
               </div>
 
@@ -345,12 +350,42 @@ export default function DiscoverPage() {
         <div style={{
           flex: 1,
           display: "flex",
+          flexDirection: "column",
           alignItems: "center",
           justifyContent: "center",
-          fontSize: "24px",
-          color: "#666",
+          gap: "20px",
         }}>
-          {users.length === 0 ? "ユーザーが見つかりませんでした" : "全てのユーザーを確認しました"}
+          {/* 恋愛モードがOFFの場合の専用メッセージ */}
+          {mode === "romance" && users.length === 0 && currentUser && !currentUser.enabledModes.includes("romance") ? (
+            <>
+              <p style={{ fontSize: "20px", color: "#374151", margin: 0 }}>
+                恋愛機能はOFFです
+              </p>
+              <p style={{ fontSize: "16px", color: "#6B7280", margin: 0 }}>
+                恋愛モードを利用するには、マイページで機能をONにしてください
+              </p>
+              <button
+                onClick={() => router.push("/mypage")}
+                style={{
+                  padding: "12px 32px",
+                  background: "linear-gradient(to right, #3B82F6, #8B5CF6)",
+                  color: "#FFFFFF",
+                  border: "none",
+                  borderRadius: "28px",
+                  cursor: "pointer",
+                  fontSize: "16px",
+                  fontWeight: "500",
+                  boxShadow: "0 4px 12px rgba(59, 130, 246, 0.3)",
+                }}
+              >
+                マイページで設定する
+              </button>
+            </>
+          ) : (
+            <p style={{ fontSize: "24px", color: "#666", margin: 0 }}>
+              {users.length === 0 ? "ユーザーが見つかりませんでした" : "全てのユーザーを確認しました"}
+            </p>
+          )}
         </div>
       )}
 
@@ -621,9 +656,12 @@ export default function DiscoverPage() {
                   <p style={{ margin: "0 0 8px 0", fontSize: "14px", fontWeight: "bold", color: "#1E1B4B" }}>
                     基本情報
                   </p>
-                  <p style={{ margin: "0 0 4px 0", fontSize: "16px", color: "#374151" }}>
-                    部署: {currentUser_displayed.department}
-                  </p>
+                  {/* 恋愛モードで部署を隠す設定を確認 */}
+                  {!(mode === "romance" && !currentUser_displayed.romance.showDepartment) && (
+                    <p style={{ margin: "0 0 4px 0", fontSize: "16px", color: "#374151" }}>
+                      部署: {currentUser_displayed.department}
+                    </p>
+                  )}
                   <p style={{ margin: "0 0 4px 0", fontSize: "16px", color: "#374151" }}>
                     職種: {currentUser_displayed.jobTitle}
                   </p>
