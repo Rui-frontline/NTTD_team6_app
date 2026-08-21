@@ -25,6 +25,11 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       lang="ja"
       data-mode="work"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      // ブラウザ拡張が html に属性を足すことがあり（広告ブロッカーなど）、
+      // React が「サーバーの出力と違う」と警告を出す。原因はアプリの外なので
+      // 直しようがなく、この要素の属性差分だけ黙らせる。
+      // 中身（children）の不一致は今までどおり報告される。
+      suppressHydrationWarning
     >
       <body className="min-h-full">
         <SessionProvider>
