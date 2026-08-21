@@ -219,7 +219,10 @@ export default function DiscoverPage() {
                 fontSize: "16px",
                 color: "#6B7280",
               }}>
-                {currentUser_displayed.department} / {currentUser_displayed.jobTitle}
+                {/* 恋愛モードで部署を隠す設定を確認 */}
+                {mode === "romance" && !currentUser_displayed.romance.showDepartment
+                  ? currentUser_displayed.jobTitle
+                  : `${currentUser_displayed.department} / ${currentUser_displayed.jobTitle}`}
               </p>
 
               {/* 区切り線 */}
@@ -621,9 +624,12 @@ export default function DiscoverPage() {
                   <p style={{ margin: "0 0 8px 0", fontSize: "14px", fontWeight: "bold", color: "#1E1B4B" }}>
                     基本情報
                   </p>
-                  <p style={{ margin: "0 0 4px 0", fontSize: "16px", color: "#374151" }}>
-                    部署: {currentUser_displayed.department}
-                  </p>
+                  {/* 恋愛モードで部署を隠す設定を確認 */}
+                  {!(mode === "romance" && !currentUser_displayed.romance.showDepartment) && (
+                    <p style={{ margin: "0 0 4px 0", fontSize: "16px", color: "#374151" }}>
+                      部署: {currentUser_displayed.department}
+                    </p>
+                  )}
                   <p style={{ margin: "0 0 4px 0", fontSize: "16px", color: "#374151" }}>
                     職種: {currentUser_displayed.jobTitle}
                   </p>
