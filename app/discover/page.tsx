@@ -356,7 +356,7 @@ export default function DiscoverPage() {
           gap: "20px",
         }}>
           {/* 恋愛モードがOFFの場合の専用メッセージ */}
-          {mode === "romance" && users.length === 0 && currentUser && !currentUser.enabled_modes.includes("romance") ? (
+          {mode === "romance" && users.length === 0 && currentUser && !currentUser.enabledModes.includes("romance") ? (
             <>
               <p style={{ fontSize: "20px", color: "#374151", margin: 0 }}>
                 恋愛機能はOFFです
