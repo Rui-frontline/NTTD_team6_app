@@ -204,6 +204,15 @@ function TalkIcon() {
   );
 }
 
+function HistoryIcon() {
+  return (
+    <svg {...iconProps()}>
+      <circle cx="12" cy="12" r="9" />
+      <path d="M12 6v6l4 2" />
+    </svg>
+  );
+}
+
 function PersonIcon() {
   return (
     <svg {...iconProps()}>
@@ -216,5 +225,6 @@ function PersonIcon() {
 const NAV = [
   { href: "/discover", label: "探す", icon: SearchIcon },
   { href: "/talk", label: "トーク", icon: TalkIcon },
+  { href: "/history", label: "履歴", icon: HistoryIcon },
   { href: "/me", label: "マイページ", icon: PersonIcon },
 ];

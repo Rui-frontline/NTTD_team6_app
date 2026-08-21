@@ -5,6 +5,7 @@ import type {
   Message,
   Mode,
   Profile,
+  Reaction,
   User,
 } from "@/lib/types";
 
@@ -318,14 +319,14 @@ export async function likeUser(
 
 /**
  * 見送る。
- * 恋愛モードのみ保存する（仕事モードは保存しないので、リロードすると戻る）。
+ * 履歴機能のため、仕事モード・恋愛モード両方とも保存する。
  */
 export async function passUser(
   fromUserId: string,
   toUserId: string,
   mode: Mode,
 ): Promise<void> {
-  if (mode !== "romance") return;
+  // 仕事モードでも見送りを保存するように変更（履歴機能のため）
   const { error } = await supabase.from("reactions").insert({
     from_user_id: fromUserId,
     to_user_id: toUserId,
@@ -333,6 +334,51 @@ export async function passUser(
     type: "pass",
   });
   if (error && error.code !== "23505") throw error;
+}
+
+/**
+ * 自分がした反応（いいね・見送り）の履歴を取得する。
+ * 新しい順に返す。
+ */
+export async function getReactionHistory(
+  userId: string,
+  mode: Mode,
+): Promise<Reaction[]> {
+  const { data, error } = await supabase
+    .from("reactions")
+    .select("from_user_id, to_user_id, mode, type, created_at")
+    .eq("from_user_id", userId)
+    .eq("mode", mode)
+    .order("created_at", { ascending: false });
+
+  if (error) throw error;
+  if (!data) return [];
+
+  return data.map((row) => ({
+    fromUserId: row.from_user_id,
+    toUserId: row.to_user_id,
+    mode: row.mode as Mode,
+    type: row.type as "like" | "pass",
+    createdAt: row.created_at,
+  }));
+}
+
+/**
+ * 反応を取り消す（履歴から削除）。
+ */
+export async function deleteReaction(
+  fromUserId: string,
+  toUserId: string,
+  mode: Mode,
+): Promise<void> {
+  const { error } = await supabase
+    .from("reactions")
+    .delete()
+    .eq("from_user_id", fromUserId)
+    .eq("to_user_id", toUserId)
+    .eq("mode", mode);
+
+  if (error) throw error;
 }
 
 // ───────────────────────── マッチ・メッセージ ─────────────────────────
