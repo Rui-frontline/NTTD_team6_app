@@ -213,6 +213,15 @@ function HistoryIcon() {
   );
 }
 
+function BoardIcon() {
+  return (
+    <svg {...iconProps()}>
+      <rect x="3" y="3" width="18" height="18" rx="2" />
+      <path d="M8 7h8M8 12h8M8 17h5" />
+    </svg>
+  );
+}
+
 function PersonIcon() {
   return (
     <svg {...iconProps()}>
@@ -225,6 +234,7 @@ function PersonIcon() {
 const NAV = [
   { href: "/discover", label: "探す", icon: SearchIcon },
   { href: "/talk", label: "トーク", icon: TalkIcon },
+  { href: "/board", label: "募集", icon: BoardIcon },
   { href: "/history", label: "履歴", icon: HistoryIcon },
   { href: "/me", label: "マイページ", icon: PersonIcon },
 ];
