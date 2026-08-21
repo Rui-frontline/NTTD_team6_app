@@ -350,12 +350,42 @@ export default function DiscoverPage() {
         <div style={{
           flex: 1,
           display: "flex",
+          flexDirection: "column",
           alignItems: "center",
           justifyContent: "center",
-          fontSize: "24px",
-          color: "#666",
+          gap: "20px",
         }}>
-          {users.length === 0 ? "ユーザーが見つかりませんでした" : "全てのユーザーを確認しました"}
+          {/* 恋愛モードがOFFの場合の専用メッセージ */}
+          {mode === "romance" && users.length === 0 && currentUser && !currentUser.enabled_modes.includes("romance") ? (
+            <>
+              <p style={{ fontSize: "20px", color: "#374151", margin: 0 }}>
+                恋愛機能はOFFです
+              </p>
+              <p style={{ fontSize: "16px", color: "#6B7280", margin: 0 }}>
+                恋愛モードを利用するには、マイページで機能をONにしてください
+              </p>
+              <button
+                onClick={() => router.push("/mypage")}
+                style={{
+                  padding: "12px 32px",
+                  background: "linear-gradient(to right, #3B82F6, #8B5CF6)",
+                  color: "#FFFFFF",
+                  border: "none",
+                  borderRadius: "28px",
+                  cursor: "pointer",
+                  fontSize: "16px",
+                  fontWeight: "500",
+                  boxShadow: "0 4px 12px rgba(59, 130, 246, 0.3)",
+                }}
+              >
+                マイページで設定する
+              </button>
+            </>
+          ) : (
+            <p style={{ fontSize: "24px", color: "#666", margin: 0 }}>
+              {users.length === 0 ? "ユーザーが見つかりませんでした" : "全てのユーザーを確認しました"}
+            </p>
+          )}
         </div>
       )}
 
