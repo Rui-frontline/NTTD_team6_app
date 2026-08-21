@@ -745,6 +745,7 @@ export async function getBoard(id: string): Promise<Board | null> {
  * 募集を作成する。
  */
 export async function createBoard(input: {
+  userId: string;
   mode: Mode;
   title: string;
   description: string;
@@ -754,6 +755,7 @@ export async function createBoard(input: {
   const { data, error } = await supabase
     .from("boards")
     .insert({
+      user_id: input.userId,
       mode: input.mode,
       title: input.title,
       description: input.description,

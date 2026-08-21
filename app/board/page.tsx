@@ -165,6 +165,7 @@ export default function BoardPage() {
       {showCreateModal && (
         <CreateBoardModal
           mode={mode}
+          currentUserId={currentUser.id}
           onClose={() => setShowCreateModal(false)}
           onCreated={(newBoard) => {
             setBoards([newBoard, ...boards]);
@@ -334,10 +335,12 @@ function BoardCard({
 
 function CreateBoardModal({
   mode,
+  currentUserId,
   onClose,
   onCreated,
 }: {
   mode: "work" | "romance";
+  currentUserId: string;
   onClose: () => void;
   onCreated: (board: Board) => void;
 }) {
@@ -356,6 +359,7 @@ function CreateBoardModal({
     setSubmitting(true);
     try {
       const board = await createBoard({
+        userId: currentUserId,
         mode,
         title: title.trim(),
         description: description.trim(),
