@@ -23,6 +23,7 @@ type UserRow = {
   job_title: string;
   age: number;
   enabled_modes: string[];
+  points: number | null;
   profiles?: ProfileRow[] | null;
 };
 
@@ -55,12 +56,15 @@ function toUser(row: UserRow): User {
     jobTitle: row.job_title,
     age: row.age,
     enabledModes: (row.enabled_modes ?? []) as Mode[],
+    // supabase/points.sql をまだ流していない環境では列が無いので 0 にしておく
+    points: row.points ?? 0,
     work: toProfile(profiles.find((p) => p.mode === "work")),
     romance: toProfile(profiles.find((p) => p.mode === "romance")),
   };
 }
 
-const USER_SELECT = "id,name,avatar_url,department,job_title,age,enabled_modes,profiles(*)";
+const USER_SELECT =
+  "id,name,avatar_url,department,job_title,age,enabled_modes,points,profiles(*)";
 
 // ───────────────────────── ユーザー ─────────────────────────
 
@@ -600,4 +604,29 @@ export async function uploadAvatarImage(
 
   const { data } = supabase.storage.from(AVATAR_BUCKET).getPublicUrl(path);
   return data.publicUrl;
+}
+// ───────────────────────── ポイント ─────────────────────────
+
+/**
+ * ポイントを増やす。戻り値は増やしたあとの残高。
+ *
+ * 対象は「いま操作している本人」で固定。誰に足すかは引数で受けず、
+ * DB 側で auth.uid() から決めている（他人のポイントを増やせないように）。
+ *
+ * 履歴（point_events）の追加と残高の更新は関数の中でまとめて行われる。
+ * 片方だけ成功して食い違うことはない。
+ *
+ * reason には 'first_message' のような、何で貯まったかが分かる文字列を渡す。
+ * supabase/points.sql を実行していない環境では失敗する。
+ */
+export async function awardPoints(
+  amount: number,
+  reason: string,
+): Promise<number> {
+  const { data, error } = await supabase.rpc("award_points", {
+    p_amount: amount,
+    p_reason: reason,
+  });
+  if (error) throw error;
+  return (data as number) ?? 0;
 }

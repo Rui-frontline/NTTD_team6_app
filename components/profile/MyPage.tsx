@@ -5,6 +5,7 @@ import { useSession } from "@/lib/session";
 import { updateProfile, updateUser } from "@/lib/repository";
 import { fileToAvatarImage } from "@/lib/image";
 import { PageHeading } from "@/components/PageHeading";
+import { PointBalance } from "@/components/PointBalance";
 import type { Profile, User } from "@/lib/types";
 import { MODE_LABEL, MODES, TAG_OPTIONS } from "@/lib/types";
 import { TagPicker } from "./TagPicker";
@@ -195,6 +196,11 @@ export function MyPage() {
         title="マイページ"
         description="相手に表示されるプロフィールを編集できます。"
       />
+
+      <div className="mb-6 flex items-center justify-between rounded-lg border border-[var(--line)] px-4 py-3">
+        <span className="text-sm font-medium">保有ポイント</span>
+        <PointBalance className="text-[var(--accent)]" />
+      </div>
 
       {/*
         保存中は編集をまとめて止める。
