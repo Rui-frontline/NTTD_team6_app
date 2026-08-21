@@ -37,7 +37,7 @@ create policy boards_select on public.boards
     exists (
       select 1 from public.users
       where id = auth.uid()
-      and mode = any(enabled_modes)
+      and boards.mode = any(enabled_modes)
     )
   );
 
