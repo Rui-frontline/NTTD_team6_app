@@ -30,6 +30,8 @@ export type User = {
   age: number; // 共通
   /** 参加しているモード。含まれていないモードでは一覧に出ない */
   enabledModes: Mode[];
+  /** 保有ポイント。増減は repository の awardPoints から行う */
+  points: number;
   work: Profile;
   romance: Profile;
 };
