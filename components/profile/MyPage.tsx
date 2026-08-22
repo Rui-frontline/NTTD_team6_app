@@ -6,8 +6,9 @@ import { updateProfile, updateUser } from "@/lib/repository";
 import { fileToAvatarImage } from "@/lib/image";
 import { PageHeading } from "@/components/PageHeading";
 import { PointBalance } from "@/components/PointBalance";
-import type { Profile, User } from "@/lib/types";
-import { MODE_LABEL, MODES, TAG_OPTIONS } from "@/lib/types";
+import type { Mode, Profile, User } from "@/lib/types";
+import { MODE_LABEL, TAG_OPTIONS } from "@/lib/types";
+import type { ProfileField } from "@/lib/profile-fields";
 import {
   JOB_TITLE_OPTIONS,
   PROFILE_FIELDS,
@@ -35,22 +36,28 @@ const AGE_OPTIONS = Array.from({ length: 99 - 18 + 1 }, (_, i) => 18 + i);
 
 /**
  * マイページ本体。
+ *
+ * 画面の作りは pictures/マイページ_仕事モード.png に合わせている。
+ * 左に写真とポイントの札、右に番号付きの節を積んだカード、という2段組み。
+ * 節の分け方は仕事モードだけデザイン案どおりに切ってあり、恋愛モードは
+ * これまでどおり lib/profile-fields.ts の並びをそのまま出す。
+ *
  * - 表示中のモード(仕事/恋愛)はアプリ全体で共有されている useSession().mode を使う。
- *   タブを切り替えると data-mode も切り替わり、配色も連動する。
- * - 編集内容は下書き(draft)として持ち、「保存する」を押すまで確定しない。
+ *   切り替えはヘッダーのモードスイッチが担当する（画面内には置かない）。
+ * - 編集内容は下書き(draft)として持ち、「変更を保存」を押すまで確定しない。
  *   アイコンだけは選んだ時点で Storage に上がるが、users.avatar_url への
  *   反映は他の項目と同じく保存時にまとめて行う。
  * - 保存は lib/repository の updateUser / updateProfile を呼ぶ(Supabase保存)。
  *   保存後は session.refreshUser() でDBから読み直してローカルのcurrentUserも最新化する。
  */
 export function MyPage() {
-  const { currentUser, mode, setMode, loading, refreshUser } = useSession();
+  const { currentUser, mode, loading, refreshUser } = useSession();
   const [draft, setDraft] = useState<User | null>(currentUser);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
 
-  // 隠しファイル入力を「アイコンを変更」ボタンから開くための参照
+  // 隠しファイル入力を「写真を変更」ボタンから開くための参照
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
 
@@ -122,10 +129,29 @@ export function MyPage() {
   };
 
   /**
+   * モード別の入力欄を key で1つ出す。
+   *
+   * ラベルや入力の種類は lib/profile-fields.ts が持っているので、
+   * 画面側は「どの節にどの順で置くか」だけを決める。
+   */
+  const modeField = (key: string) => {
+    const field = PROFILE_FIELDS[mode].find((f) => f.key === key);
+    if (!field) return null;
+    return (
+      <ModeField
+        key={key}
+        field={field}
+        profile={modeProfile}
+        onChange={updateModeProfile}
+      />
+    );
+  };
+
+  /**
    * 写真が選ばれたら、その場で Storage に上げて下書きのURLを差し替える。
    *
    * アップロードだけ先に済ませておき、users.avatar_url への保存は
-   * 他の項目と同じく「保存する」を押したときにまとめて行う。
+   * 他の項目と同じく「変更を保存」を押したときにまとめて行う。
    * (保存せずに離れたぶんの画像は Storage に残るが、後から画面で片付けられる)
    */
   const handleAvatarChange = async (
@@ -152,6 +178,13 @@ export function MyPage() {
     } finally {
       setUploadingAvatar(false);
     }
+  };
+
+  /** 編集を捨てて、保存済みの値に戻す */
+  const handleCancel = () => {
+    setDraft(currentUser);
+    setError(null);
+    setSaved(false);
   };
 
   const handleSave = async () => {
@@ -257,7 +290,7 @@ export function MyPage() {
       setDraft((prev) =>
         prev ? { ...prev, name, department, departmentPath, jobTitle } : prev,
       );
-      
+
       // 保存できたことを一時的に知らせる。3秒で自動的に消す。
       setSaved(true);
       window.setTimeout(() => setSaved(false), 3000);
@@ -270,273 +303,474 @@ export function MyPage() {
   };
 
   return (
-    <div className="mx-auto max-w-xl bg-[var(--background)] px-4 py-6 text-[var(--foreground)]">
-      <PageHeading
-        title="マイページ"
-        description="相手に表示されるプロフィールを編集できます。"
-      />
-
-      <div className="mb-6 flex items-center justify-between rounded-lg border border-[var(--line)] px-4 py-3">
-        <span className="text-sm font-medium">保有ポイント</span>
-        <PointBalance className="text-[var(--accent)]" />
-      </div>
-
+    <div className="mx-auto w-full max-w-6xl text-[var(--foreground)]">
       {/*
         保存中は編集をまとめて止める。
         fieldset の disabled は中の input / textarea / button すべてに伝わるので、
-        入力欄・スイッチ・タグ・モードタブが一度に無効化される。
+        入力欄・スイッチ・タグ・写真の変更が一度に無効化される。
         保存ボタンだけを止めていたときは、通信中に編集できてしまい、
         保存後の refreshUser() でその編集が消えていた。
       */}
       <fieldset disabled={saving} className="m-0 border-0 p-0">
-
-      {/* 共通項目 */}
-      <section className="mb-8 space-y-4">
-        <div className="flex items-center gap-4">
-          <div className="h-16 w-16 shrink-0 overflow-hidden rounded-full bg-[var(--surface)]">
-            {draft.avatarUrl ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={draft.avatarUrl}
-                alt="プロフィールアイコン"
-                className="h-full w-full object-cover"
-              />
-            ) : (
-              <div className="flex h-full w-full items-center justify-center text-xs text-[var(--muted)]">
-                未設定
-              </div>
-            )}
-          </div>
-          <div>
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="image/*"
-              onChange={handleAvatarChange}
-              className="hidden"
-            />
-            <button
-              type="button"
-              onClick={() => fileInputRef.current?.click()}
-              disabled={uploadingAvatar}
-              className="rounded-md border border-[var(--line)] px-3 py-1.5 text-sm text-[var(--foreground)] hover:bg-[var(--surface)] disabled:opacity-60"
-            >
-              {uploadingAvatar ? "アップロード中..." : "アイコンを変更"}
-            </button>
-            <p className="mt-1 text-xs text-[var(--muted)]">
-              保存するまで反映されません
-            </p>
-          </div>
-        </div>
-
-        <Field label="名前">
-          <input
-            type="text"
-            value={draft.name}
-            onChange={(e) => updateCommon("name", e.target.value)}
-            className="w-full rounded-md border border-[var(--line)] bg-[var(--surface)] px-3 py-2 text-sm text-[var(--foreground)] focus:border-[var(--accent)] focus:outline-none focus:ring-1 focus:ring-[var(--accent)]"
-          />
-        </Field>
-
-        <Field label="年齢">
-          {/*
-            数値入力ではなく選択にしている。
-            input[type=number] は中身を全部消すと Number("") が 0 になり、
-            意図せず 0 歳で保存されてしまうため。選択なら範囲外の値を作れない。
-          */}
-          <select
-            value={AGE_OPTIONS.includes(draft.age) ? draft.age : ""}
-            onChange={(e) => updateCommon("age", Number(e.target.value))}
-            className="w-full rounded-md border border-[var(--line)] bg-[var(--surface)] px-3 py-2 text-sm text-[var(--foreground)] focus:border-[var(--accent)] focus:outline-none focus:ring-1 focus:ring-[var(--accent)]"
-          >
-            {/* 登録前のデータなどで範囲外の値が入っていたとき用 */}
-            {AGE_OPTIONS.includes(draft.age) ? null : (
-              <option value="" disabled>
-                選択してください
-              </option>
-            )}
-            {AGE_OPTIONS.map((age) => (
-              <option key={age} value={age}>
-                {age}
-              </option>
-            ))}
-          </select>
-        </Field>
-
-        <Field label="職種">
-          <Select
-            value={jobTitleInOptions ? draft.jobTitle : UNSET}
-            options={JOB_TITLE_OPTIONS}
-            onChange={(v) => updateCommon("jobTitle", v)}
-          />
-          {/* 選択肢に無い値が登録済みのときは、黙って消さずに知らせる */}
-          {!jobTitleInOptions && draft.jobTitle ? (
-            <p className="mt-1 text-xs text-[var(--accent-strong)]">
-              現在の登録は「{draft.jobTitle}
-              」です。選択肢に無いので選び直してください。
-            </p>
-          ) : null}
-        </Field>
-
-        <DepartmentPicker
-          parts={departmentParts}
-          fallback={draft.department}
-          onChange={(parts) => {
-            // 表示と絞り込みで使うのはいちばん下の名前だけ。
-            // 経路は選び直すときの復元にだけ使うので、別に持つ。
-            setDraft((prev) =>
-              prev
-                ? {
-                    ...prev,
-                    department: departmentLeaf(parts),
-                    departmentPath: joinDepartmentPath(parts),
-                  }
-                : prev,
-            );
-          }}
-        />
-        <p className="-mt-1 text-xs text-[var(--muted)]">
-          値は仕事/恋愛で共通です。表示するかどうかは各モードのタブで設定できます。
-        </p>
-
-        {/* 性別・出身大学。定義は lib/profile-fields.ts に置いてある */}
-        {USER_FIELDS.map((field) => (
-          <Field key={field.key} label={field.label}>
-            {field.kind === "select" ? (
-              <Select
-                value={draft[field.key]}
-                options={field.options}
-                onChange={(v) => updateCommon(field.key, v)}
-              />
-            ) : (
-              <TextInput
-                value={draft[field.key]}
-                onChange={(v) => updateCommon(field.key, v)}
-              />
-            )}
-          </Field>
-        ))}
-      </section>
-
-      {/* モード切り替えタブ(アプリ全体のモードと連動) */}
-      <div className="mb-4 flex rounded-lg bg-[var(--surface)] p-1">
-        {MODES.map((m) => (
-          <button
-            key={m}
-            type="button"
-            onClick={() => setMode(m)}
-            className={[
-              "flex-1 rounded-md py-2 text-sm font-medium transition-colors",
-              mode === m
-                ? "bg-[var(--accent-soft)] text-[var(--accent-strong)] shadow"
-                : "text-[var(--muted)] hover:text-[var(--foreground)]",
-            ].join(" ")}
-          >
-            {MODE_LABEL[m]}モード
-          </button>
-        ))}
-      </div>
-
-      {/* モード別項目 */}
-      <section className="space-y-5">
-        <div className="flex items-center justify-between rounded-lg border border-[var(--line)] px-4 py-3">
-          <div>
-            <p className="text-sm font-medium">部署を表示する</p>
-            <p className="text-xs text-[var(--muted)]">
-              {MODE_LABEL[mode]}モードのプロフィールに部署を表示します
-            </p>
-          </div>
-          <Switch
-            checked={modeProfile.showDepartment}
-            onChange={(v) => updateModeProfile({ showDepartment: v })}
-          />
-        </div>
-
-        <Field label="自己紹介文">
-          <textarea
-            value={modeProfile.bio}
-            onChange={(e) => updateModeProfile({ bio: e.target.value })}
-            rows={4}
-            className="w-full rounded-md border border-[var(--line)] bg-[var(--surface)] px-3 py-2 text-sm text-[var(--foreground)] focus:border-[var(--accent)] focus:outline-none focus:ring-1 focus:ring-[var(--accent)] resize-none"
-          />
-        </Field>
-
-        <TagPicker
-          candidates={candidates}
-          selected={modeProfile.tags}
-          onChange={(tags) => updateModeProfile({ tags })}
+        <PageHeading
+          title="マイページ"
+          description="相手に表示されるプロフィールを編集できます。"
         />
 
         {/*
-          モードごとの追加項目。何をどの順で出すかは
-          lib/profile-fields.ts の PROFILE_FIELDS が持っている。
-          19個ぶんを手書きするとこのファイルが読めなくなるため。
+          左の札と右のカードの2段組み。
+          狭い画面では1列に落として、札が上に来るようにする。
         */}
-        {PROFILE_FIELDS[mode].map((field) => (
-          <Field key={field.key} label={field.label}>
-            {field.kind === "select" ? (
-              <Select
-                value={modeProfile[field.key]}
-                options={field.options}
-                onChange={(v) => updateModeProfile({ [field.key]: v })}
+        <div className="grid items-start gap-6 lg:grid-cols-[19rem_minmax(0,1fr)]">
+          {/* ── 左：写真とポイント ───────────────────────── */}
+          <aside className="rounded-2xl border border-[var(--line)] bg-[var(--surface)] p-6 shadow-[var(--soft-shadow)] lg:sticky lg:top-6">
+            <div className="flex flex-col items-center text-center">
+              <div className="h-32 w-32 overflow-hidden rounded-full bg-[var(--accent)]">
+                {draft.avatarUrl ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={draft.avatarUrl}
+                    alt="プロフィール写真"
+                    className="h-full w-full object-cover"
+                  />
+                ) : (
+                  // 写真が無いときは頭文字を出す。空の丸より誰の欄か分かりやすい
+                  <div className="flex h-full w-full items-center justify-center text-3xl font-bold tracking-wide text-white">
+                    {initials(draft.name)}
+                  </div>
+                )}
+              </div>
+
+              <p className="mt-4 text-xl font-bold">{draft.name || "名前未設定"}</p>
+              <p className="mt-1 text-sm text-[var(--muted)]">
+                {draft.department || "会社・部署未設定"}
+              </p>
+
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                onChange={handleAvatarChange}
+                className="hidden"
               />
-            ) : field.kind === "number" ? (
-              <NumberSelect
-                value={modeProfile[field.key]}
-                min={field.min}
-                max={field.max}
-                unit={field.unit}
-                onChange={(v) => updateModeProfile({ [field.key]: v })}
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={uploadingAvatar}
+                className="mt-4 inline-flex items-center gap-2 rounded-full border border-[var(--line)] px-4 py-2 text-sm text-[var(--foreground)] transition-colors hover:border-[var(--accent)] hover:text-[var(--accent-strong)] disabled:opacity-60"
+              >
+                <CameraIcon />
+                {uploadingAvatar ? "アップロード中..." : "写真を変更"}
+              </button>
+              <p className="mt-2 text-xs text-[var(--muted)]">
+                保存するまで反映されません
+              </p>
+            </div>
+
+            <hr className="my-6 border-[var(--line)]" />
+
+            <div className="flex items-center justify-between">
+              <span className="text-sm font-medium">保有ポイント</span>
+              <PointBalance className="text-[var(--accent)]" />
+            </div>
+
+            <hr className="my-6 border-[var(--line)]" />
+
+            {/*
+              参加スイッチ。プロフィールの中身ではなく「一覧に出るかどうか」の
+              設定なので、節の中には入れず左の札に置いている。
+              ここでは ToggleRow を使わない。カードの中に枠付きの箱を入れると
+              二重の囲みになるので、上のポイント行と同じ見た目に揃える。
+            */}
+            <div>
+              <div className="flex items-center justify-between gap-3">
+                <span className="text-sm font-medium">このモードに参加する</span>
+                <Switch
+                  checked={isParticipating}
+                  onChange={toggleParticipate}
+                />
+              </div>
+              <p className="mt-1.5 text-xs text-[var(--muted)]">
+                OFFにすると{MODE_LABEL[mode]}モードの一覧に自分が出なくなります
+              </p>
+            </div>
+          </aside>
+
+          {/* ── 右：プロフィールの記入 ───────────────────── */}
+          <div className="divide-y divide-[var(--line)] overflow-hidden rounded-2xl border border-[var(--line)] bg-[var(--surface)] shadow-[var(--soft-shadow)]">
+            <Section
+              number="01"
+              title="基本情報"
+              description="名前・所属・あなたのこと"
+              scope="shared"
+              mode={mode}
+            >
+              <div className="grid gap-4 sm:grid-cols-2">
+                <Field label="名前">
+                  <input
+                    type="text"
+                    value={draft.name}
+                    onChange={(e) => updateCommon("name", e.target.value)}
+                    className={INPUT_CLASS}
+                  />
+                </Field>
+
+                <Field label="年齢">
+                  {/*
+                    数値入力ではなく選択にしている。
+                    input[type=number] は中身を全部消すと Number("") が 0 になり、
+                    意図せず 0 歳で保存されてしまうため。選択なら範囲外の値を作れない。
+                  */}
+                  <select
+                    value={AGE_OPTIONS.includes(draft.age) ? draft.age : ""}
+                    onChange={(e) => updateCommon("age", Number(e.target.value))}
+                    className={INPUT_CLASS}
+                  >
+                    {/* 登録前のデータなどで範囲外の値が入っていたとき用 */}
+                    {AGE_OPTIONS.includes(draft.age) ? null : (
+                      <option value="" disabled>
+                        選択してください
+                      </option>
+                    )}
+                    {AGE_OPTIONS.map((age) => (
+                      <option key={age} value={age}>
+                        {age}
+                      </option>
+                    ))}
+                  </select>
+                </Field>
+
+                <Field label="職種">
+                  <Select
+                    value={jobTitleInOptions ? draft.jobTitle : UNSET}
+                    options={JOB_TITLE_OPTIONS}
+                    onChange={(v) => updateCommon("jobTitle", v)}
+                  />
+                  {/* 選択肢に無い値が登録済みのときは、黙って消さずに知らせる */}
+                  {!jobTitleInOptions && draft.jobTitle ? (
+                    <p className="mt-1 text-xs text-[var(--accent-strong)]">
+                      現在の登録は「{draft.jobTitle}
+                      」です。選択肢に無いので選び直してください。
+                    </p>
+                  ) : null}
+                </Field>
+
+                {/* 性別・出身大学。定義は lib/profile-fields.ts に置いてある */}
+                {USER_FIELDS.map((field) => (
+                  <Field key={field.key} label={field.label}>
+                    {field.kind === "select" ? (
+                      <Select
+                        value={draft[field.key]}
+                        options={field.options}
+                        onChange={(v) => updateCommon(field.key, v)}
+                      />
+                    ) : (
+                      <TextInput
+                        value={draft[field.key]}
+                        onChange={(v) => updateCommon(field.key, v)}
+                      />
+                    )}
+                  </Field>
+                ))}
+
+                {/* 会社・部署は選択欄が最大4段に増えるので、幅いっぱいを使う */}
+                <div className="sm:col-span-2">
+                  <DepartmentPicker
+                    parts={departmentParts}
+                    fallback={draft.department}
+                    onChange={(parts) => {
+                      // 表示と絞り込みで使うのはいちばん下の名前だけ。
+                      // 経路は選び直すときの復元にだけ使うので、別に持つ。
+                      setDraft((prev) =>
+                        prev
+                          ? {
+                              ...prev,
+                              department: departmentLeaf(parts),
+                              departmentPath: joinDepartmentPath(parts),
+                            }
+                          : prev,
+                      );
+                    }}
+                  />
+                  {/*
+                    この節で唯一の例外。部署の「値」は users にあって共通だが、
+                    「出すかどうか」は profiles にあってモードごとに持てる。
+                    節の見出しは共通と出ているので、ここだけ印を付けて断る。
+                  */}
+                  <ToggleRow
+                    className="mt-3"
+                    title="会社・部署を表示する"
+                    description="OFFにするとプロフィールから部署を隠します"
+                    checked={modeProfile.showDepartment}
+                    onChange={(v) => updateModeProfile({ showDepartment: v })}
+                    badge={<ScopeBadge scope="mode" mode={mode} />}
+                  />
+                </div>
+              </div>
+            </Section>
+
+            <Section
+              number="02"
+              title="自己紹介"
+              description="あなたらしさが伝わる文章"
+              scope="mode"
+              mode={mode}
+            >
+              <Field label="自己紹介文">
+                <textarea
+                  value={modeProfile.bio}
+                  onChange={(e) => updateModeProfile({ bio: e.target.value })}
+                  rows={4}
+                  className={INPUT_CLASS + " resize-none"}
+                />
+              </Field>
+            </Section>
+
+            <Section
+              number="03"
+              title="タグ"
+              description="プロフィールに出る興味・スキル"
+              scope="mode"
+              mode={mode}
+            >
+              <TagPicker
+                candidates={candidates}
+                selected={modeProfile.tags}
+                onChange={(tags) => updateModeProfile({ tags })}
               />
-            ) : field.multiline ? (
-              <textarea
-                value={modeProfile[field.key]}
-                onChange={(e) =>
-                  updateModeProfile({ [field.key]: e.target.value })
-                }
-                rows={3}
-                className={INPUT_CLASS + " resize-none"}
-              />
+            </Section>
+
+            {/*
+              ここから先の節の切り方はモードで違う。
+              仕事モードだけデザイン案どおりに 04〜06 へ分けている。
+              恋愛モードは項目が14個あり分け方が未定なので、これまでどおり
+              lib/profile-fields.ts の並びをひと続きで出す。
+            */}
+            {mode === "work" ? (
+              <>
+                <Section
+                  number="04"
+                  title="実績・資格"
+                  description="これまで携わった仕事と、持っている資格"
+                  scope="mode"
+                  mode={mode}
+                >
+                  <div className="space-y-4">
+                    {modeField("workAchievements")}
+                    {modeField("certifications")}
+                  </div>
+                </Section>
+
+                <Section
+                  number="05"
+                  title="話せること・相談したいこと"
+                  description="声をかけてもらうきっかけになる項目"
+                  scope="mode"
+                  mode={mode}
+                >
+                  <div className="space-y-4">
+                    {modeField("canTalkAbout")}
+                    {modeField("wantToConsult")}
+                  </div>
+                </Section>
+
+                <Section
+                  number="06"
+                  title="今後の興味"
+                  description="これから関わってみたい領域"
+                  scope="mode"
+                  mode={mode}
+                >
+                  {modeField("interestedAreas")}
+                </Section>
+              </>
             ) : (
-              <TextInput
-                value={modeProfile[field.key]}
-                onChange={(v) => updateModeProfile({ [field.key]: v })}
-              />
+              <Section
+                number="04"
+                title="詳しいプロフィール"
+                description="体型・休日・希望する相手など"
+                scope="mode"
+                mode={mode}
+              >
+                <div className="grid gap-4 sm:grid-cols-2">
+                  {PROFILE_FIELDS.romance.map((field) => (
+                    <ModeField
+                      key={field.key}
+                      field={field}
+                      profile={modeProfile}
+                      onChange={updateModeProfile}
+                    />
+                  ))}
+                </div>
+              </Section>
             )}
-          </Field>
-        ))}
 
-        <div className="flex items-center justify-between rounded-lg border border-[var(--line)] px-4 py-3">
-          <div>
-            <p className="text-sm font-medium">このモードに参加する</p>
-            <p className="text-xs text-[var(--muted)]">
-              OFFにすると{MODE_LABEL[mode]}モードの一覧に自分が出なくなります
-            </p>
+            <div className="p-6">
+              {error && (
+                <p className="mb-4 text-sm text-[var(--accent-strong)]">
+                  {error}
+                </p>
+              )}
+              {saved && !error && (
+                <p className="mb-4 rounded-lg border border-[var(--accent)] bg-[var(--accent-soft)] px-4 py-3 text-sm text-[var(--accent-strong)]">
+                  保存しました
+                </p>
+              )}
+
+              <div className="flex justify-end gap-3">
+                <button
+                  type="button"
+                  onClick={handleCancel}
+                  className="rounded-lg border border-[var(--line)] px-6 py-2.5 text-sm font-medium text-[var(--foreground)] transition-colors hover:bg-[var(--accent-soft)] disabled:opacity-60"
+                >
+                  キャンセル
+                </button>
+                <button
+                  type="button"
+                  onClick={handleSave}
+                  className="rounded-lg bg-[var(--accent)] px-6 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-[var(--accent-strong)] disabled:opacity-60"
+                >
+                  {saving ? "保存中..." : "変更を保存"}
+                </button>
+              </div>
+            </div>
           </div>
-          <Switch checked={isParticipating} onChange={toggleParticipate} />
         </div>
-      </section>
-
       </fieldset>
-
-      {error && (
-        <p className="mt-4 text-sm text-[var(--accent-strong)]">{error}</p>
-      )}
-            {saved && !error && (
-        <p className="mt-4 rounded-lg border border-[var(--accent)] bg-[var(--accent-soft)] px-4 py-3 text-sm text-[var(--accent-strong)]">
-          保存しました
-        </p>
-      )}
-
-      <button
-        type="button"
-        onClick={handleSave}
-        disabled={saving}
-        className="mt-8 w-full rounded-lg bg-[var(--accent)] py-3 text-sm font-semibold text-white hover:bg-[var(--accent-strong)] disabled:opacity-60"
-      >
-        {saving ? "保存中..." : "保存する"}
-      </button>
     </div>
+  );
+}
+
+/** 名前から丸の中に出す頭文字を作る。「佐藤 花」→「佐花」、「花子」→「花子」 */
+function initials(name: string): string {
+  const parts = name.trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return "?";
+  // 絵文字やサロゲートペアで壊れないよう、コードポイント単位で切る
+  const chars = (s: string) => Array.from(s);
+  if (parts.length === 1) return chars(parts[0]).slice(0, 2).join("");
+  return chars(parts[0])[0] + chars(parts[1])[0];
+}
+
+/**
+ * その項目が両モードで共有されるのか、いま見ているモードだけのものか。
+ *
+ * users テーブルにある項目（名前・年齢・部署など）は1人に1つなので、
+ * 仕事モードで直すと恋愛モードにも出る。profiles テーブルの項目は
+ * モードごとに行が分かれているので、それぞれ別に持てる。
+ * この違いは画面を見ただけでは分からないため、節ごとに明示する。
+ */
+type Scope = "shared" | "mode";
+
+function ScopeBadge({
+  scope,
+  mode,
+  className = "",
+}: {
+  scope: Scope;
+  mode: Mode;
+  className?: string;
+}) {
+  const shared = scope === "shared";
+  return (
+    <span
+      className={[
+        "inline-flex shrink-0 items-center gap-1.5 rounded-full border px-2.5 py-1",
+        "text-[11px] font-medium leading-none",
+        shared
+          ? "border-[var(--line)] text-[var(--muted)]"
+          : "border-[var(--line)] bg-[var(--accent-soft)] text-[var(--accent-strong)]",
+        className,
+      ].join(" ")}
+    >
+      {/* 文字を読まなくても色で見分けられるように、小さな印を添える */}
+      <span
+        aria-hidden
+        className={[
+          "h-1.5 w-1.5 rounded-full",
+          shared ? "bg-[var(--muted)]" : "bg-[var(--accent)]",
+        ].join(" ")}
+      />
+      {shared ? "仕事・恋愛で共通" : `${MODE_LABEL[mode]}モードのみ`}
+    </span>
+  );
+}
+
+/** 番号付きの節。デザイン案の 01/02/03… の見出しにあたる */
+function Section({
+  number,
+  title,
+  description,
+  scope,
+  mode,
+  children,
+}: {
+  number: string;
+  title: string;
+  description: string;
+  scope: Scope;
+  mode: Mode;
+  children: React.ReactNode;
+}) {
+  return (
+    <section className="p-6">
+      <div className="mb-4 flex flex-wrap items-center gap-x-3 gap-y-2">
+        <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[var(--accent)] text-xs font-bold text-white">
+          {number}
+        </span>
+        <div>
+          <h2 className="text-base font-bold leading-tight">{title}</h2>
+          <p className="text-xs text-[var(--muted)]">{description}</p>
+        </div>
+        <ScopeBadge scope={scope} mode={mode} className="ml-auto" />
+      </div>
+      {children}
+    </section>
+  );
+}
+
+/**
+ * モード別の入力欄1つ。
+ * 種類ごとの出し分けをここにまとめ、節を並べる側は key を渡すだけにする。
+ */
+function ModeField({
+  field,
+  profile,
+  onChange,
+}: {
+  field: ProfileField;
+  profile: Profile;
+  onChange: (patch: Partial<Profile>) => void;
+}) {
+  return (
+    <Field label={field.label}>
+      {field.kind === "select" ? (
+        <Select
+          value={profile[field.key]}
+          options={field.options}
+          onChange={(v) => onChange({ [field.key]: v })}
+        />
+      ) : field.kind === "number" ? (
+        <NumberSelect
+          value={profile[field.key]}
+          min={field.min}
+          max={field.max}
+          unit={field.unit}
+          onChange={(v) => onChange({ [field.key]: v })}
+        />
+      ) : field.multiline ? (
+        <textarea
+          value={profile[field.key]}
+          onChange={(e) => onChange({ [field.key]: e.target.value })}
+          rows={3}
+          className={INPUT_CLASS + " resize-none"}
+        />
+      ) : (
+        <TextInput
+          value={profile[field.key]}
+          onChange={(v) => onChange({ [field.key]: v })}
+        />
+      )}
+    </Field>
   );
 }
 
@@ -552,6 +786,42 @@ function Field({
       <span className="mb-1 block text-sm font-medium">{label}</span>
       {children}
     </label>
+  );
+}
+
+/** 説明つきのスイッチ1行 */
+function ToggleRow({
+  title,
+  description,
+  checked,
+  onChange,
+  badge,
+  className = "",
+}: {
+  title: string;
+  description: string;
+  checked: boolean;
+  onChange: (v: boolean) => void;
+  /** 節の見出しと適用範囲が違う行だけ、ここに ScopeBadge を渡す */
+  badge?: React.ReactNode;
+  className?: string;
+}) {
+  return (
+    <div
+      className={[
+        "flex items-center justify-between gap-4 rounded-lg border border-[var(--line)] px-4 py-3",
+        className,
+      ].join(" ")}
+    >
+      <div>
+        <div className="flex flex-wrap items-center gap-2">
+          <p className="text-sm font-medium">{title}</p>
+          {badge}
+        </div>
+        <p className="mt-0.5 text-xs text-[var(--muted)]">{description}</p>
+      </div>
+      <Switch checked={checked} onChange={onChange} />
+    </div>
   );
 }
 
@@ -588,5 +858,23 @@ function Switch({
         ].join(" ")}
       />
     </button>
+  );
+}
+
+function CameraIcon() {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      aria-hidden
+      className="h-4 w-4 shrink-0"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={1.7}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M3 8.5A1.5 1.5 0 0 1 4.5 7h2L8 5h8l1.5 2h2A1.5 1.5 0 0 1 21 8.5v9a1.5 1.5 0 0 1-1.5 1.5h-15A1.5 1.5 0 0 1 3 17.5v-9Z" />
+      <circle cx="12" cy="13" r="3.2" />
+    </svg>
   );
 }
