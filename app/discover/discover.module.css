@@ -1,8 +1,18 @@
-.likeAction {
-  position: relative;
-  width: 200px;
-  height: 56px;
-}
+/*
+  探す画面の演出（いいね・見送る・マッチ成立）のスタイル。
+
+  色は globals.css の :root[data-mode="romance"] のトークンを使う。
+  演出は恋愛モードでしか描画しないので、トークンは必ず解決する。
+
+    --romance-coral   #ff4f7b   --romance-baby   #ffd5df
+    --romance-salmon  #ff6f91   --romance-milk   #fff3f5
+    --romance-blush   #ff91ab   --romance-ivory  #fffaf1
+    --foreground      #4d2935   --accent-strong  #b72d52
+
+  半透明にするところは color-mix() でトークンを薄めている。16進を直接
+  rgba() に展開すると、パレットを調整したときにここだけ取り残されるため。
+  影の沈んだ紫だけはパレットに対応する色がないので、そのまま書いている。
+*/
 
 .discoverStage {
   width: 100%;
@@ -351,11 +361,13 @@
   position: absolute;
   bottom: 0;
   left: 0;
-  color: #ff4f7b;
+  color: var(--romance-coral);
   font-size: 34px;
   line-height: 1;
   opacity: 0;
-  filter: drop-shadow(0 8px 9px rgba(255, 79, 123, 0.28));
+  filter: drop-shadow(
+    0 8px 9px color-mix(in srgb, var(--romance-coral) 28%, transparent)
+  );
   animation: float-heart 1.25s cubic-bezier(0.18, 0.72, 0.28, 1) both;
 }
 
@@ -393,17 +405,17 @@
   gap: 10px;
   min-width: 248px;
   padding: 14px 24px;
-  border: 1px solid rgba(255, 111, 145, 0.42);
+  border: 1px solid color-mix(in srgb, var(--romance-salmon) 42%, transparent);
   border-radius: 999px;
   background: linear-gradient(
     135deg,
-    rgba(255, 250, 241, 0.98),
-    rgba(255, 243, 245, 0.98)
+    color-mix(in srgb, var(--romance-ivory) 98%, transparent),
+    color-mix(in srgb, var(--romance-milk) 98%, transparent)
   );
   box-shadow:
     0 16px 40px rgba(177, 68, 96, 0.2),
     inset 0 1px 0 rgba(255, 255, 255, 0.94);
-  color: #6c3042;
+  color: var(--foreground);
   font-size: 15px;
   font-weight: 700;
   letter-spacing: 0.02em;
@@ -412,9 +424,11 @@
 }
 
 .toastHeart {
-  color: #ff4f7b;
+  color: var(--romance-coral);
   font-size: 19px;
-  filter: drop-shadow(0 3px 4px rgba(255, 79, 123, 0.22));
+  filter: drop-shadow(
+    0 3px 4px color-mix(in srgb, var(--romance-coral) 22%, transparent)
+  );
 }
 
 .matchCelebration {
@@ -427,10 +441,23 @@
   padding: 32px;
   background:
     radial-gradient(circle at 50% 48%, rgba(255, 255, 255, 0.93) 0 12%, transparent 42%),
-    radial-gradient(circle at 20% 16%, rgba(255, 145, 171, 0.34), transparent 31%),
-    radial-gradient(circle at 82% 78%, rgba(255, 111, 145, 0.26), transparent 30%),
-    rgba(77, 41, 53, 0.58);
+    radial-gradient(
+      circle at 20% 16%,
+      color-mix(in srgb, var(--romance-blush) 34%, transparent),
+      transparent 31%
+    ),
+    radial-gradient(
+      circle at 82% 78%,
+      color-mix(in srgb, var(--romance-salmon) 26%, transparent),
+      transparent 30%
+    ),
+    color-mix(in srgb, var(--foreground) 58%, transparent);
   backdrop-filter: blur(12px);
+  /*
+    演出中もその下のマッチ成立モーダル（z-index: 2000）を操作できるようにする。
+    この層は 3 秒間ふさぐだけで、押せる要素は載っていない。
+  */
+  pointer-events: none;
   animation: match-backdrop-life 3s ease both;
 }
 
@@ -438,17 +465,17 @@
   position: absolute;
   width: min(78vw, 790px);
   aspect-ratio: 1;
-  border: 2px solid rgba(255, 213, 223, 0.72);
+  border: 2px solid color-mix(in srgb, var(--romance-baby) 72%, transparent);
   border-radius: 50%;
   background: radial-gradient(
     circle,
-    rgba(255, 243, 245, 0.72) 0 22%,
-    rgba(255, 145, 171, 0.14) 45%,
+    color-mix(in srgb, var(--romance-milk) 72%, transparent) 0 22%,
+    color-mix(in srgb, var(--romance-blush) 14%, transparent) 45%,
     transparent 68%
   );
   box-shadow:
-    0 0 0 18px rgba(255, 243, 245, 0.08),
-    0 0 90px rgba(255, 79, 123, 0.42);
+    0 0 0 18px color-mix(in srgb, var(--romance-milk) 8%, transparent),
+    0 0 90px color-mix(in srgb, var(--romance-coral) 42%, transparent);
   animation: halo-bloom 3s cubic-bezier(0.18, 0.78, 0.3, 1) both;
 }
 
@@ -458,14 +485,24 @@
   width: min(880px, calc(100vw - 64px));
   padding: clamp(42px, 7vw, 76px) clamp(28px, 7vw, 86px);
   overflow: hidden;
-  border: 1px solid rgba(255, 213, 223, 0.86);
+  border: 1px solid color-mix(in srgb, var(--romance-baby) 86%, transparent);
   border-radius: 42px;
   background:
-    linear-gradient(rgba(255, 250, 241, 0.92), rgba(255, 243, 245, 0.94)) padding-box,
-    linear-gradient(135deg, #ff4f7b, #ffd5df, #ff6f91) border-box;
+    linear-gradient(
+        color-mix(in srgb, var(--romance-ivory) 92%, transparent),
+        color-mix(in srgb, var(--romance-milk) 94%, transparent)
+      )
+      padding-box,
+    linear-gradient(
+        135deg,
+        var(--romance-coral),
+        var(--romance-baby),
+        var(--romance-salmon)
+      )
+      border-box;
   box-shadow:
     0 34px 90px rgba(95, 35, 54, 0.34),
-    0 0 0 7px rgba(255, 243, 245, 0.16),
+    0 0 0 7px color-mix(in srgb, var(--romance-milk) 16%, transparent),
     inset 0 1px 0 rgba(255, 255, 255, 0.96);
   text-align: center;
   animation: match-card-life 3s cubic-bezier(0.2, 0.78, 0.28, 1) both;
@@ -476,7 +513,7 @@
   position: absolute;
   width: 200px;
   height: 200px;
-  border: 1px solid rgba(255, 145, 171, 0.32);
+  border: 1px solid color-mix(in srgb, var(--romance-blush) 32%, transparent);
   border-radius: 50%;
   content: "";
 }
@@ -484,18 +521,18 @@
 .matchCard::before {
   top: -118px;
   left: -72px;
-  box-shadow: 0 0 0 24px rgba(255, 213, 223, 0.19);
+  box-shadow: 0 0 0 24px color-mix(in srgb, var(--romance-baby) 19%, transparent);
 }
 
 .matchCard::after {
   right: -82px;
   bottom: -124px;
-  box-shadow: 0 0 0 34px rgba(255, 145, 171, 0.12);
+  box-shadow: 0 0 0 34px color-mix(in srgb, var(--romance-blush) 12%, transparent);
 }
 
 .matchKicker {
   margin: 0 0 2px;
-  color: #b72d52;
+  color: var(--accent-strong);
   font-size: clamp(15px, 2vw, 21px);
   font-weight: 800;
   letter-spacing: 0.48em;
@@ -504,7 +541,12 @@
 
 .matchTitle {
   margin: 0;
-  background: linear-gradient(100deg, #ff4f7b 8%, #ff6f91 48%, #ff91ab 82%);
+  background: linear-gradient(
+    100deg,
+    var(--romance-coral) 8%,
+    var(--romance-salmon) 48%,
+    var(--romance-blush) 82%
+  );
   background-clip: text;
   color: transparent;
   font-family: Georgia, "Times New Roman", serif;
@@ -513,12 +555,14 @@
   font-weight: 900;
   letter-spacing: -0.055em;
   line-height: 0.98;
-  filter: drop-shadow(0 11px 15px rgba(255, 79, 123, 0.2));
+  filter: drop-shadow(
+    0 11px 15px color-mix(in srgb, var(--romance-coral) 20%, transparent)
+  );
 }
 
 .matchMessage {
   margin: 22px 0 0;
-  color: #6c3042;
+  color: var(--foreground);
   font-size: clamp(14px, 2vw, 19px);
   font-weight: 700;
   letter-spacing: 0.1em;
@@ -534,9 +578,9 @@
 
 .matchSparkles span {
   position: absolute;
-  color: #ffd5df;
+  color: var(--romance-baby);
   font-size: 34px;
-  text-shadow: 0 0 18px rgba(255, 79, 123, 0.62);
+  text-shadow: 0 0 18px color-mix(in srgb, var(--romance-coral) 62%, transparent);
   animation: sparkle 1.2s ease-in-out infinite alternate;
 }
 
@@ -548,7 +592,7 @@
 .matchSparkles span:nth-child(2) {
   top: 68%;
   left: 7%;
-  color: #ff4f7b;
+  color: var(--romance-coral);
   font-size: 29px;
   animation-delay: 180ms;
 }
@@ -556,7 +600,7 @@
 .matchSparkles span:nth-child(3) {
   top: 17%;
   right: 8%;
-  color: #ff91ab;
+  color: var(--romance-blush);
   font-size: 44px;
   animation-delay: 340ms;
 }
@@ -570,7 +614,7 @@
 .matchSparkles span:nth-child(5) {
   top: 2%;
   left: 48%;
-  color: #ff6f91;
+  color: var(--romance-salmon);
   font-size: 24px;
   animation-delay: 720ms;
 }
@@ -578,7 +622,7 @@
 .matchSparkles span:nth-child(6) {
   right: 42%;
   bottom: 0;
-  color: #ff91ab;
+  color: var(--romance-blush);
   font-size: 38px;
   animation-delay: 890ms;
 }

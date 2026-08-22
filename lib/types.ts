@@ -11,7 +11,14 @@ export const MODE_LABEL: Record<Mode, string> = {
   romance: "恋愛",
 };
 
-/** モードごとに変わる部分 */
+/**
+ * モードごとに変わる部分。
+ *
+ * work と romance で同じ型を使っている（DB も profiles の1テーブル）。
+ * そのため、片方のモードでしか使わない項目も両方に存在する。
+ * どちらで入力させるかは lib/profile-fields.ts が決めていて、
+ * 使わない側は空文字 / null のままになる。
+ */
 export type Profile = {
   /** 自己紹介文 */
   bio: string;
@@ -19,15 +26,61 @@ export type Profile = {
   tags: string[];
   /** このモードで部署を表示するか */
   showDepartment: boolean;
+
+  // ── 仕事モードで入力する項目 ──
+  /** 詳しい仕事の実績 */
+  workAchievements: string;
+  /** お話しできること */
+  canTalkAbout: string;
+  /** 相談したい内容 */
+  wantToConsult: string;
+  /** 資格情報 */
+  certifications: string;
+  /** 今後興味のある領域 */
+  interestedAreas: string;
+
+  // ── 恋愛モードで入力する項目 ──
+  /** 身長(cm)。未設定は null */
+  heightCm: number | null;
+  /** 体型 */
+  bodyType: string;
+  /** 性格タイプ */
+  personalityType: string;
+  /** 同居人 */
+  livingWith: string;
+  /** 休日 */
+  holiday: string;
+  /** タバコ */
+  smoking: string;
+  /** お酒 */
+  drinking: string;
+  /** 出身 */
+  hometown: string;
+  /** 住んでる場所 */
+  residence: string;
+  /** 希望する相手の最低年齢。未設定は null */
+  preferredAgeMin: number | null;
+  /** 希望する相手の最高年齢。未設定は null */
+  preferredAgeMax: number | null;
+  /** 子供がほしいか */
+  wantsChildren: string;
+  /** 結婚への意思 */
+  marriageIntent: string;
+  /** 出会うまでの希望 */
+  meetingPreference: string;
 };
 
 export type User = {
   id: string; // uuid
   name: string; // 共通
   avatarUrl: string; // 共通
-  department: string; // 共通（表示可否はモードごと）
+  department: string; // 共通（表示可否はモードごと）。いちばん下の階層の名前だけ
+  /** 部署を選んだ経路。「会社 / 区分 / 本部」の形。選び直すときの復元に使う */
+  departmentPath: string;
   jobTitle: string; // 共通
   age: number; // 共通
+  gender: string; // 共通
+  university: string; // 共通（出身大学）
   /** 参加しているモード。含まれていないモードでは一覧に出ない */
   enabledModes: Mode[];
   /** 保有ポイント。増減は repository の awardPoints から行う */

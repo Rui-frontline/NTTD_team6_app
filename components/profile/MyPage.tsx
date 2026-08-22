@@ -8,6 +8,26 @@ import { PageHeading } from "@/components/PageHeading";
 import { PointBalance } from "@/components/PointBalance";
 import type { Profile, User } from "@/lib/types";
 import { MODE_LABEL, MODES, TAG_OPTIONS } from "@/lib/types";
+import {
+  JOB_TITLE_OPTIONS,
+  PROFILE_FIELDS,
+  UNSET,
+  USER_FIELDS,
+} from "@/lib/profile-fields";
+import {
+  departmentLeaf,
+  findDepartmentPath,
+  isDepartmentComplete,
+  joinDepartmentPath,
+  splitDepartmentPath,
+} from "@/lib/departments";
+import {
+  DepartmentPicker,
+  INPUT_CLASS,
+  NumberSelect,
+  Select,
+  TextInput,
+} from "./fields";
 import { TagPicker } from "./TagPicker";
 
 /** 年齢の選択肢。新規登録の入力欄と同じ 18〜99 に揃えている */
@@ -28,6 +48,7 @@ export function MyPage() {
   const [draft, setDraft] = useState<User | null>(currentUser);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [saved, setSaved] = useState(false);
 
   // 隠しファイル入力を「アイコンを変更」ボタンから開くための参照
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -67,6 +88,17 @@ export function MyPage() {
 
   const candidates = TAG_OPTIONS[mode];
   const modeProfile = draft[mode];
+
+  // 経路を持っていない古いデータは、いちばん下の名前から逆引きして復元する。
+  // 選択肢に無い部署（ダミーデータなど）は空のままになり、選び直してもらう。
+  const departmentParts = draft.departmentPath
+    ? splitDepartmentPath(draft.departmentPath)
+    : (findDepartmentPath(draft.department) ?? []);
+  // 選択肢に無い職種（選択式にする前に登録されたもの）が入っていないか。
+  // 入っていたら未選択として扱い、選び直してもらう。
+  const jobTitleInOptions = (JOB_TITLE_OPTIONS as readonly string[]).includes(
+    draft.jobTitle,
+  );
   const isParticipating = draft.enabledModes.includes(mode);
   const isWork = mode === "work";
   const fieldControlClass = isWork
@@ -132,17 +164,52 @@ export function MyPage() {
     // 新規登録で必須にしている項目は、ここでも同じ条件を守る。
     // 空のまま保存できると、探す画面のカードやフィルターから情報が欠落する。
     const name = draft.name.trim();
-    const department = draft.department.trim();
     const jobTitle = draft.jobTitle.trim();
 
-    if (!name || !department || !jobTitle) {
-      setError("名前・部署・職種は空にできません。");
+    if (!name) {
+      setError("名前は空にできません。");
+      setSaved(false);
+      return;
+    }
+    // 選択肢から選ばれていない職種は、探す画面の絞り込みと噛み合わないので弾く
+    if (!(JOB_TITLE_OPTIONS as readonly string[]).includes(jobTitle)) {
+      setError("職種を選択してください。");
+      setSaved(false);
+      return;
+    }
+
+    // 部署は draft.departmentPath ではなく departmentParts で見る。
+    // 経路を持たない既存ユーザーは、画面上は末端の名前から復元できていても
+    // draft.departmentPath が空のままなので、そちらを見ると必ず失敗し、
+    // 部署に触っていなくても他の項目まで保存できなくなる。
+    //
+    // 未選択も途中で止めた状態も、この判定でまとめて弾ける。
+    if (!isDepartmentComplete(departmentParts)) {
+      setError("会社・部署はいちばん下の階層まで選んでください。");
+      setSaved(false);
       return;
     }
     if (!Number.isInteger(draft.age) || draft.age < 18 || draft.age > 99) {
       setError("年齢は18〜99の範囲で入力してください。");
+      setSaved(false);
       return;
     }
+
+    // 希望年齢は両方入れたときだけ前後関係を見る（片方だけの指定も許す）
+    const { preferredAgeMin, preferredAgeMax } = modeProfile;
+    if (
+      preferredAgeMin !== null &&
+      preferredAgeMax !== null &&
+      preferredAgeMin > preferredAgeMax
+    ) {
+      setError("希望する相手の年齢は、最低年齢を最高年齢以下にしてください。");
+      setSaved(false);
+      return;
+    }
+
+    // 復元したぶんもここで保存され、次からは経路が埋まった状態になる
+    const department = departmentLeaf(departmentParts);
+    const departmentPath = joinDepartmentPath(departmentParts);
 
     setSaving(true);
     setError(null);
@@ -153,8 +220,11 @@ export function MyPage() {
     const previousCommon = {
       name: currentUser.name,
       department: currentUser.department,
+      departmentPath: currentUser.departmentPath,
       jobTitle: currentUser.jobTitle,
       age: currentUser.age,
+      gender: currentUser.gender,
+      university: currentUser.university,
       avatarUrl: currentUser.avatarUrl,
       enabledModes: currentUser.enabledModes,
     };
@@ -163,8 +233,11 @@ export function MyPage() {
       await updateUser(draft.id, {
         name,
         department,
+        departmentPath,
         jobTitle,
         age: draft.age,
+        gender: draft.gender,
+        university: draft.university.trim(),
         avatarUrl: draft.avatarUrl,
         enabledModes: draft.enabledModes,
       });
@@ -185,7 +258,13 @@ export function MyPage() {
 
       await refreshUser(); // DBから読み直してローカルのcurrentUserも最新化
       // 前後の空白を落とした値で保存したので、入力欄の表示も揃えておく
-      setDraft((prev) => (prev ? { ...prev, name, department, jobTitle } : prev));
+      setDraft((prev) =>
+        prev ? { ...prev, name, department, departmentPath, jobTitle } : prev,
+      );
+      
+      // 保存できたことを一時的に知らせる。3秒で自動的に消す。
+      setSaved(true);
+      window.setTimeout(() => setSaved(false), 3000);
     } catch (e) {
       setError("保存に失敗しました。もう一度お試しください。");
       console.error(e);
@@ -361,14 +440,29 @@ export function MyPage() {
         </Field>
 
         <Field label="職種">
+<<<<<<< HEAD
           <input
             type="text"
             value={draft.jobTitle}
             onChange={(e) => updateCommon("jobTitle", e.target.value)}
             className={fieldControlClass}
+=======
+          <Select
+            value={jobTitleInOptions ? draft.jobTitle : UNSET}
+            options={JOB_TITLE_OPTIONS}
+            onChange={(v) => updateCommon("jobTitle", v)}
+>>>>>>> 4b48676864818780b8b8355e95e0b1968b0beab7
           />
+          {/* 選択肢に無い値が登録済みのときは、黙って消さずに知らせる */}
+          {!jobTitleInOptions && draft.jobTitle ? (
+            <p className="mt-1 text-xs text-[var(--accent-strong)]">
+              現在の登録は「{draft.jobTitle}
+              」です。選択肢に無いので選び直してください。
+            </p>
+          ) : null}
         </Field>
 
+<<<<<<< HEAD
         <Field label="部署">
           <input
             type="text"
@@ -380,6 +474,46 @@ export function MyPage() {
             値は仕事/恋愛で共通です。表示するかどうかは各モードのタブで設定できます。
           </p>
         </Field>
+=======
+        <DepartmentPicker
+          parts={departmentParts}
+          fallback={draft.department}
+          onChange={(parts) => {
+            // 表示と絞り込みで使うのはいちばん下の名前だけ。
+            // 経路は選び直すときの復元にだけ使うので、別に持つ。
+            setDraft((prev) =>
+              prev
+                ? {
+                    ...prev,
+                    department: departmentLeaf(parts),
+                    departmentPath: joinDepartmentPath(parts),
+                  }
+                : prev,
+            );
+          }}
+        />
+        <p className="-mt-1 text-xs text-[var(--muted)]">
+          値は仕事/恋愛で共通です。表示するかどうかは各モードのタブで設定できます。
+        </p>
+
+        {/* 性別・出身大学。定義は lib/profile-fields.ts に置いてある */}
+        {USER_FIELDS.map((field) => (
+          <Field key={field.key} label={field.label}>
+            {field.kind === "select" ? (
+              <Select
+                value={draft[field.key]}
+                options={field.options}
+                onChange={(v) => updateCommon(field.key, v)}
+              />
+            ) : (
+              <TextInput
+                value={draft[field.key]}
+                onChange={(v) => updateCommon(field.key, v)}
+              />
+            )}
+          </Field>
+        ))}
+>>>>>>> 4b48676864818780b8b8355e95e0b1968b0beab7
       </section>
 
       {/* モード切り替えタブ(アプリ全体のモードと連動) */}
@@ -456,6 +590,7 @@ export function MyPage() {
           onChange={(tags) => updateModeProfile({ tags })}
         />
 
+<<<<<<< HEAD
         <div
           className={
             isWork
@@ -463,6 +598,48 @@ export function MyPage() {
               : "flex items-center justify-between rounded-lg border border-[var(--line)] px-4 py-3"
           }
         >
+=======
+        {/*
+          モードごとの追加項目。何をどの順で出すかは
+          lib/profile-fields.ts の PROFILE_FIELDS が持っている。
+          19個ぶんを手書きするとこのファイルが読めなくなるため。
+        */}
+        {PROFILE_FIELDS[mode].map((field) => (
+          <Field key={field.key} label={field.label}>
+            {field.kind === "select" ? (
+              <Select
+                value={modeProfile[field.key]}
+                options={field.options}
+                onChange={(v) => updateModeProfile({ [field.key]: v })}
+              />
+            ) : field.kind === "number" ? (
+              <NumberSelect
+                value={modeProfile[field.key]}
+                min={field.min}
+                max={field.max}
+                unit={field.unit}
+                onChange={(v) => updateModeProfile({ [field.key]: v })}
+              />
+            ) : field.multiline ? (
+              <textarea
+                value={modeProfile[field.key]}
+                onChange={(e) =>
+                  updateModeProfile({ [field.key]: e.target.value })
+                }
+                rows={3}
+                className={INPUT_CLASS + " resize-none"}
+              />
+            ) : (
+              <TextInput
+                value={modeProfile[field.key]}
+                onChange={(v) => updateModeProfile({ [field.key]: v })}
+              />
+            )}
+          </Field>
+        ))}
+
+        <div className="flex items-center justify-between rounded-lg border border-[var(--line)] px-4 py-3">
+>>>>>>> 4b48676864818780b8b8355e95e0b1968b0beab7
           <div>
             <p className="text-sm font-medium">このモードに参加する</p>
             <p className="text-xs text-[var(--muted)]">
@@ -477,6 +654,11 @@ export function MyPage() {
 
       {error && (
         <p className="mt-4 text-sm text-[var(--accent-strong)]">{error}</p>
+      )}
+            {saved && !error && (
+        <p className="mt-4 rounded-lg border border-[var(--accent)] bg-[var(--accent-soft)] px-4 py-3 text-sm text-[var(--accent-strong)]">
+          保存しました
+        </p>
       )}
 
       <button

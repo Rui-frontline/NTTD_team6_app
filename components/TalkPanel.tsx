@@ -337,7 +337,20 @@ function Conversation({
         {error ? (
           <p className="px-3 pb-2 pt-3 text-xs text-accent">{error}</p>
         ) : null}
+<<<<<<< HEAD
         <div className={mode === "romance" ? "flex items-end gap-2 p-3" : "flex items-end gap-2 p-4"}>
+=======
+
+        {/*
+          送信の直前に必ず目に入るよう、入力欄のすぐ上に置いている。
+          常時出したままにするので、本文より一段小さく・薄くして邪魔をしない。
+        */}
+        <p className="px-3 pt-3 text-[11px] leading-relaxed text-muted">
+          健全なサービスを運営する目的で運営者がメッセージの内容を確認・削除することがあります。相手への配慮あるやり取りをお願いいたします。これに同意した上で送信してください。
+        </p>
+
+        <div className="flex items-end gap-2 px-3 pb-3 pt-2">
+>>>>>>> 4b48676864818780b8b8355e95e0b1968b0beab7
           {/*
             accept="image/*" にしておくと、スマホでは OS のシートに
             「写真を選ぶ」と「カメラで撮影」の両方が並ぶ。
