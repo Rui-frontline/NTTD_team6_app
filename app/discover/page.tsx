@@ -139,14 +139,14 @@ export default function DiscoverPage() {
           top: "20px",
           right: "20px",
           padding: "10px 20px",
-          backgroundColor: "#FFFFFF",
-          color: "#374151",
-          border: "1px solid #E5E7EB",
+          backgroundColor: "var(--surface)",
+          color: "var(--foreground)",
+          border: "1px solid var(--line)",
           borderRadius: "20px",
           cursor: "pointer",
           fontSize: "14px",
           fontWeight: "500",
-          boxShadow: "0 2px 6px rgba(0, 0, 0, 0.05)",
+          boxShadow: "var(--soft-shadow)",
         }}
       >
         フィルター
@@ -169,9 +169,9 @@ export default function DiscoverPage() {
             <div style={{
               width: "300px",
               height: "500px",
-              backgroundColor: "#FFFFFF",
+              backgroundColor: "var(--surface)",
               borderRadius: "28px",
-              boxShadow: "0 4px 12px rgba(0, 0, 0, 0.08)",
+              boxShadow: "var(--card-shadow)",
               overflow: "hidden",
               display: "flex",
               alignItems: "center",
@@ -193,9 +193,9 @@ export default function DiscoverPage() {
             <div style={{
               width: "600px",
               height: "500px",
-              backgroundColor: "#FFFFFF",
+              backgroundColor: "var(--surface)",
               borderRadius: "28px",
-              boxShadow: "0 4px 12px rgba(0, 0, 0, 0.08)",
+              boxShadow: "var(--card-shadow)",
               padding: "32px",
               overflowY: "auto",
               display: "flex",
@@ -208,7 +208,7 @@ export default function DiscoverPage() {
                 margin: 0,
                 fontSize: "28px",
                 fontWeight: "bold",
-                color: "#1E1B4B",
+                color: "var(--foreground)",
               }}>
                 {currentUser_displayed.name}
               </h1>
@@ -217,7 +217,7 @@ export default function DiscoverPage() {
               <p style={{
                 margin: 0,
                 fontSize: "16px",
-                color: "#6B7280",
+                color: "var(--muted)",
               }}>
                 {/* 恋愛モードで部署を隠す設定を確認 */}
                 {mode === "romance" && !currentUser_displayed.romance.showDepartment
@@ -226,15 +226,15 @@ export default function DiscoverPage() {
               </p>
 
               {/* 区切り線 */}
-              <div style={{ height: "1px", backgroundColor: "#E5E7EB" }} />
+              <div style={{ height: "1px", backgroundColor: "var(--line)" }} />
 
               {/* 年齢（恋愛モードのみ） */}
               {mode === "romance" && (
                 <div>
-                  <p style={{ margin: "0 0 8px 0", fontSize: "14px", fontWeight: "bold", color: "#1E1B4B" }}>
+                  <p style={{ margin: "0 0 8px 0", fontSize: "14px", fontWeight: "bold", color: "var(--foreground)" }}>
                     年齢
                   </p>
-                  <p style={{ margin: 0, fontSize: "16px", color: "#374151" }}>
+                  <p style={{ margin: 0, fontSize: "16px", color: "var(--foreground)" }}>
                     {currentUser_displayed.age}歳
                   </p>
                 </div>
@@ -242,7 +242,7 @@ export default function DiscoverPage() {
 
               {/* タグ */}
               <div>
-                <p style={{ margin: "0 0 8px 0", fontSize: "14px", fontWeight: "bold", color: "#1E1B4B" }}>
+                <p style={{ margin: "0 0 8px 0", fontSize: "14px", fontWeight: "bold", color: "var(--foreground)" }}>
                   タグ
                 </p>
                 <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
@@ -251,8 +251,8 @@ export default function DiscoverPage() {
                       key={tag}
                       style={{
                         padding: "6px 16px",
-                        backgroundColor: "#EEF2FF",
-                        color: "#4F46E5",
+                        backgroundColor: "var(--accent-soft)",
+                        color: "var(--accent-strong)",
                         borderRadius: "20px",
                         fontSize: "14px",
                       }}
@@ -264,17 +264,17 @@ export default function DiscoverPage() {
               </div>
 
               {/* 区切り線 */}
-              <div style={{ height: "1px", backgroundColor: "#E5E7EB" }} />
+              <div style={{ height: "1px", backgroundColor: "var(--line)" }} />
 
               {/* 自己紹介 */}
               <div>
-                <p style={{ margin: "0 0 12px 0", fontSize: "14px", fontWeight: "bold", color: "#1E1B4B" }}>
+                <p style={{ margin: "0 0 12px 0", fontSize: "14px", fontWeight: "bold", color: "var(--foreground)" }}>
                   自己紹介
                 </p>
                 <p style={{
                   margin: 0,
                   fontSize: "15px",
-                  color: "#374151",
+                  color: "var(--foreground)",
                   lineHeight: "1.7",
                   whiteSpace: "pre-wrap",
                 }}>
@@ -291,7 +291,7 @@ export default function DiscoverPage() {
                   marginTop: "auto",
                   padding: "12px 0",
                   backgroundColor: "transparent",
-                  color: "#4F46E5",
+                  color: "var(--accent-strong)",
                   border: "none",
                   cursor: "pointer",
                   fontSize: "14px",
@@ -315,14 +315,14 @@ export default function DiscoverPage() {
               style={{
                 width: "200px",
                 height: "56px",
-                backgroundColor: "#FFFFFF",
-                color: "#374151",
-                border: "1px solid #E5E7EB",
+                backgroundColor: "var(--surface)",
+                color: "var(--foreground)",
+                border: "1px solid var(--line)",
                 borderRadius: "28px",
                 cursor: "pointer",
                 fontSize: "16px",
                 fontWeight: "500",
-                boxShadow: "0 2px 6px rgba(0, 0, 0, 0.05)",
+                boxShadow: "var(--soft-shadow)",
               }}
             >
               ✕ 見送る
@@ -332,14 +332,14 @@ export default function DiscoverPage() {
               style={{
                 width: "200px",
                 height: "56px",
-                background: "linear-gradient(to right, #3B82F6, #8B5CF6)",
+                background: "var(--action-gradient)",
                 color: "#FFFFFF",
                 border: "none",
                 borderRadius: "28px",
                 cursor: "pointer",
                 fontSize: "16px",
                 fontWeight: "500",
-                boxShadow: "0 4px 12px rgba(59, 130, 246, 0.3)",
+                boxShadow: "var(--action-shadow)",
               }}
             >
               ♡ いいね
@@ -358,31 +358,31 @@ export default function DiscoverPage() {
           {/* 恋愛モードがOFFの場合の専用メッセージ */}
           {mode === "romance" && users.length === 0 && currentUser && !currentUser.enabledModes.includes("romance") ? (
             <>
-              <p style={{ fontSize: "20px", color: "#374151", margin: 0 }}>
+              <p style={{ fontSize: "20px", color: "var(--foreground)", margin: 0 }}>
                 恋愛機能はOFFです
               </p>
-              <p style={{ fontSize: "16px", color: "#6B7280", margin: 0 }}>
+              <p style={{ fontSize: "16px", color: "var(--muted)", margin: 0 }}>
                 恋愛モードを利用するには、マイページで機能をONにしてください
               </p>
               <button
                 onClick={() => router.push("/mypage")}
                 style={{
                   padding: "12px 32px",
-                  background: "linear-gradient(to right, #3B82F6, #8B5CF6)",
+                  background: "var(--action-gradient)",
                   color: "#FFFFFF",
                   border: "none",
                   borderRadius: "28px",
                   cursor: "pointer",
                   fontSize: "16px",
                   fontWeight: "500",
-                  boxShadow: "0 4px 12px rgba(59, 130, 246, 0.3)",
+                  boxShadow: "var(--action-shadow)",
                 }}
               >
                 マイページで設定する
               </button>
             </>
           ) : (
-            <p style={{ fontSize: "24px", color: "#666", margin: 0 }}>
+            <p style={{ fontSize: "24px", color: "var(--muted)", margin: 0 }}>
               {users.length === 0 ? "ユーザーが見つかりませんでした" : "全てのユーザーを確認しました"}
             </p>
           )}
@@ -410,10 +410,11 @@ export default function DiscoverPage() {
               right: 0,
               bottom: 0,
               width: "400px",
-              backgroundColor: "white",
+              backgroundColor: "var(--surface)",
+              color: "var(--foreground)",
               padding: "20px",
               overflowY: "auto",
-              boxShadow: "-2px 0 10px rgba(0,0,0,0.3)",
+              boxShadow: "var(--card-shadow)",
             }}
             onClick={(e) => e.stopPropagation()}
           >
@@ -423,7 +424,8 @@ export default function DiscoverPage() {
                 onClick={() => setShowFilter(false)}
                 style={{
                   padding: "5px 15px",
-                  backgroundColor: "#ccc",
+                  backgroundColor: "var(--accent-soft)",
+                  color: "var(--accent-strong)",
                   border: "none",
                   borderRadius: "3px",
                   cursor: "pointer",
@@ -562,7 +564,8 @@ export default function DiscoverPage() {
               }}
               style={{
                 padding: "10px 20px",
-                backgroundColor: "#ccc",
+                backgroundColor: "var(--accent-soft)",
+                color: "var(--accent-strong)",
                 border: "none",
                 borderRadius: "5px",
                 cursor: "pointer",
@@ -597,11 +600,11 @@ export default function DiscoverPage() {
             style={{
               width: "900px",
               maxHeight: "90vh",
-              backgroundColor: "#FFFFFF",
+              backgroundColor: "var(--surface)",
               borderRadius: "28px",
               padding: "40px",
               overflowY: "auto",
-              boxShadow: "0 8px 32px rgba(0, 0, 0, 0.15)",
+              boxShadow: "var(--card-shadow)",
             }}
             onClick={(e) => e.stopPropagation()}
           >
@@ -611,8 +614,8 @@ export default function DiscoverPage() {
                 onClick={() => setShowDetailProfile(false)}
                 style={{
                   padding: "8px 20px",
-                  backgroundColor: "#F3F4F6",
-                  color: "#374151",
+                  backgroundColor: "var(--accent-soft)",
+                  color: "var(--accent-strong)",
                   border: "none",
                   borderRadius: "20px",
                   cursor: "pointer",
@@ -646,38 +649,38 @@ export default function DiscoverPage() {
                   margin: 0,
                   fontSize: "32px",
                   fontWeight: "bold",
-                  color: "#1E1B4B",
+                  color: "var(--foreground)",
                 }}>
                   {currentUser_displayed.name}
                 </h1>
 
                 {/* 基本情報 */}
                 <div>
-                  <p style={{ margin: "0 0 8px 0", fontSize: "14px", fontWeight: "bold", color: "#1E1B4B" }}>
+                  <p style={{ margin: "0 0 8px 0", fontSize: "14px", fontWeight: "bold", color: "var(--foreground)" }}>
                     基本情報
                   </p>
                   {/* 恋愛モードで部署を隠す設定を確認 */}
                   {!(mode === "romance" && !currentUser_displayed.romance.showDepartment) && (
-                    <p style={{ margin: "0 0 4px 0", fontSize: "16px", color: "#374151" }}>
+                    <p style={{ margin: "0 0 4px 0", fontSize: "16px", color: "var(--foreground)" }}>
                       部署: {currentUser_displayed.department}
                     </p>
                   )}
-                  <p style={{ margin: "0 0 4px 0", fontSize: "16px", color: "#374151" }}>
+                  <p style={{ margin: "0 0 4px 0", fontSize: "16px", color: "var(--foreground)" }}>
                     職種: {currentUser_displayed.jobTitle}
                   </p>
                   {mode === "romance" && (
-                    <p style={{ margin: "0 0 4px 0", fontSize: "16px", color: "#374151" }}>
+                    <p style={{ margin: "0 0 4px 0", fontSize: "16px", color: "var(--foreground)" }}>
                       年齢: {currentUser_displayed.age}歳
                     </p>
                   )}
                 </div>
 
                 {/* 区切り線 */}
-                <div style={{ height: "1px", backgroundColor: "#E5E7EB" }} />
+                <div style={{ height: "1px", backgroundColor: "var(--line)" }} />
 
                 {/* タグ */}
                 <div>
-                  <p style={{ margin: "0 0 12px 0", fontSize: "14px", fontWeight: "bold", color: "#1E1B4B" }}>
+                  <p style={{ margin: "0 0 12px 0", fontSize: "14px", fontWeight: "bold", color: "var(--foreground)" }}>
                     タグ
                   </p>
                   <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
@@ -686,8 +689,8 @@ export default function DiscoverPage() {
                         key={tag}
                         style={{
                           padding: "8px 20px",
-                          backgroundColor: "#EEF2FF",
-                          color: "#4F46E5",
+                          backgroundColor: "var(--accent-soft)",
+                          color: "var(--accent-strong)",
                           borderRadius: "20px",
                           fontSize: "15px",
                         }}
@@ -699,17 +702,17 @@ export default function DiscoverPage() {
                 </div>
 
                 {/* 区切り線 */}
-                <div style={{ height: "1px", backgroundColor: "#E5E7EB" }} />
+                <div style={{ height: "1px", backgroundColor: "var(--line)" }} />
 
                 {/* 自己紹介 */}
                 <div>
-                  <p style={{ margin: "0 0 12px 0", fontSize: "14px", fontWeight: "bold", color: "#1E1B4B" }}>
+                  <p style={{ margin: "0 0 12px 0", fontSize: "14px", fontWeight: "bold", color: "var(--foreground)" }}>
                     自己紹介
                   </p>
                   <p style={{
                     margin: 0,
                     fontSize: "16px",
-                    color: "#374151",
+                    color: "var(--foreground)",
                     lineHeight: "1.8",
                     whiteSpace: "pre-wrap",
                   }}>
@@ -745,11 +748,11 @@ export default function DiscoverPage() {
         >
           <div
             style={{
-              backgroundColor: "#FFFFFF",
+              backgroundColor: "var(--surface)",
               padding: "40px",
               borderRadius: "28px",
               maxWidth: "650px",
-              boxShadow: "0 8px 32px rgba(0, 0, 0, 0.15)",
+              boxShadow: "var(--card-shadow)",
               animation: "scaleIn 0.3s ease-in-out",
             }}
             onClick={(e) => e.stopPropagation()}
@@ -761,7 +764,7 @@ export default function DiscoverPage() {
                   margin: "0 0 8px 0",
                   fontSize: "28px",
                   fontWeight: "bold",
-                  color: "#1E1B4B",
+                  color: "var(--foreground)",
                 }}
               >
                 マッチ成立！
@@ -770,7 +773,7 @@ export default function DiscoverPage() {
                 style={{
                   margin: 0,
                   fontSize: "14px",
-                  color: "#6B7280",
+                  color: "var(--muted)",
                 }}
               >
                 相互にいいねが送られました
@@ -792,8 +795,8 @@ export default function DiscoverPage() {
                   flexShrink: 0,
                   borderRadius: "50%",
                   overflow: "hidden",
-                  border: "3px solid #EEF2FF",
-                  boxShadow: "0 4px 12px rgba(79, 70, 229, 0.15)",
+                  border: "3px solid var(--accent-soft)",
+                  boxShadow: "var(--soft-shadow)",
                 }}
               >
                 <img
@@ -815,7 +818,7 @@ export default function DiscoverPage() {
                     margin: "0 0 8px 0",
                     fontSize: "24px",
                     fontWeight: "bold",
-                    color: "#1E1B4B",
+                    color: "var(--foreground)",
                   }}
                 >
                   {matchedUser.name}
@@ -826,7 +829,7 @@ export default function DiscoverPage() {
                   style={{
                     margin: "0 0 16px 0",
                     fontSize: "14px",
-                    color: "#6B7280",
+                    color: "var(--muted)",
                   }}
                 >
                   {matchedUser.department} / {matchedUser.jobTitle}
@@ -837,7 +840,7 @@ export default function DiscoverPage() {
                   style={{
                     margin: 0,
                     fontSize: "14px",
-                    color: "#374151",
+                    color: "var(--foreground)",
                     lineHeight: "1.6",
                   }}
                 >
@@ -855,14 +858,14 @@ export default function DiscoverPage() {
                 }}
                 style={{
                   padding: "12px 24px",
-                  backgroundColor: "#FFFFFF",
-                  color: "#374151",
-                  border: "1px solid #E5E7EB",
+                  backgroundColor: "var(--surface)",
+                  color: "var(--foreground)",
+                  border: "1px solid var(--line)",
                   borderRadius: "28px",
                   cursor: "pointer",
                   fontSize: "14px",
                   fontWeight: "500",
-                  boxShadow: "0 2px 6px rgba(0, 0, 0, 0.05)",
+                  boxShadow: "var(--soft-shadow)",
                 }}
               >
                 後で
@@ -878,14 +881,14 @@ export default function DiscoverPage() {
                 }}
                 style={{
                   padding: "12px 24px",
-                  background: "linear-gradient(to right, #3B82F6, #8B5CF6)",
+                  background: "var(--action-gradient)",
                   color: "#FFFFFF",
                   border: "none",
                   borderRadius: "28px",
                   cursor: "pointer",
                   fontSize: "14px",
                   fontWeight: "500",
-                  boxShadow: "0 4px 12px rgba(59, 130, 246, 0.3)",
+                  boxShadow: "var(--action-shadow)",
                 }}
               >
                 トークを開く

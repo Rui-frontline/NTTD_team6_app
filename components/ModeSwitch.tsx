@@ -19,7 +19,7 @@ export function ModeSwitch() {
     <div
       role="tablist"
       aria-label="モードの切り替え"
-      className="flex items-center gap-1 rounded-full border border-[var(--tab-shell-border)] bg-[var(--tab-shell-bg)] p-1"
+      className="flex items-center gap-1 rounded-full border border-[var(--tab-shell-border)] bg-[var(--tab-shell-bg)] p-1 [box-shadow:var(--soft-shadow)]"
     >
       {MODES.map((m) => {
         const active = m === mode;
@@ -31,9 +31,9 @@ export function ModeSwitch() {
             aria-selected={active}
             onClick={() => setMode(m)}
             className={[
-              "flex items-center gap-2 rounded-[var(--tab-radius)] px-5 py-1.5 text-sm font-bold transition-colors",
+              "flex items-center gap-2 rounded-[var(--tab-radius)] px-5 py-1.5 text-sm font-bold transition-all",
               active
-                ? "bg-[var(--tab-active-bg)] text-[var(--tab-active-fg)]"
+                ? "[background:var(--tab-active-bg)] text-[var(--tab-active-fg)] [box-shadow:var(--soft-shadow)]"
                 : "text-[var(--tab-idle-fg)]",
             ].join(" ")}
           >
