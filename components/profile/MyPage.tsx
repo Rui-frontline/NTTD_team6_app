@@ -8,6 +8,21 @@ import { PageHeading } from "@/components/PageHeading";
 import { PointBalance } from "@/components/PointBalance";
 import type { Profile, User } from "@/lib/types";
 import { MODE_LABEL, MODES, TAG_OPTIONS } from "@/lib/types";
+import {
+  PROFILE_FIELDS,
+  UNSET,
+  UNSET_LABEL,
+  USER_FIELDS,
+  numberOptions,
+} from "@/lib/profile-fields";
+import {
+  departmentLeaf,
+  departmentLevels,
+  findDepartmentPath,
+  isDepartmentComplete,
+  joinDepartmentPath,
+  splitDepartmentPath,
+} from "@/lib/departments";
 import { TagPicker } from "./TagPicker";
 
 /** 年齢の選択肢。新規登録の入力欄と同じ 18〜99 に揃えている */
@@ -68,6 +83,12 @@ export function MyPage() {
 
   const candidates = TAG_OPTIONS[mode];
   const modeProfile = draft[mode];
+
+  // 経路を持っていない古いデータは、いちばん下の名前から逆引きして復元する。
+  // 選択肢に無い部署（ダミーデータなど）は空のままになり、選び直してもらう。
+  const departmentParts = draft.departmentPath
+    ? splitDepartmentPath(draft.departmentPath)
+    : (findDepartmentPath(draft.department) ?? []);
   const isParticipating = draft.enabledModes.includes(mode);
 
   const updateCommon = <K extends keyof User>(key: K, value: User[K]) => {
@@ -129,18 +150,46 @@ export function MyPage() {
     // 新規登録で必須にしている項目は、ここでも同じ条件を守る。
     // 空のまま保存できると、探す画面のカードやフィルターから情報が欠落する。
     const name = draft.name.trim();
-    const department = draft.department.trim();
     const jobTitle = draft.jobTitle.trim();
 
-    if (!name || !department || !jobTitle) {
-      setError("名前・部署・職種は空にできません。");
+    if (!name || !jobTitle) {
+      setError("名前・職種は空にできません。");
+      setSaved(false);
+      return;
+    }
+
+    // 部署は draft.departmentPath ではなく departmentParts で見る。
+    // 経路を持たない既存ユーザーは、画面上は末端の名前から復元できていても
+    // draft.departmentPath が空のままなので、そちらを見ると必ず失敗し、
+    // 部署に触っていなくても他の項目まで保存できなくなる。
+    //
+    // 未選択も途中で止めた状態も、この判定でまとめて弾ける。
+    if (!isDepartmentComplete(departmentParts)) {
+      setError("部署はいちばん下の階層まで選んでください。");
       setSaved(false);
       return;
     }
     if (!Number.isInteger(draft.age) || draft.age < 18 || draft.age > 99) {
       setError("年齢は18〜99の範囲で入力してください。");
+      setSaved(false);
       return;
     }
+
+    // 希望年齢は両方入れたときだけ前後関係を見る（片方だけの指定も許す）
+    const { preferredAgeMin, preferredAgeMax } = modeProfile;
+    if (
+      preferredAgeMin !== null &&
+      preferredAgeMax !== null &&
+      preferredAgeMin > preferredAgeMax
+    ) {
+      setError("希望する相手の年齢は、最低年齢を最高年齢以下にしてください。");
+      setSaved(false);
+      return;
+    }
+
+    // 復元したぶんもここで保存され、次からは経路が埋まった状態になる
+    const department = departmentLeaf(departmentParts);
+    const departmentPath = joinDepartmentPath(departmentParts);
 
     setSaving(true);
     setError(null);
@@ -151,8 +200,11 @@ export function MyPage() {
     const previousCommon = {
       name: currentUser.name,
       department: currentUser.department,
+      departmentPath: currentUser.departmentPath,
       jobTitle: currentUser.jobTitle,
       age: currentUser.age,
+      gender: currentUser.gender,
+      university: currentUser.university,
       avatarUrl: currentUser.avatarUrl,
       enabledModes: currentUser.enabledModes,
     };
@@ -161,8 +213,11 @@ export function MyPage() {
       await updateUser(draft.id, {
         name,
         department,
+        departmentPath,
         jobTitle,
         age: draft.age,
+        gender: draft.gender,
+        university: draft.university.trim(),
         avatarUrl: draft.avatarUrl,
         enabledModes: draft.enabledModes,
       });
@@ -183,7 +238,9 @@ export function MyPage() {
 
       await refreshUser(); // DBから読み直してローカルのcurrentUserも最新化
       // 前後の空白を落とした値で保存したので、入力欄の表示も揃えておく
-      setDraft((prev) => (prev ? { ...prev, name, department, jobTitle } : prev));
+      setDraft((prev) =>
+        prev ? { ...prev, name, department, departmentPath, jobTitle } : prev,
+      );
       
       // 保存できたことを一時的に知らせる。3秒で自動的に消す。
       setSaved(true);
@@ -299,17 +356,41 @@ export function MyPage() {
           />
         </Field>
 
-        <Field label="部署">
-          <input
-            type="text"
-            value={draft.department}
-            onChange={(e) => updateCommon("department", e.target.value)}
-            className="w-full rounded-md border border-[var(--line)] bg-[var(--surface)] px-3 py-2 text-sm text-[var(--foreground)] focus:border-[var(--accent)] focus:outline-none focus:ring-1 focus:ring-[var(--accent)]"
-          />
-          <p className="mt-1 text-xs text-[var(--muted)]">
-            値は仕事/恋愛で共通です。表示するかどうかは各モードのタブで設定できます。
-          </p>
-        </Field>
+        <DepartmentPicker
+          parts={departmentParts}
+          fallback={draft.department}
+          onChange={(parts) => {
+            // 表示と絞り込みで使うのはいちばん下の名前だけ。
+            // 経路は選び直すときの復元にだけ使うので、別に持つ。
+            setDraft((prev) =>
+              prev
+                ? {
+                    ...prev,
+                    department: departmentLeaf(parts),
+                    departmentPath: joinDepartmentPath(parts),
+                  }
+                : prev,
+            );
+          }}
+        />
+
+        {/* 性別・出身大学。定義は lib/profile-fields.ts に置いてある */}
+        {USER_FIELDS.map((field) => (
+          <Field key={field.key} label={field.label}>
+            {field.kind === "select" ? (
+              <Select
+                value={draft[field.key]}
+                options={field.options}
+                onChange={(v) => updateCommon(field.key, v)}
+              />
+            ) : (
+              <TextInput
+                value={draft[field.key]}
+                onChange={(v) => updateCommon(field.key, v)}
+              />
+            )}
+          </Field>
+        ))}
       </section>
 
       {/* モード切り替えタブ(アプリ全体のモードと連動) */}
@@ -361,6 +442,45 @@ export function MyPage() {
           onChange={(tags) => updateModeProfile({ tags })}
         />
 
+        {/*
+          モードごとの追加項目。何をどの順で出すかは
+          lib/profile-fields.ts の PROFILE_FIELDS が持っている。
+          19個ぶんを手書きするとこのファイルが読めなくなるため。
+        */}
+        {PROFILE_FIELDS[mode].map((field) => (
+          <Field key={field.key} label={field.label}>
+            {field.kind === "select" ? (
+              <Select
+                value={modeProfile[field.key]}
+                options={field.options}
+                onChange={(v) => updateModeProfile({ [field.key]: v })}
+              />
+            ) : field.kind === "number" ? (
+              <NumberSelect
+                value={modeProfile[field.key]}
+                min={field.min}
+                max={field.max}
+                unit={field.unit}
+                onChange={(v) => updateModeProfile({ [field.key]: v })}
+              />
+            ) : field.multiline ? (
+              <textarea
+                value={modeProfile[field.key]}
+                onChange={(e) =>
+                  updateModeProfile({ [field.key]: e.target.value })
+                }
+                rows={3}
+                className={INPUT_CLASS + " resize-none"}
+              />
+            ) : (
+              <TextInput
+                value={modeProfile[field.key]}
+                onChange={(v) => updateModeProfile({ [field.key]: v })}
+              />
+            )}
+          </Field>
+        ))}
+
         <div className="flex items-center justify-between rounded-lg border border-[var(--line)] px-4 py-3">
           <div>
             <p className="text-sm font-medium">このモードに参加する</p>
@@ -392,6 +512,156 @@ export function MyPage() {
         {saving ? "保存中..." : "保存する"}
       </button>
     </div>
+  );
+}
+
+/**
+ * 部署を「会社 → 区分 → 本部 → 部」と辿って選ばせる。
+ *
+ * 階層の深さが枝によって違うので、選択欄の数は固定できない。
+ * どこまで出すかは lib/departments.ts の departmentLevels が決めていて、
+ * 選んだ先にまだ下があれば欄が1つ増える。
+ */
+function DepartmentPicker({
+  parts,
+  fallback,
+  onChange,
+}: {
+  parts: string[];
+  /** 選択肢に無い部署が登録されている場合に、元の値を知らせるために使う */
+  fallback: string;
+  onChange: (parts: string[]) => void;
+}) {
+  const levels = departmentLevels(parts);
+  const complete = isDepartmentComplete(parts);
+  // 登録済みなのに選択肢から復元できなかった場合だけ知らせる
+  const orphaned = parts.length === 0 && fallback !== "";
+
+  return (
+    <div className="space-y-2">
+      <span className="block text-sm font-medium">部署</span>
+
+      {levels.map((level, depth) => (
+        <select
+          key={depth}
+          value={level.value}
+          aria-label={level.label}
+          onChange={(e) => {
+            // 上の段を変えたら、下の段の選択は捨てる
+            const next = parts.slice(0, depth);
+            if (e.target.value) next[depth] = e.target.value;
+            onChange(next);
+          }}
+          className={INPUT_CLASS}
+        >
+          <option value={UNSET}>{level.label}を選択</option>
+          {level.options.map((node) => (
+            <option key={node.label} value={node.label}>
+              {node.label}
+            </option>
+          ))}
+        </select>
+      ))}
+
+      {orphaned ? (
+        <p className="text-xs text-[var(--accent-strong)]">
+          現在の登録は「{fallback}」です。選択肢に無いので選び直してください。
+        </p>
+      ) : !complete ? (
+        <p className="text-xs text-[var(--muted)]">
+          いちばん下の階層まで選んでください。
+        </p>
+      ) : null}
+
+      <p className="text-xs text-[var(--muted)]">
+        値は仕事/恋愛で共通です。表示するかどうかは各モードのタブで設定できます。
+      </p>
+    </div>
+  );
+}
+
+/** 入力欄の見た目。同じ指定を何度も書かないようにまとめている */
+const INPUT_CLASS =
+  "w-full rounded-md border border-[var(--line)] bg-[var(--surface)] px-3 py-2 text-sm text-[var(--foreground)] focus:border-[var(--accent)] focus:outline-none focus:ring-1 focus:ring-[var(--accent)]";
+
+function TextInput({
+  value,
+  onChange,
+}: {
+  value: string;
+  onChange: (value: string) => void;
+}) {
+  return (
+    <input
+      type="text"
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      className={INPUT_CLASS}
+    />
+  );
+}
+
+/** 選択式。未設定は空文字で表す */
+function Select({
+  value,
+  options,
+  onChange,
+}: {
+  value: string;
+  options: readonly string[];
+  onChange: (value: string) => void;
+}) {
+  return (
+    <select
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      className={INPUT_CLASS}
+    >
+      <option value={UNSET}>{UNSET_LABEL}</option>
+      {options.map((option) => (
+        <option key={option} value={option}>
+          {option}
+        </option>
+      ))}
+    </select>
+  );
+}
+
+/**
+ * 数値の選択。未設定は null で表す。
+ *
+ * input[type=number] を使わないのは、中身を全部消したときに Number("") が
+ * 0 になり、「未設定」と「0」を区別できなくなるため。
+ */
+function NumberSelect({
+  value,
+  min,
+  max,
+  unit,
+  onChange,
+}: {
+  value: number | null;
+  min: number;
+  max: number;
+  unit: string;
+  onChange: (value: number | null) => void;
+}) {
+  return (
+    <select
+      value={value === null ? UNSET : String(value)}
+      onChange={(e) =>
+        onChange(e.target.value === UNSET ? null : Number(e.target.value))
+      }
+      className={INPUT_CLASS}
+    >
+      <option value={UNSET}>{UNSET_LABEL}</option>
+      {numberOptions(min, max).map((n) => (
+        <option key={n} value={n}>
+          {n}
+          {unit}
+        </option>
+      ))}
+    </select>
   );
 }
 
