@@ -22,6 +22,8 @@ type SignUpInput = {
   password: string;
   name: string;
   department: string;
+  /** 部署を選んだ経路。「会社 / 区分 / 本部」の形 */
+  departmentPath: string;
   jobTitle: string;
   age: number;
 };
@@ -122,6 +124,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
       id: data.user.id,
       name: input.name,
       department: input.department,
+      departmentPath: input.departmentPath,
       jobTitle: input.jobTitle,
       age: input.age,
     });
