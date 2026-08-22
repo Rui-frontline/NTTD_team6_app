@@ -28,6 +28,7 @@ export function MyPage() {
   const [draft, setDraft] = useState<User | null>(currentUser);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [saved, setSaved] = useState(false);
 
   // 隠しファイル入力を「アイコンを変更」ボタンから開くための参照
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -133,6 +134,7 @@ export function MyPage() {
 
     if (!name || !department || !jobTitle) {
       setError("名前・部署・職種は空にできません。");
+      setSaved(false);
       return;
     }
     if (!Number.isInteger(draft.age) || draft.age < 18 || draft.age > 99) {
@@ -182,6 +184,10 @@ export function MyPage() {
       await refreshUser(); // DBから読み直してローカルのcurrentUserも最新化
       // 前後の空白を落とした値で保存したので、入力欄の表示も揃えておく
       setDraft((prev) => (prev ? { ...prev, name, department, jobTitle } : prev));
+      
+      // 保存できたことを一時的に知らせる。3秒で自動的に消す。
+      setSaved(true);
+      window.setTimeout(() => setSaved(false), 3000);
     } catch (e) {
       setError("保存に失敗しました。もう一度お試しください。");
       console.error(e);
@@ -370,6 +376,11 @@ export function MyPage() {
 
       {error && (
         <p className="mt-4 text-sm text-[var(--accent-strong)]">{error}</p>
+      )}
+            {saved && !error && (
+        <p className="mt-4 rounded-lg border border-[var(--accent)] bg-[var(--accent-soft)] px-4 py-3 text-sm text-[var(--accent-strong)]">
+          保存しました
+        </p>
       )}
 
       <button
