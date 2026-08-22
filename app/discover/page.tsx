@@ -365,7 +365,7 @@ export default function DiscoverPage() {
                 恋愛モードを利用するには、マイページで機能をONにしてください
               </p>
               <button
-                onClick={() => router.push("/mypage")}
+                onClick={() => router.push("/me")}
                 style={{
                   padding: "12px 32px",
                   background: "var(--action-gradient)",

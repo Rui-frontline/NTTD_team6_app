@@ -30,6 +30,8 @@ export type User = {
   age: number; // 共通
   /** 参加しているモード。含まれていないモードでは一覧に出ない */
   enabledModes: Mode[];
+  /** 保有ポイント。増減は repository の awardPoints から行う */
+  points: number;
   work: Profile;
   romance: Profile;
 };
@@ -116,3 +118,26 @@ export const TAG_OPTIONS: Record<Mode, string[]> = {
 
 /** タグの上限 */
 export const MAX_TAGS = 5;
+
+/** 募集掲示板の投稿 */
+export type Board = {
+  id: string;
+  userId: string;
+  mode: Mode;
+  title: string;
+  description: string;
+  maxParticipants: number | null; // null = 無制限
+  deadline: string | null; // null = 無期限
+  status: "募集中" | "募集終了";
+  createdAt: string;
+  updatedAt: string;
+};
+
+/** 募集掲示板のグループチャットメッセージ */
+export type BoardMessage = {
+  id: string;
+  boardId: string;
+  userId: string;
+  body: string;
+  createdAt: string;
+};

@@ -3,6 +3,8 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
+import { PointBalance, formatPoints } from "@/components/PointBalance";
+import { useSession } from "@/lib/session";
 
 /**
  * 左サイドバー。画面の左端を全高で占める。
@@ -57,25 +59,90 @@ export function Sidebar() {
         })}
       </nav>
 
-      {/* アプリ名は最下部。畳んでいるときはマークだけ残す */}
-      <Link
-        href="/discover"
-        className="mt-auto mb-5 flex items-center gap-2 rounded-xl p-3 transition-colors hover:bg-[var(--sidebar-hover-bg)]"
-        title="MeetLink 社内コネクト"
-      >
-        <LogoMark />
-        {open ? (
-          <span className="min-w-0">
-            <span className="block truncate text-sm font-extrabold tracking-tight">
-              MeetLink
+      {/* 画面の下部。上から アカウント → 保有ポイント → アプリ名 */}
+      <div className="mt-auto mb-5 flex flex-col gap-2 px-3">
+        <AccountCard open={open} />
+
+        <Link
+          href="/discover"
+          className="flex items-center gap-2 rounded-xl p-2 transition-colors hover:bg-[var(--sidebar-hover-bg)]"
+          title="MeetLink 社内コネクト"
+        >
+          <LogoMark />
+          {open ? (
+            <span className="min-w-0">
+              <span className="block truncate text-sm font-extrabold tracking-tight">
+                MeetLink
+              </span>
+              <span className="block truncate text-[11px] text-[var(--sidebar-muted)]">
+                社内コネクト
+              </span>
             </span>
-            <span className="block truncate text-[11px] text-[var(--sidebar-muted)]">
-              社内コネクト
-            </span>
-          </span>
-        ) : null}
-      </Link>
+          ) : null}
+        </Link>
+      </div>
     </aside>
+  );
+}
+
+/**
+ * いまログインしているアカウント。
+ * デモでアカウントを切り替えながら見せるので、誰で入っているかが
+ * 常に分かるようにしている。
+ */
+function AccountCard({ open }: { open: boolean }) {
+  const { currentUser } = useSession();
+
+  if (!currentUser) return null;
+
+  // 畳んでいるとポイントが見えなくなるので、ここに入れておく
+  const label = `${currentUser.name}（${currentUser.department}） ${formatPoints(
+    currentUser.points,
+  )} pt`;
+
+  // 畳んでいるときは枠を出さず、アイコンだけ中央に置く。
+  // 幅 4rem に枠と余白まで入れると、アイコンがはみ出すため。
+  if (!open) {
+    return (
+      // eslint-disable-next-line @next/next/no-img-element
+      <img
+        src={currentUser.avatarUrl}
+        alt=""
+        title={label}
+        width={32}
+        height={32}
+        className="mx-auto h-8 w-8 rounded-full bg-[var(--sidebar-hover-bg)] object-cover"
+      />
+    );
+  }
+
+  return (
+    <div
+      title={label}
+      className="rounded-xl border border-[var(--sidebar-active-border)] bg-[var(--sidebar-active-bg)] p-2"
+    >
+      <div className="flex items-center gap-2">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={currentUser.avatarUrl}
+          alt=""
+          width={32}
+          height={32}
+          className="h-8 w-8 shrink-0 rounded-full bg-[var(--sidebar-hover-bg)] object-cover"
+        />
+        <span className="min-w-0">
+          <span className="block truncate text-xs font-bold text-[var(--sidebar-active-fg)]">
+            {currentUser.name}
+          </span>
+          <span className="block truncate text-[10px] text-[var(--sidebar-muted)]">
+            {currentUser.department}
+          </span>
+        </span>
+      </div>
+
+      {/* 罫線で区切ると、名前や部署と別の情報だと分かりやすい */}
+      <PointBalance className="mt-2 border-t border-[var(--sidebar-active-border)] pt-2 text-[var(--sidebar-active-fg)]" />
+    </div>
   );
 }
 
@@ -137,6 +204,24 @@ function TalkIcon() {
   );
 }
 
+function HistoryIcon() {
+  return (
+    <svg {...iconProps()}>
+      <circle cx="12" cy="12" r="9" />
+      <path d="M12 6v6l4 2" />
+    </svg>
+  );
+}
+
+function BoardIcon() {
+  return (
+    <svg {...iconProps()}>
+      <rect x="3" y="3" width="18" height="18" rx="2" />
+      <path d="M8 7h8M8 12h8M8 17h5" />
+    </svg>
+  );
+}
+
 function PersonIcon() {
   return (
     <svg {...iconProps()}>
@@ -149,5 +234,7 @@ function PersonIcon() {
 const NAV = [
   { href: "/discover", label: "探す", icon: SearchIcon },
   { href: "/talk", label: "トーク", icon: TalkIcon },
+  { href: "/board", label: "募集", icon: BoardIcon },
+  { href: "/history", label: "履歴", icon: HistoryIcon },
   { href: "/me", label: "マイページ", icon: PersonIcon },
 ];
