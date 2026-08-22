@@ -26,20 +26,12 @@ export function LoginForm() {
 
   return (
     <div>
-      <div className="mb-8 text-center">
-        <p className="text-[10px] font-bold tracking-[0.28em] text-[var(--gold)]">
-          MEET. CONNECT. GROW.
-        </p>
-        <h1 className="mt-2 text-3xl font-semibold tracking-wide text-[var(--accent)]">
-          MeetLink
-        </h1>
-        <p className="mt-1 text-xs tracking-[0.14em] text-muted">社内マッチング</p>
-      </div>
-      <p className="text-center text-sm leading-relaxed text-muted">
+      <h1 className="text-2xl font-extrabold">社内マッチング</h1>
+      <p className="mt-2 text-sm text-muted">
         会社のメールアドレスを持つ人だけが利用できます。
       </p>
 
-      <form onSubmit={handleSubmit} className="mt-7 flex flex-col gap-5">
+      <form onSubmit={handleSubmit} className="mt-8 flex flex-col gap-4">
         <label className="flex flex-col gap-1">
           <span className="text-sm font-bold">メールアドレス</span>
           <input
@@ -48,7 +40,7 @@ export function LoginForm() {
             autoComplete="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className="rounded-[14px] border border-[#DED9D0] bg-[#FBFAF7] px-4 py-3 text-sm outline-none focus:border-accent"
+            className="rounded-lg border border-line bg-surface px-3 py-2 text-sm"
           />
         </label>
 
@@ -60,12 +52,12 @@ export function LoginForm() {
             autoComplete="current-password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            className="rounded-[14px] border border-[#DED9D0] bg-[#FBFAF7] px-4 py-3 text-sm outline-none focus:border-accent"
+            className="rounded-lg border border-line bg-surface px-3 py-2 text-sm"
           />
         </label>
 
         {error ? (
-          <p className="rounded-[14px] border border-line bg-accent-soft px-4 py-3 text-sm text-accent">
+          <p className="rounded-lg bg-accent-soft px-3 py-2 text-sm text-accent">
             {error}
           </p>
         ) : null}
@@ -73,15 +65,15 @@ export function LoginForm() {
         <button
           type="submit"
           disabled={busy}
-          className="premium-primary mt-1 px-4 py-3.5 text-sm font-semibold text-white disabled:opacity-50"
+          className="rounded-lg bg-accent px-4 py-2.5 text-sm font-bold text-white transition-opacity disabled:opacity-50"
         >
           {busy ? "ログイン中…" : "ログイン"}
         </button>
       </form>
 
-      <p className="mt-7 text-center text-sm text-muted">
+      <p className="mt-6 text-sm text-muted">
         はじめての方は{" "}
-        <Link href="/signup" className="font-semibold text-accent underline decoration-[var(--gold)] underline-offset-4">
+        <Link href="/signup" className="font-bold text-accent underline">
           新規登録
         </Link>
       </p>

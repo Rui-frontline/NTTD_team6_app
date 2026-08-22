@@ -34,8 +34,6 @@ export function TalkPanel({
    */
   onRead: (matchId: string, readAt: string) => void;
 }) {
-  const { mode } = useSession();
-
   return (
     <section
       // 閉じている間は中身を丸ごと無効化する。
@@ -49,22 +47,12 @@ export function TalkPanel({
         "absolute inset-0 flex flex-col bg-surface transition-transform duration-300 ease-out",
         // 閉じているときは画面の外（右）へ逃がす。
         // pointer-events-none が無いと、見えていないパネルが右側のクリックを吸ってしまう。
-        open
-          ? mode === "romance"
-            ? "translate-x-0"
-            : "pointer-events-auto translate-x-0"
-          : "pointer-events-none translate-x-full",
+        open ? "translate-x-0" : "pointer-events-none translate-x-full",
       ].join(" ")}
     >
       {summary ? (
         <>
-          <header
-            className={
-              mode === "romance"
-                ? "flex items-center gap-3 border-b border-line px-4 py-3"
-                : "flex min-h-17 items-center gap-3 border-b border-line bg-[rgba(255,253,249,0.88)] px-5 py-3"
-            }
-          >
+          <header className="flex items-center gap-3 border-b border-line px-4 py-3">
             {/* ダミー画像なので next/image ではなく img を使う */}
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
@@ -72,30 +60,16 @@ export function TalkPanel({
               alt=""
               width={32}
               height={32}
-              className={
-                mode === "romance"
-                  ? "h-8 w-8 shrink-0 rounded-full bg-accent-soft"
-                  : "h-9 w-9 shrink-0 rounded-full border border-[var(--gold-soft)] bg-accent-soft object-cover p-0.5"
-              }
+              className="h-8 w-8 shrink-0 rounded-full bg-accent-soft"
             />
-            <span
-              className={
-                mode === "romance"
-                  ? "min-w-0 flex-1 truncate text-sm font-bold"
-                  : "min-w-0 flex-1 truncate font-serif text-base font-semibold text-[var(--accent)]"
-              }
-            >
+            <span className="min-w-0 flex-1 truncate text-sm font-bold">
               {summary.partner.name}
             </span>
             <button
               type="button"
               onClick={onClose}
               aria-label="トークを閉じる"
-              className={
-                mode === "romance"
-                  ? "rounded-full px-2 py-1 text-lg leading-none text-muted transition-colors hover:bg-background hover:text-foreground"
-                  : "flex h-9 w-9 items-center justify-center rounded-full text-lg leading-none text-muted transition-colors hover:bg-background hover:text-foreground"
-              }
+              className="rounded-full px-2 py-1 text-lg leading-none text-muted transition-colors hover:bg-background hover:text-foreground"
             >
               ×
             </button>
@@ -132,7 +106,7 @@ function Conversation({
   onSent: (created: Message) => void;
   onRead: (matchId: string, readAt: string) => void;
 }) {
-  const { currentUser, mode } = useSession();
+  const { currentUser } = useSession();
   const [messages, setMessages] = useState<Message[]>([]);
   const [loaded, setLoaded] = useState(false);
   const [input, setInput] = useState("");
@@ -257,14 +231,7 @@ function Conversation({
 
   return (
     <div className="flex flex-1 flex-col overflow-hidden">
-      <div
-        ref={scrollRef}
-        className={
-          mode === "romance"
-            ? "flex-1 overflow-y-auto px-3 py-3"
-            : "flex-1 overflow-y-auto bg-[rgba(248,245,239,0.36)] px-4 py-5"
-        }
-      >
+      <div ref={scrollRef} className="flex-1 overflow-y-auto px-3 py-3">
         {!loaded ? (
           <div className="flex h-full items-center justify-center text-sm text-muted">
             読み込み中…
@@ -274,7 +241,7 @@ function Conversation({
             まだメッセージはありません。
           </div>
         ) : (
-          <div className={mode === "romance" ? "flex flex-col gap-2" : "flex flex-col gap-3"}>
+          <div className="flex flex-col gap-2">
             {messages.map((message) => {
               const mine = message.senderId === currentUser?.id;
               return (
@@ -307,16 +274,10 @@ function Conversation({
                     ) : (
                       <div
                         className={[
-                          mode === "romance"
-                            ? "max-w-full rounded-2xl px-3 py-2 text-sm whitespace-pre-wrap break-words"
-                            : "max-w-full rounded-[16px] px-4 py-2.5 text-sm leading-relaxed whitespace-pre-wrap break-words",
+                          "max-w-full rounded-2xl px-3 py-2 text-sm whitespace-pre-wrap break-words",
                           mine
-                            ? mode === "romance"
-                              ? "ml-auto bg-accent text-white"
-                              : "ml-auto bg-accent text-white [box-shadow:0_5px_14px_rgba(12,35,64,0.12)]"
-                            : mode === "romance"
-                              ? "bg-[var(--bubble-other-bg)] border border-line"
-                              : "border border-line bg-[var(--bubble-other-bg)] text-[var(--accent)]",
+                            ? "ml-auto bg-accent text-white"
+                            : "bg-[var(--bubble-other-bg)] border border-line",
                         ].join(" ")}
                       >
                         {message.body}
@@ -337,9 +298,6 @@ function Conversation({
         {error ? (
           <p className="px-3 pb-2 pt-3 text-xs text-accent">{error}</p>
         ) : null}
-<<<<<<< HEAD
-        <div className={mode === "romance" ? "flex items-end gap-2 p-3" : "flex items-end gap-2 p-4"}>
-=======
 
         {/*
           送信の直前に必ず目に入るよう、入力欄のすぐ上に置いている。
@@ -350,7 +308,6 @@ function Conversation({
         </p>
 
         <div className="flex items-end gap-2 px-3 pb-3 pt-2">
->>>>>>> 4b48676864818780b8b8355e95e0b1968b0beab7
           {/*
             accept="image/*" にしておくと、スマホでは OS のシートに
             「写真を選ぶ」と「カメラで撮影」の両方が並ぶ。
@@ -373,11 +330,7 @@ function Conversation({
             disabled={busy}
             aria-label="写真を送る"
             title="写真を送る"
-            className={
-              mode === "romance"
-                ? "flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-line bg-surface text-muted transition-colors hover:border-accent hover:text-accent disabled:cursor-not-allowed disabled:opacity-50"
-                : "flex h-11 w-11 shrink-0 items-center justify-center rounded-[14px] border border-line bg-[#FBFAF7] text-muted transition-colors hover:border-accent hover:text-accent disabled:cursor-not-allowed disabled:opacity-50"
-            }
+            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-line bg-surface text-muted transition-colors hover:border-accent hover:text-accent disabled:cursor-not-allowed disabled:opacity-50"
           >
             <svg
               width="20"
@@ -407,11 +360,7 @@ function Conversation({
             }}
             rows={1}
             placeholder="メッセージを入力"
-            className={
-              mode === "romance"
-                ? "max-h-32 min-h-11 flex-1 resize-none rounded-xl border border-line bg-surface px-3 py-2 text-sm outline-none placeholder:text-muted focus:border-accent"
-                : "max-h-32 min-h-11 flex-1 resize-none rounded-[14px] border border-[#DED9D0] bg-[#FBFAF7] px-4 py-2.5 text-sm outline-none placeholder:text-muted focus:border-accent focus:[box-shadow:0_0_0_3px_rgba(12,35,64,0.05)]"
-            }
+            className="max-h-32 min-h-11 flex-1 resize-none rounded-xl border border-line bg-surface px-3 py-2 text-sm outline-none placeholder:text-muted focus:border-accent"
           />
           <button
             type="button"
@@ -419,11 +368,7 @@ function Conversation({
               void handleSend();
             }}
             disabled={busy || input.trim() === ""}
-            className={
-              mode === "romance"
-                ? "rounded-xl bg-accent px-3 py-2 text-sm font-bold text-white transition-opacity disabled:cursor-not-allowed disabled:opacity-50"
-                : "premium-primary min-h-11 px-5 py-2 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-50"
-            }
+            className="rounded-xl bg-accent px-3 py-2 text-sm font-bold text-white transition-opacity disabled:cursor-not-allowed disabled:opacity-50"
           >
             {busy ? "送信中" : "送信"}
           </button>

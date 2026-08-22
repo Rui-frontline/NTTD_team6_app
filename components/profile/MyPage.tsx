@@ -100,10 +100,6 @@ export function MyPage() {
     draft.jobTitle,
   );
   const isParticipating = draft.enabledModes.includes(mode);
-  const isWork = mode === "work";
-  const fieldControlClass = isWork
-    ? "w-full rounded-[14px] border border-[#DED9D0] bg-[#FBFAF7] px-4 py-3 text-sm text-[var(--foreground)] focus:border-[var(--accent)] focus:outline-none focus:ring-0"
-    : "w-full rounded-md border border-[var(--line)] bg-[var(--surface)] px-3 py-2 text-sm text-[var(--foreground)] focus:border-[var(--accent)] focus:outline-none focus:ring-1 focus:ring-[var(--accent)]";
 
   const updateCommon = <K extends keyof User>(key: K, value: User[K]) => {
     setDraft((prev) => (prev ? { ...prev, [key]: value } : prev));
@@ -274,77 +270,16 @@ export function MyPage() {
   };
 
   return (
-    <div
-      className={
-        isWork
-          ? "mx-auto w-full max-w-6xl text-[var(--foreground)]"
-          : "mx-auto max-w-xl bg-[var(--background)] px-4 py-6 text-[var(--foreground)]"
-      }
-    >
+    <div className="mx-auto max-w-xl bg-[var(--background)] px-4 py-6 text-[var(--foreground)]">
       <PageHeading
         title="マイページ"
         description="相手に表示されるプロフィールを編集できます。"
       />
 
-      {!isWork ? (
-        <div className="mb-6 flex items-center justify-between rounded-lg border border-[var(--line)] px-4 py-3">
-          <span className="text-sm font-medium">保有ポイント</span>
-          <PointBalance className="text-[var(--accent)]" />
-        </div>
-      ) : null}
-
-      <div
-        className={
-          isWork
-            ? "grid items-start gap-6 lg:grid-cols-[300px_minmax(0,1fr)] lg:gap-8"
-            : "block"
-        }
-      >
-        {isWork ? (
-        <aside className="premium-card overflow-hidden lg:sticky lg:top-26">
-          <div className="aspect-[4/5] overflow-hidden bg-[var(--accent-soft)]">
-            {draft.avatarUrl ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={draft.avatarUrl}
-                alt="プロフィール写真"
-                className="h-full w-full object-cover"
-              />
-            ) : (
-              <div className="flex h-full items-center justify-center text-sm text-[var(--muted)]">
-                写真未設定
-              </div>
-            )}
-          </div>
-          <div className="p-6">
-            <p className="text-[10px] font-bold tracking-[0.22em] text-[var(--gold)]">
-              YOUR PROFILE
-            </p>
-            <h2 className="mt-2 text-2xl font-semibold tracking-wide text-[var(--accent)]">
-              {draft.name}
-            </h2>
-            <p className="mt-1 text-sm leading-relaxed text-[var(--muted)]">
-              {draft.department} / {draft.jobTitle}
-            </p>
-            <div className="mt-5 flex flex-wrap gap-2">
-              {modeProfile.tags.map((tag) => (
-                <span
-                  key={tag}
-                  className="rounded-full bg-[var(--accent-soft)] px-3 py-1.5 text-xs text-[var(--accent-strong)]"
-                >
-                  {tag}
-                </span>
-              ))}
-            </div>
-            <div className="mt-6 flex items-center justify-between border-t border-[var(--line)] pt-4">
-              <span className="text-xs text-[var(--muted)]">保有ポイント</span>
-              <PointBalance className="text-[var(--accent)]" />
-            </div>
-          </div>
-        </aside>
-        ) : null}
-
-        <div className={isWork ? "premium-card p-5 sm:p-7 lg:p-9" : ""}>
+      <div className="mb-6 flex items-center justify-between rounded-lg border border-[var(--line)] px-4 py-3">
+        <span className="text-sm font-medium">保有ポイント</span>
+        <PointBalance className="text-[var(--accent)]" />
+      </div>
 
       {/*
         保存中は編集をまとめて止める。
@@ -356,16 +291,9 @@ export function MyPage() {
       <fieldset disabled={saving} className="m-0 border-0 p-0">
 
       {/* 共通項目 */}
-      <section className={isWork ? "mb-9 space-y-5" : "mb-8 space-y-4"}>
-        {isWork ? <SectionLabel number="01" title="基本情報" /> : null}
+      <section className="mb-8 space-y-4">
         <div className="flex items-center gap-4">
-          <div
-            className={
-              isWork
-                ? "h-18 w-18 shrink-0 overflow-hidden rounded-full border border-[var(--gold-soft)] bg-[var(--surface)] p-0.5"
-                : "h-16 w-16 shrink-0 overflow-hidden rounded-full bg-[var(--surface)]"
-            }
-          >
+          <div className="h-16 w-16 shrink-0 overflow-hidden rounded-full bg-[var(--surface)]">
             {draft.avatarUrl ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img
@@ -391,11 +319,7 @@ export function MyPage() {
               type="button"
               onClick={() => fileInputRef.current?.click()}
               disabled={uploadingAvatar}
-              className={
-                isWork
-                  ? "rounded-[14px] border border-[var(--line)] bg-[var(--surface)] px-3.5 py-2 text-sm text-[var(--foreground)] transition-colors hover:border-[var(--accent)] disabled:opacity-60"
-                  : "rounded-md border border-[var(--line)] px-3 py-1.5 text-sm text-[var(--foreground)] hover:bg-[var(--surface)] disabled:opacity-60"
-              }
+              className="rounded-md border border-[var(--line)] px-3 py-1.5 text-sm text-[var(--foreground)] hover:bg-[var(--surface)] disabled:opacity-60"
             >
               {uploadingAvatar ? "アップロード中..." : "アイコンを変更"}
             </button>
@@ -410,7 +334,7 @@ export function MyPage() {
             type="text"
             value={draft.name}
             onChange={(e) => updateCommon("name", e.target.value)}
-            className={fieldControlClass}
+            className="w-full rounded-md border border-[var(--line)] bg-[var(--surface)] px-3 py-2 text-sm text-[var(--foreground)] focus:border-[var(--accent)] focus:outline-none focus:ring-1 focus:ring-[var(--accent)]"
           />
         </Field>
 
@@ -423,7 +347,7 @@ export function MyPage() {
           <select
             value={AGE_OPTIONS.includes(draft.age) ? draft.age : ""}
             onChange={(e) => updateCommon("age", Number(e.target.value))}
-            className={fieldControlClass}
+            className="w-full rounded-md border border-[var(--line)] bg-[var(--surface)] px-3 py-2 text-sm text-[var(--foreground)] focus:border-[var(--accent)] focus:outline-none focus:ring-1 focus:ring-[var(--accent)]"
           >
             {/* 登録前のデータなどで範囲外の値が入っていたとき用 */}
             {AGE_OPTIONS.includes(draft.age) ? null : (
@@ -440,18 +364,10 @@ export function MyPage() {
         </Field>
 
         <Field label="職種">
-<<<<<<< HEAD
-          <input
-            type="text"
-            value={draft.jobTitle}
-            onChange={(e) => updateCommon("jobTitle", e.target.value)}
-            className={fieldControlClass}
-=======
           <Select
             value={jobTitleInOptions ? draft.jobTitle : UNSET}
             options={JOB_TITLE_OPTIONS}
             onChange={(v) => updateCommon("jobTitle", v)}
->>>>>>> 4b48676864818780b8b8355e95e0b1968b0beab7
           />
           {/* 選択肢に無い値が登録済みのときは、黙って消さずに知らせる */}
           {!jobTitleInOptions && draft.jobTitle ? (
@@ -462,19 +378,6 @@ export function MyPage() {
           ) : null}
         </Field>
 
-<<<<<<< HEAD
-        <Field label="部署">
-          <input
-            type="text"
-            value={draft.department}
-            onChange={(e) => updateCommon("department", e.target.value)}
-            className={fieldControlClass}
-          />
-          <p className="mt-1 text-xs text-[var(--muted)]">
-            値は仕事/恋愛で共通です。表示するかどうかは各モードのタブで設定できます。
-          </p>
-        </Field>
-=======
         <DepartmentPicker
           parts={departmentParts}
           fallback={draft.department}
@@ -513,31 +416,19 @@ export function MyPage() {
             )}
           </Field>
         ))}
->>>>>>> 4b48676864818780b8b8355e95e0b1968b0beab7
       </section>
 
       {/* モード切り替えタブ(アプリ全体のモードと連動) */}
-      {isWork ? <SectionLabel number="02" title="プロフィール公開設定" /> : null}
-      <div
-        className={
-          isWork
-            ? "mb-5 mt-5 flex rounded-[16px] border border-[var(--line)] bg-[#F4F1EB] p-1.5"
-            : "mb-4 flex rounded-lg bg-[var(--surface)] p-1"
-        }
-      >
+      <div className="mb-4 flex rounded-lg bg-[var(--surface)] p-1">
         {MODES.map((m) => (
           <button
             key={m}
             type="button"
             onClick={() => setMode(m)}
             className={[
-              isWork
-                ? "flex-1 rounded-[12px] py-2.5 text-sm font-medium transition-colors"
-                : "flex-1 rounded-md py-2 text-sm font-medium transition-colors",
+              "flex-1 rounded-md py-2 text-sm font-medium transition-colors",
               mode === m
-                ? isWork
-                  ? "bg-[var(--accent)] text-white [box-shadow:var(--soft-shadow)]"
-                  : "bg-[var(--accent-soft)] text-[var(--accent-strong)] shadow"
+                ? "bg-[var(--accent-soft)] text-[var(--accent-strong)] shadow"
                 : "text-[var(--muted)] hover:text-[var(--foreground)]",
             ].join(" ")}
           >
@@ -548,13 +439,7 @@ export function MyPage() {
 
       {/* モード別項目 */}
       <section className="space-y-5">
-        <div
-          className={
-            isWork
-              ? "flex items-center justify-between rounded-[14px] border border-[var(--line)] bg-[#FBFAF7] px-4 py-3.5"
-              : "flex items-center justify-between rounded-lg border border-[var(--line)] px-4 py-3"
-          }
-        >
+        <div className="flex items-center justify-between rounded-lg border border-[var(--line)] px-4 py-3">
           <div>
             <p className="text-sm font-medium">部署を表示する</p>
             <p className="text-xs text-[var(--muted)]">
@@ -572,17 +457,9 @@ export function MyPage() {
             value={modeProfile.bio}
             onChange={(e) => updateModeProfile({ bio: e.target.value })}
             rows={4}
-            className={
-              isWork
-                ? "w-full resize-none rounded-[14px] border border-[#DED9D0] bg-[#FBFAF7] px-4 py-3 text-sm leading-relaxed text-[var(--foreground)] focus:border-[var(--accent)] focus:outline-none focus:ring-0"
-                : "w-full rounded-md border border-[var(--line)] bg-[var(--surface)] px-3 py-2 text-sm text-[var(--foreground)] focus:border-[var(--accent)] focus:outline-none focus:ring-1 focus:ring-[var(--accent)] resize-none"
-            }
+            className="w-full rounded-md border border-[var(--line)] bg-[var(--surface)] px-3 py-2 text-sm text-[var(--foreground)] focus:border-[var(--accent)] focus:outline-none focus:ring-1 focus:ring-[var(--accent)] resize-none"
           />
         </Field>
-
-        {isWork ? <div className="pt-2">
-          <SectionLabel number="03" title="興味・スキル" compact />
-        </div> : null}
 
         <TagPicker
           candidates={candidates}
@@ -590,15 +467,6 @@ export function MyPage() {
           onChange={(tags) => updateModeProfile({ tags })}
         />
 
-<<<<<<< HEAD
-        <div
-          className={
-            isWork
-              ? "flex items-center justify-between rounded-[14px] border border-[var(--line)] bg-[#FBFAF7] px-4 py-3.5"
-              : "flex items-center justify-between rounded-lg border border-[var(--line)] px-4 py-3"
-          }
-        >
-=======
         {/*
           モードごとの追加項目。何をどの順で出すかは
           lib/profile-fields.ts の PROFILE_FIELDS が持っている。
@@ -639,7 +507,6 @@ export function MyPage() {
         ))}
 
         <div className="flex items-center justify-between rounded-lg border border-[var(--line)] px-4 py-3">
->>>>>>> 4b48676864818780b8b8355e95e0b1968b0beab7
           <div>
             <p className="text-sm font-medium">このモードに参加する</p>
             <p className="text-xs text-[var(--muted)]">
@@ -665,37 +532,10 @@ export function MyPage() {
         type="button"
         onClick={handleSave}
         disabled={saving}
-        className={
-          isWork
-            ? "premium-primary mt-8 w-full py-3.5 text-sm font-semibold text-white disabled:opacity-60"
-            : "mt-8 w-full rounded-lg bg-[var(--accent)] py-3 text-sm font-semibold text-white hover:bg-[var(--accent-strong)] disabled:opacity-60"
-        }
+        className="mt-8 w-full rounded-lg bg-[var(--accent)] py-3 text-sm font-semibold text-white hover:bg-[var(--accent-strong)] disabled:opacity-60"
       >
         {saving ? "保存中..." : "保存する"}
       </button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function SectionLabel({
-  number,
-  title,
-  compact = false,
-}: {
-  number: string;
-  title: string;
-  compact?: boolean;
-}) {
-  return (
-    <div className={["flex items-center gap-3", compact ? "mb-4" : ""].join(" ")}>
-      <span className="inline-flex h-7 min-w-9 items-center justify-center rounded-lg bg-[var(--accent)] px-2 text-[10px] font-bold tracking-wider text-white">
-        {number}
-      </span>
-      <h2 className="text-base font-semibold tracking-wide text-[var(--accent)]">
-        {title}
-      </h2>
     </div>
   );
 }
@@ -709,7 +549,7 @@ function Field({
 }) {
   return (
     <label className="block">
-      <span className="profile-field-label mb-2 block text-sm font-medium text-[var(--accent)]">{label}</span>
+      <span className="mb-1 block text-sm font-medium">{label}</span>
       {children}
     </label>
   );

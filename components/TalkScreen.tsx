@@ -202,45 +202,21 @@ export function TalkScreen({
   }
 
   return (
-    <div
-      className={
-        mode === "romance"
-          ? "flex h-[calc(100dvh-9rem)] flex-col gap-3"
-          : "mx-auto flex h-[calc(100dvh-9rem)] w-full max-w-6xl flex-col gap-3"
-      }
-    >
+    <div className="flex h-[calc(100dvh-9rem)] flex-col gap-3">
       <PageHeading
         title="トーク"
         description="マッチした人との会話を確認できます。"
       />
 
       {error ? (
-        <p
-          className={
-            mode === "romance"
-              ? "rounded-lg bg-accent-soft px-3 py-2 text-sm text-accent"
-              : "rounded-[14px] border border-line bg-accent-soft px-4 py-3 text-sm text-accent"
-          }
-        >
+        <p className="rounded-lg bg-accent-soft px-3 py-2 text-sm text-accent">
           {error}
         </p>
       ) : null}
 
       {/* overflow-hidden が、画面外に逃がしたパネルのはみ出しを隠している */}
-      <div
-        className={
-          mode === "romance"
-            ? "flex flex-1 overflow-hidden rounded-lg border border-line bg-surface"
-            : "relative flex flex-1 overflow-hidden rounded-[20px] border border-line bg-surface [box-shadow:var(--card-shadow)]"
-        }
-      >
-        <div
-          className={
-            mode === "romance"
-              ? "w-72 shrink-0 overflow-y-auto border-r border-line"
-              : "w-full shrink-0 overflow-y-auto border-r border-line bg-[rgba(255,253,249,0.72)] sm:w-72 lg:w-80"
-          }
-        >
+      <div className="flex flex-1 overflow-hidden rounded-lg border border-line bg-surface">
+        <div className="w-72 shrink-0 overflow-y-auto border-r border-line">
           {loading ? (
             <p className="px-4 py-3 text-sm text-muted">読み込み中…</p>
           ) : matches.length === 0 ? (
@@ -260,13 +236,7 @@ export function TalkScreen({
         </div>
 
         {/* パネルは absolute で置くので、その基準になる relative をここに付ける */}
-        <div
-          className={
-            mode === "romance"
-              ? "relative flex-1"
-              : "pointer-events-none absolute inset-0 min-w-0 sm:pointer-events-auto sm:relative sm:flex-1"
-          }
-        >
+        <div className="relative flex-1">
           <TalkPanel
             open={open}
             summary={selected}

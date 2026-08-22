@@ -59,15 +59,8 @@ export function SignUpForm() {
 
   return (
     <div>
-      <div className="mb-8 text-center">
-        <p className="text-[10px] font-bold tracking-[0.28em] text-[var(--gold)]">
-          MEET. CONNECT. GROW.
-        </p>
-        <h1 className="mt-2 text-3xl font-semibold tracking-wide text-[var(--accent)]">
-          新規登録
-        </h1>
-      </div>
-      <p className="text-center text-sm leading-relaxed text-muted">
+      <h1 className="text-2xl font-extrabold">新規登録</h1>
+      <p className="mt-2 text-sm text-muted">
         会社のメールアドレスを持つ人だけが利用できます。
       </p>
 
@@ -79,7 +72,7 @@ export function SignUpForm() {
             autoComplete="email"
             value={form.email}
             onChange={(e) => update("email", e.target.value)}
-            className="rounded-[14px] border border-[#DED9D0] bg-[#FBFAF7] px-4 py-3 text-sm outline-none focus:border-accent"
+            className="rounded-lg border border-line bg-surface px-3 py-2 text-sm"
           />
         </Field>
 
@@ -91,7 +84,7 @@ export function SignUpForm() {
             autoComplete="new-password"
             value={form.password}
             onChange={(e) => update("password", e.target.value)}
-            className="rounded-[14px] border border-[#DED9D0] bg-[#FBFAF7] px-4 py-3 text-sm outline-none focus:border-accent"
+            className="rounded-lg border border-line bg-surface px-3 py-2 text-sm"
           />
         </Field>
 
@@ -101,21 +94,10 @@ export function SignUpForm() {
             required
             value={form.name}
             onChange={(e) => update("name", e.target.value)}
-            className="rounded-[14px] border border-[#DED9D0] bg-[#FBFAF7] px-4 py-3 text-sm outline-none focus:border-accent"
+            className="rounded-lg border border-line bg-surface px-3 py-2 text-sm"
           />
         </Field>
 
-<<<<<<< HEAD
-        <Field label="部署">
-          <input
-            type="text"
-            required
-            value={form.department}
-            onChange={(e) => update("department", e.target.value)}
-            className="rounded-[14px] border border-[#DED9D0] bg-[#FBFAF7] px-4 py-3 text-sm outline-none focus:border-accent"
-          />
-        </Field>
-=======
         {/* 部署と職種は、マイページと同じ選択肢からしか選べないようにする。
             ここが自由入力だと候補外の値で登録でき、そのあとマイページで
             何も保存できなくなる */}
@@ -123,18 +105,12 @@ export function SignUpForm() {
           parts={departmentParts}
           onChange={setDepartmentParts}
         />
->>>>>>> 4b48676864818780b8b8355e95e0b1968b0beab7
 
         <Field label="職種">
           <Select
             value={form.jobTitle}
-<<<<<<< HEAD
-            onChange={(e) => update("jobTitle", e.target.value)}
-            className="rounded-[14px] border border-[#DED9D0] bg-[#FBFAF7] px-4 py-3 text-sm outline-none focus:border-accent"
-=======
             options={JOB_TITLE_OPTIONS}
             onChange={(v) => update("jobTitle", v)}
->>>>>>> 4b48676864818780b8b8355e95e0b1968b0beab7
           />
         </Field>
 
@@ -146,12 +122,12 @@ export function SignUpForm() {
             max={99}
             value={form.age}
             onChange={(e) => update("age", e.target.value)}
-            className="rounded-[14px] border border-[#DED9D0] bg-[#FBFAF7] px-4 py-3 text-sm outline-none focus:border-accent"
+            className="rounded-lg border border-line bg-surface px-3 py-2 text-sm"
           />
         </Field>
 
         {error ? (
-          <p className="rounded-[14px] border border-line bg-accent-soft px-4 py-3 text-sm text-accent">
+          <p className="rounded-lg bg-accent-soft px-3 py-2 text-sm text-accent">
             {error}
           </p>
         ) : null}
@@ -159,7 +135,7 @@ export function SignUpForm() {
         <button
           type="submit"
           disabled={busy}
-          className="premium-primary px-4 py-3.5 text-sm font-semibold text-white disabled:opacity-50"
+          className="rounded-lg bg-accent px-4 py-2.5 text-sm font-bold text-white transition-opacity disabled:opacity-50"
         >
           {busy ? "登録中…" : "登録する"}
         </button>
@@ -169,9 +145,9 @@ export function SignUpForm() {
         </p>
       </form>
 
-      <p className="mt-7 text-center text-sm text-muted">
+      <p className="mt-6 text-sm text-muted">
         すでにアカウントをお持ちの方は{" "}
-        <Link href="/login" className="font-semibold text-accent underline decoration-[var(--gold)] underline-offset-4">
+        <Link href="/login" className="font-bold text-accent underline">
           ログイン
         </Link>
       </p>
@@ -188,7 +164,7 @@ function Field({
 }) {
   return (
     <label className="flex flex-col gap-1">
-      <span className="text-sm font-semibold text-[var(--accent)]">{label}</span>
+      <span className="text-sm font-bold">{label}</span>
       {children}
     </label>
   );

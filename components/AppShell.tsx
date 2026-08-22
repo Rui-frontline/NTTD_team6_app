@@ -15,7 +15,7 @@ const PUBLIC_PATHS = ["/login", "/signup"];
  * ログイン・新規登録以外の画面は、未ログインなら /login に飛ばす。
  */
 export function AppShell({ children }: { children: React.ReactNode }) {
-  const { isAuthenticated, loading, mode } = useSession();
+  const { isAuthenticated, loading } = useSession();
   const pathname = usePathname();
   const router = useRouter();
 
@@ -36,13 +36,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   }
 
   if (isPublic) {
-    return (
-      <main className="relative mx-auto flex min-h-screen w-full max-w-lg items-center px-5 py-12">
-        <div className="auth-card w-full px-7 py-9 sm:px-10 sm:py-11">
-          {children}
-        </div>
-      </main>
-    );
+    return <main className="mx-auto w-full max-w-md px-4 py-16">{children}</main>;
   }
 
   if (!isAuthenticated) {
@@ -64,15 +58,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       <Sidebar />
       <div className="relative z-10 flex min-h-screen min-w-0 flex-1 flex-col">
         <Header />
-        <main
-          className={
-            mode === "romance"
-              ? "flex-1 px-6 py-8"
-              : "flex-1 px-5 py-7 sm:px-7 lg:px-10 lg:py-9 xl:px-12"
-          }
-        >
-          {children}
-        </main>
+        <main className="flex-1 px-6 py-8">{children}</main>
       </div>
     </div>
   );

@@ -19,11 +19,7 @@ export function ModeSwitch() {
     <div
       role="tablist"
       aria-label="モードの切り替え"
-      className={
-        mode === "romance"
-          ? "flex items-center gap-1 rounded-full border border-[var(--tab-shell-border)] bg-[var(--tab-shell-bg)] p-1 [box-shadow:var(--soft-shadow)]"
-          : "flex items-center gap-1 rounded-2xl border border-[var(--tab-shell-border)] bg-[var(--tab-shell-bg)] p-1.5 [box-shadow:var(--soft-shadow)]"
-      }
+      className="flex items-center gap-1 rounded-full border border-[var(--tab-shell-border)] bg-[var(--tab-shell-bg)] p-1 [box-shadow:var(--soft-shadow)]"
     >
       {MODES.map((m) => {
         const active = m === mode;
@@ -35,20 +31,14 @@ export function ModeSwitch() {
             aria-selected={active}
             onClick={() => setMode(m)}
             className={[
-              mode === "romance"
-                ? "flex items-center gap-2 rounded-[var(--tab-radius)] px-5 py-1.5 text-sm font-bold transition-all"
-                : "flex min-h-9 items-center gap-1.5 rounded-[var(--tab-radius)] px-2.5 py-1.5 text-[11px] font-semibold tracking-wide transition-all sm:gap-2 sm:px-5 sm:text-sm",
+              "flex items-center gap-2 rounded-[var(--tab-radius)] px-5 py-1.5 text-sm font-bold transition-all",
               active
                 ? "[background:var(--tab-active-bg)] text-[var(--tab-active-fg)] [box-shadow:var(--soft-shadow)]"
                 : "text-[var(--tab-idle-fg)]",
-              active && m === "work" ? "[&>svg]:text-[var(--gold)]" : "",
             ].join(" ")}
           >
             {m === "romance" ? <HeartIcon /> : <WorkIcon />}
-            {MODE_LABEL[m]}
-            <span className={mode === "romance" ? "" : "hidden sm:inline"}>
-              モード
-            </span>
+            {MODE_LABEL[m]}モード
           </button>
         );
       })}
