@@ -326,7 +326,7 @@ export async function createUser(input: {
   // 画面側の検証だけだと、登録フォームを直し忘れたときに候補外の値が
   // 入り込み、あとからマイページで何も保存できなくなる。
   if (!isDepartmentComplete(splitDepartmentPath(input.departmentPath))) {
-    throw new Error("部署はいちばん下の階層まで選んでください。");
+    throw new Error("会社・部署はいちばん下の階層まで選んでください。");
   }
   if (!(JOB_TITLE_OPTIONS as readonly string[]).includes(input.jobTitle)) {
     throw new Error("職種を選択してください。");

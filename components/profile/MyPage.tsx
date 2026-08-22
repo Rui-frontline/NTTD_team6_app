@@ -181,7 +181,7 @@ export function MyPage() {
     //
     // 未選択も途中で止めた状態も、この判定でまとめて弾ける。
     if (!isDepartmentComplete(departmentParts)) {
-      setError("部署はいちばん下の階層まで選んでください。");
+      setError("会社・部署はいちばん下の階層まで選んでください。");
       setSaved(false);
       return;
     }
