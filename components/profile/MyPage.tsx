@@ -150,16 +150,21 @@ export function MyPage() {
     // 新規登録で必須にしている項目は、ここでも同じ条件を守る。
     // 空のまま保存できると、探す画面のカードやフィルターから情報が欠落する。
     const name = draft.name.trim();
-    const department = draft.department.trim();
     const jobTitle = draft.jobTitle.trim();
 
-    if (!name || !department || !jobTitle) {
-      setError("名前・部署・職種は空にできません。");
+    if (!name || !jobTitle) {
+      setError("名前・職種は空にできません。");
       setSaved(false);
       return;
     }
-    // 途中の階層で止めたまま保存させない（探す画面の絞り込みが噛み合わなくなる）
-    if (!isDepartmentComplete(splitDepartmentPath(draft.departmentPath))) {
+
+    // 部署は draft.departmentPath ではなく departmentParts で見る。
+    // 経路を持たない既存ユーザーは、画面上は末端の名前から復元できていても
+    // draft.departmentPath が空のままなので、そちらを見ると必ず失敗し、
+    // 部署に触っていなくても他の項目まで保存できなくなる。
+    //
+    // 未選択も途中で止めた状態も、この判定でまとめて弾ける。
+    if (!isDepartmentComplete(departmentParts)) {
       setError("部署はいちばん下の階層まで選んでください。");
       setSaved(false);
       return;
@@ -181,6 +186,10 @@ export function MyPage() {
       setSaved(false);
       return;
     }
+
+    // 復元したぶんもここで保存され、次からは経路が埋まった状態になる
+    const department = departmentLeaf(departmentParts);
+    const departmentPath = joinDepartmentPath(departmentParts);
 
     setSaving(true);
     setError(null);
@@ -204,7 +213,7 @@ export function MyPage() {
       await updateUser(draft.id, {
         name,
         department,
-        departmentPath: draft.departmentPath,
+        departmentPath,
         jobTitle,
         age: draft.age,
         gender: draft.gender,
@@ -229,7 +238,9 @@ export function MyPage() {
 
       await refreshUser(); // DBから読み直してローカルのcurrentUserも最新化
       // 前後の空白を落とした値で保存したので、入力欄の表示も揃えておく
-      setDraft((prev) => (prev ? { ...prev, name, department, jobTitle } : prev));
+      setDraft((prev) =>
+        prev ? { ...prev, name, department, departmentPath, jobTitle } : prev,
+      );
       
       // 保存できたことを一時的に知らせる。3秒で自動的に消す。
       setSaved(true);
