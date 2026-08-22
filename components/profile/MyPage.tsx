@@ -9,6 +9,7 @@ import { PointBalance } from "@/components/PointBalance";
 import type { Profile, User } from "@/lib/types";
 import { MODE_LABEL, MODES, TAG_OPTIONS } from "@/lib/types";
 import {
+  JOB_TITLE_OPTIONS,
   PROFILE_FIELDS,
   UNSET,
   UNSET_LABEL,
@@ -89,6 +90,11 @@ export function MyPage() {
   const departmentParts = draft.departmentPath
     ? splitDepartmentPath(draft.departmentPath)
     : (findDepartmentPath(draft.department) ?? []);
+  // 選択肢に無い職種（選択式にする前に登録されたもの）が入っていないか。
+  // 入っていたら未選択として扱い、選び直してもらう。
+  const jobTitleInOptions = (JOB_TITLE_OPTIONS as readonly string[]).includes(
+    draft.jobTitle,
+  );
   const isParticipating = draft.enabledModes.includes(mode);
 
   const updateCommon = <K extends keyof User>(key: K, value: User[K]) => {
@@ -152,8 +158,14 @@ export function MyPage() {
     const name = draft.name.trim();
     const jobTitle = draft.jobTitle.trim();
 
-    if (!name || !jobTitle) {
-      setError("名前・職種は空にできません。");
+    if (!name) {
+      setError("名前は空にできません。");
+      setSaved(false);
+      return;
+    }
+    // 選択肢から選ばれていない職種は、探す画面の絞り込みと噛み合わないので弾く
+    if (!(JOB_TITLE_OPTIONS as readonly string[]).includes(jobTitle)) {
+      setError("職種を選択してください。");
       setSaved(false);
       return;
     }
@@ -348,12 +360,18 @@ export function MyPage() {
         </Field>
 
         <Field label="職種">
-          <input
-            type="text"
-            value={draft.jobTitle}
-            onChange={(e) => updateCommon("jobTitle", e.target.value)}
-            className="w-full rounded-md border border-[var(--line)] bg-[var(--surface)] px-3 py-2 text-sm text-[var(--foreground)] focus:border-[var(--accent)] focus:outline-none focus:ring-1 focus:ring-[var(--accent)]"
+          <Select
+            value={jobTitleInOptions ? draft.jobTitle : UNSET}
+            options={JOB_TITLE_OPTIONS}
+            onChange={(v) => updateCommon("jobTitle", v)}
           />
+          {/* 選択肢に無い値が登録済みのときは、黙って消さずに知らせる */}
+          {!jobTitleInOptions && draft.jobTitle ? (
+            <p className="mt-1 text-xs text-[var(--accent-strong)]">
+              現在の登録は「{draft.jobTitle}
+              」です。選択肢に無いので選び直してください。
+            </p>
+          ) : null}
         </Field>
 
         <DepartmentPicker
