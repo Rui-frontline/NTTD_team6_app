@@ -411,26 +411,24 @@ export default function DiscoverPage() {
             >
               ✕ 見送る
             </button>
-            <div className={styles.likeAction}>
-              <button
-                ref={likeButtonRef}
-                onClick={() => handleLike(currentUser_displayed)}
-                style={{
-                  width: "200px",
-                  height: "56px",
-                  background: "var(--action-gradient)",
-                  color: "#FFFFFF",
-                  border: "none",
-                  borderRadius: "28px",
-                  cursor: "pointer",
-                  fontSize: "16px",
-                  fontWeight: "500",
-                  boxShadow: "var(--action-shadow)",
-                }}
-              >
-                ♡ いいね
-              </button>
-            </div>
+            <button
+              ref={likeButtonRef}
+              onClick={() => handleLike(currentUser_displayed)}
+              style={{
+                width: "200px",
+                height: "56px",
+                background: "var(--action-gradient)",
+                color: "#FFFFFF",
+                border: "none",
+                borderRadius: "28px",
+                cursor: "pointer",
+                fontSize: "16px",
+                fontWeight: "500",
+                boxShadow: "var(--action-shadow)",
+              }}
+            >
+              ♡ いいね
+            </button>
           </div>
         </div>
       ) : (
