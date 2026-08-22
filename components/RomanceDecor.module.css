@@ -1,0 +1,104 @@
+.backdrop,
+.tapeLayer {
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.backdrop { z-index: 0; }
+.tapeLayer { z-index: 30; }
+
+.wash {
+  position: absolute;
+  display: block;
+  border-radius: 42% 58% 63% 37% / 48% 42% 58% 52%;
+  filter: blur(12px);
+  mix-blend-mode: multiply;
+  transform: rotate(-8deg);
+}
+
+.washTop {
+  top: -13rem;
+  right: -7rem;
+  width: 34rem;
+  height: 29rem;
+  opacity: 0.32;
+  background:
+    radial-gradient(circle at 36% 43%, rgba(255, 79, 123, 0.42), transparent 34%),
+    radial-gradient(circle at 64% 60%, rgba(255, 145, 171, 0.38), transparent 48%),
+    radial-gradient(circle at 52% 46%, rgba(255, 213, 223, 0.64), transparent 68%);
+}
+
+.washLeft {
+  top: 38%;
+  left: 8.8rem;
+  width: 15rem;
+  height: 23rem;
+  opacity: 0.2;
+  transform: rotate(13deg);
+  background:
+    radial-gradient(circle at 42% 38%, rgba(255, 111, 145, 0.45), transparent 42%),
+    radial-gradient(circle at 64% 67%, rgba(255, 213, 223, 0.7), transparent 65%);
+}
+
+.washBottom {
+  right: 9%;
+  bottom: -12rem;
+  width: 35rem;
+  height: 24rem;
+  opacity: 0.24;
+  transform: rotate(5deg);
+  background:
+    radial-gradient(circle at 38% 46%, rgba(255, 145, 171, 0.42), transparent 43%),
+    radial-gradient(circle at 67% 51%, rgba(255, 111, 145, 0.34), transparent 56%),
+    radial-gradient(circle at 53% 40%, rgba(255, 243, 245, 0.82), transparent 72%);
+}
+
+.doodle {
+  position: absolute;
+  stroke-width: 2.35;
+  opacity: 0.48;
+  filter: drop-shadow(0 2px 2px rgba(177, 68, 96, 0.06));
+}
+
+.sketchLine { opacity: 0.36; stroke-width: 1.15; }
+.heartLeft { top: 37%; left: max(10.6rem, 12vw); width: 2.8rem; transform: rotate(-12deg); }
+.heartRight { top: 20%; right: -0.6rem; width: 3.7rem; transform: rotate(13deg); }
+.heartBottom { right: 6%; bottom: 4%; width: 2.4rem; transform: rotate(-9deg); }
+.starLeft { top: 66%; left: max(10.4rem, 11.5vw); width: 1.45rem; transform: rotate(15deg); }
+.starRight { top: 72%; right: 1.2rem; width: 1.65rem; transform: rotate(-11deg); }
+.sparkleTop { top: 12%; right: 4.4rem; width: 2rem; }
+.sparkleBottom { bottom: 15%; left: max(11.5rem, 13vw); width: 1.7rem; transform: rotate(9deg); }
+.flowerLeft { bottom: -0.8rem; left: max(10.2rem, 11vw); width: 4.7rem; transform: rotate(-9deg); }
+.flowerRight { top: 43%; right: -1.5rem; width: 4.5rem; transform: rotate(12deg); }
+.arrowRight { top: 57%; right: -3rem; width: 7.8rem; transform: rotate(-8deg); }
+.waveLeft { bottom: 20%; left: max(9.8rem, 10.8vw); width: 7rem; transform: rotate(-86deg); }
+
+.tape {
+  position: absolute;
+  display: block;
+  width: 8.5rem;
+  height: 1.8rem;
+  opacity: 0.54;
+  background:
+    repeating-linear-gradient(92deg, transparent 0 12px, rgba(255, 255, 255, 0.2) 12px 14px),
+    rgba(255, 145, 171, 0.72);
+  box-shadow: 0 3px 8px rgba(177, 68, 96, 0.08);
+  clip-path: polygon(2% 8%, 98% 0, 96% 90%, 4% 100%, 0 66%);
+  mix-blend-mode: multiply;
+}
+
+.tapeTop { top: -0.55rem; left: 8.7rem; transform: rotate(-12deg); }
+.tapeBottom { right: -5rem; bottom: 1.4rem; transform: rotate(34deg); }
+
+@media (max-width: 1100px) {
+  .arrowRight, .waveLeft, .flowerRight, .washLeft { display: none; }
+  .heartLeft, .starLeft, .sparkleBottom, .flowerLeft { left: 10.2rem; }
+}
+
+@media (max-width: 760px) {
+  .heartLeft, .starLeft, .sparkleBottom, .flowerLeft, .heartRight, .starRight { display: none; }
+  .washTop { right: -17rem; }
+  .washBottom { right: -20rem; }
+}
