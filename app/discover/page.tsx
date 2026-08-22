@@ -22,6 +22,16 @@ type HeartBurst = {
   y: number;
 };
 
+/**
+ * ハート演出が終わるまでの時間。
+ * discover.module.css の float-heart (1.25s) と、いちばん遅いハートの
+ * animation-delay (200ms) の合計。片方だけ変えるとズレる。
+ */
+const HEART_BURST_MS = 1450;
+
+/** トーストとマッチ演出の表示時間。toast-life / match-backdrop-life と対。 */
+const FEEDBACK_MS = 3000;
+
 export default function DiscoverPage() {
   const { currentUser, mode } = useSession();
   const router = useRouter();
@@ -42,6 +52,22 @@ export default function DiscoverPage() {
   const likeButtonRef = useRef<HTMLButtonElement | null>(null);
   const reactionFeedbackTimer = useRef<number | null>(null);
   const matchCelebrationTimer = useRef<number | null>(null);
+  const heartBurstTimer = useRef<number | null>(null);
+
+  /*
+    モードを切り替えると、演出は mode === "romance" の条件で外れて再びマウント
+    される。state が残っていると、そのとき終わったはずのアニメーションが
+    最初から再生される（恋愛 → 仕事 → 恋愛でハートが飛ぶ不具合）。
+    切り替わりを検知して、その場で消す。
+    effect で setState するとカスケード描画になるため、描画中に整える。
+  */
+  const [renderedMode, setRenderedMode] = useState(mode);
+  if (renderedMode !== mode) {
+    setRenderedMode(mode);
+    setHeartBurst(null);
+    setReactionFeedback(null);
+    setShowMatchCelebration(false);
+  }
 
   // 現在表示中のユーザー
   const currentUser_displayed = users[currentIndex] || null;
@@ -66,6 +92,9 @@ export default function DiscoverPage() {
       if (matchCelebrationTimer.current !== null) {
         window.clearTimeout(matchCelebrationTimer.current);
       }
+      if (heartBurstTimer.current !== null) {
+        window.clearTimeout(heartBurstTimer.current);
+      }
     };
   }, []);
 
@@ -83,6 +112,16 @@ export default function DiscoverPage() {
           ? buttonRect.top + buttonRect.height / 2
           : window.innerHeight / 2,
       }));
+
+      // 飛び終わったら消す。残したままだと、見えないだけの div が DOM に
+      // 居座り、モードを切り替えたときに再マウントされて飛び直す。
+      if (heartBurstTimer.current !== null) {
+        window.clearTimeout(heartBurstTimer.current);
+      }
+      heartBurstTimer.current = window.setTimeout(() => {
+        setHeartBurst(null);
+        heartBurstTimer.current = null;
+      }, HEART_BURST_MS);
     }
 
     if (reactionFeedbackTimer.current !== null) {
@@ -100,7 +139,7 @@ export default function DiscoverPage() {
     reactionFeedbackTimer.current = window.setTimeout(() => {
       setReactionFeedback(null);
       reactionFeedbackTimer.current = null;
-    }, 3000);
+    }, FEEDBACK_MS);
   };
 
   const showMatchFeedback = () => {
@@ -114,7 +153,7 @@ export default function DiscoverPage() {
     matchCelebrationTimer.current = window.setTimeout(() => {
       setShowMatchCelebration(false);
       matchCelebrationTimer.current = null;
-    }, 3000);
+    }, FEEDBACK_MS);
   };
 
   // 次のユーザーに進む
@@ -132,16 +171,20 @@ export default function DiscoverPage() {
   const handleLike = async (targetUser: User) => {
     if (!currentUser) return;
 
-    showReactionFeedback("like");
-
     // テストモード：DBに保存せず次に進むだけ
     if (testMode) {
+      showReactionFeedback("like");
       goToNextUser();
       return;
     }
 
     try {
       const match = await likeUser(currentUser.id, targetUser.id, mode);
+
+      // 演出は書き込みが成功してから出す。await より前に出すと、
+      // 通信や権限のエラーで失敗したときに「いいねを押しました」の
+      // トーストとハートが最大3秒残り、その上に失敗アラートが出る。
+      showReactionFeedback("like");
 
       // マッチ成立の確認
       if (match) {
@@ -164,10 +207,9 @@ export default function DiscoverPage() {
   const handlePass = async (targetUser: User) => {
     if (!currentUser) return;
 
-    showReactionFeedback("pass");
-
     // テストモード：DBに保存せず次に進むだけ
     if (testMode) {
+      showReactionFeedback("pass");
       goToNextUser();
       return;
     }
@@ -178,6 +220,9 @@ export default function DiscoverPage() {
         await passUser(currentUser.id, targetUser.id, mode);
       }
       // 仕事モードの場合は保存しない（リロードで戻る）
+
+      // handleLike と同じ理由で、演出は書き込みが成功してから出す
+      showReactionFeedback("pass");
 
       // 次のユーザーに進む
       goToNextUser();
