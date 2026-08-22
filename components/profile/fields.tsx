@@ -122,7 +122,7 @@ export function DepartmentPicker({
 
   return (
     <div className="space-y-2">
-      <span className="block text-sm font-medium">部署</span>
+      <span className="block text-sm font-medium">会社・部署</span>
 
       {levels.map((level, depth) => (
         <select
