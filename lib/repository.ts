@@ -23,9 +23,12 @@ type UserRow = {
   name: string;
   avatar_url: string;
   department: string;
+  department_path: string | null;
   job_title: string;
   age: number;
   enabled_modes: string[];
+  gender: string | null;
+  university: string | null;
   points: number | null;
   profiles?: ProfileRow[] | null;
 };
@@ -36,16 +39,121 @@ type ProfileRow = {
   bio: string | null;
   tags: string[] | null;
   show_department: boolean | null;
+
+  // 仕事モードで入力する項目
+  work_achievements: string | null;
+  can_talk_about: string | null;
+  want_to_consult: string | null;
+  certifications: string | null;
+  interested_areas: string | null;
+
+  // 恋愛モードで入力する項目
+  height_cm: number | null;
+  body_type: string | null;
+  personality_type: string | null;
+  living_with: string | null;
+  holiday: string | null;
+  smoking: string | null;
+  drinking: string | null;
+  hometown: string | null;
+  residence: string | null;
+  preferred_age_min: number | null;
+  preferred_age_max: number | null;
+  wants_children: string | null;
+  marriage_intent: string | null;
+  meeting_preference: string | null;
 };
 
-const EMPTY_PROFILE: Profile = { bio: "", tags: [], showDepartment: true };
+/**
+ * アプリのキー → DB の列名。
+ *
+ * updateProfile がこの表を回して patch を組み立てる。
+ * 項目ごとに if を書くと19行並ぶうえ、追加のたびに書き忘れる。
+ * ここに1行足せば読み書きの両方に反映される。
+ */
+const PROFILE_COLUMNS: Record<keyof Profile, string> = {
+  bio: "bio",
+  tags: "tags",
+  showDepartment: "show_department",
 
+  workAchievements: "work_achievements",
+  canTalkAbout: "can_talk_about",
+  wantToConsult: "want_to_consult",
+  certifications: "certifications",
+  interestedAreas: "interested_areas",
+
+  heightCm: "height_cm",
+  bodyType: "body_type",
+  personalityType: "personality_type",
+  livingWith: "living_with",
+  holiday: "holiday",
+  smoking: "smoking",
+  drinking: "drinking",
+  hometown: "hometown",
+  residence: "residence",
+  preferredAgeMin: "preferred_age_min",
+  preferredAgeMax: "preferred_age_max",
+  wantsChildren: "wants_children",
+  marriageIntent: "marriage_intent",
+  meetingPreference: "meeting_preference",
+};
+
+const EMPTY_PROFILE: Profile = {
+  bio: "",
+  tags: [],
+  showDepartment: true,
+
+  workAchievements: "",
+  canTalkAbout: "",
+  wantToConsult: "",
+  certifications: "",
+  interestedAreas: "",
+
+  heightCm: null,
+  bodyType: "",
+  personalityType: "",
+  livingWith: "",
+  holiday: "",
+  smoking: "",
+  drinking: "",
+  hometown: "",
+  residence: "",
+  preferredAgeMin: null,
+  preferredAgeMax: null,
+  wantsChildren: "",
+  marriageIntent: "",
+  meetingPreference: "",
+};
+
+// 未設定の扱いが型で違う。文字列は空文字、数値は null。
+// 数値に 0 を使うと「未設定」と「0」を区別できなくなるため。
 function toProfile(row: ProfileRow | undefined): Profile {
   if (!row) return EMPTY_PROFILE;
   return {
     bio: row.bio ?? "",
     tags: row.tags ?? [],
     showDepartment: row.show_department ?? true,
+
+    workAchievements: row.work_achievements ?? "",
+    canTalkAbout: row.can_talk_about ?? "",
+    wantToConsult: row.want_to_consult ?? "",
+    certifications: row.certifications ?? "",
+    interestedAreas: row.interested_areas ?? "",
+
+    heightCm: row.height_cm ?? null,
+    bodyType: row.body_type ?? "",
+    personalityType: row.personality_type ?? "",
+    livingWith: row.living_with ?? "",
+    holiday: row.holiday ?? "",
+    smoking: row.smoking ?? "",
+    drinking: row.drinking ?? "",
+    hometown: row.hometown ?? "",
+    residence: row.residence ?? "",
+    preferredAgeMin: row.preferred_age_min ?? null,
+    preferredAgeMax: row.preferred_age_max ?? null,
+    wantsChildren: row.wants_children ?? "",
+    marriageIntent: row.marriage_intent ?? "",
+    meetingPreference: row.meeting_preference ?? "",
   };
 }
 
@@ -56,8 +164,11 @@ function toUser(row: UserRow): User {
     name: row.name,
     avatarUrl: row.avatar_url,
     department: row.department,
+    departmentPath: row.department_path ?? "",
     jobTitle: row.job_title,
     age: row.age,
+    gender: row.gender ?? "",
+    university: row.university ?? "",
     enabledModes: (row.enabled_modes ?? []) as Mode[],
     // supabase/points.sql をまだ流していない環境では列が無いので 0 にしておく
     points: row.points ?? 0,
@@ -67,7 +178,7 @@ function toUser(row: UserRow): User {
 }
 
 const USER_SELECT =
-  "id,name,avatar_url,department,job_title,age,enabled_modes,points,profiles(*)";
+  "id,name,avatar_url,department,department_path,job_title,age,gender,university,enabled_modes,points,profiles(*)";
 
 // ───────────────────────── ユーザー ─────────────────────────
 
@@ -239,8 +350,11 @@ export async function updateUser(
   input: Partial<{
     name: string;
     department: string;
+    departmentPath: string;
     jobTitle: string;
     age: number;
+    gender: string;
+    university: string;
     avatarUrl: string;
     enabledModes: Mode[];
   }>,
@@ -248,8 +362,12 @@ export async function updateUser(
   const patch: Record<string, unknown> = {};
   if (input.name !== undefined) patch.name = input.name;
   if (input.department !== undefined) patch.department = input.department;
+  if (input.departmentPath !== undefined)
+    patch.department_path = input.departmentPath;
   if (input.jobTitle !== undefined) patch.job_title = input.jobTitle;
   if (input.age !== undefined) patch.age = input.age;
+  if (input.gender !== undefined) patch.gender = input.gender;
+  if (input.university !== undefined) patch.university = input.university;
   if (input.avatarUrl !== undefined) patch.avatar_url = input.avatarUrl;
   if (input.enabledModes !== undefined) patch.enabled_modes = input.enabledModes;
 
@@ -263,10 +381,13 @@ export async function updateProfile(
   mode: Mode,
   input: Partial<Profile>,
 ): Promise<void> {
+  // 項目が多いので、列名の対応表（PROFILE_COLUMNS）を回して組み立てる。
+  // 項目ごとに if を並べると、追加したときに書き忘れが起きるため。
   const patch: Record<string, unknown> = {};
-  if (input.bio !== undefined) patch.bio = input.bio;
-  if (input.tags !== undefined) patch.tags = input.tags;
-  if (input.showDepartment !== undefined) patch.show_department = input.showDepartment;
+  for (const [key, column] of Object.entries(PROFILE_COLUMNS)) {
+    const value = input[key as keyof Profile];
+    if (value !== undefined) patch[column] = value;
+  }
 
   const { error } = await supabase
     .from("profiles")
