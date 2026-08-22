@@ -617,18 +617,35 @@ export function MyPage() {
                 </p>
               )}
 
-              <div className="flex justify-end gap-3">
+              <div className="flex items-center justify-end gap-3">
+                {/*
+                  アップロード中はどちらも押せなくする。
+                  走っている fileToAvatarImage は止められず、終わった時点で
+                  updateCommon("avatarUrl", url) が下書きを書き換えるため、
+                  この間に確定させると結果がずれる。
+
+                  キャンセル … 下書きを戻しても、あとから新しい写真が入り直す。
+                  保存     … 古い avatarUrl を書いたあとで下書きだけ新しくなり、
+                              選んだ写真が未保存のまま残る。
+                */}
+                {uploadingAvatar && (
+                  <p className="text-xs text-[var(--muted)]">
+                    写真のアップロード中は保存・キャンセルできません
+                  </p>
+                )}
                 <button
                   type="button"
                   onClick={handleCancel}
-                  className="rounded-lg border border-[var(--line)] px-6 py-2.5 text-sm font-medium text-[var(--foreground)] transition-colors hover:bg-[var(--accent-soft)] disabled:opacity-60"
+                  disabled={uploadingAvatar}
+                  className="rounded-lg border border-[var(--line)] px-6 py-2.5 text-sm font-medium text-[var(--foreground)] transition-colors hover:bg-[var(--accent-soft)] disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   キャンセル
                 </button>
                 <button
                   type="button"
                   onClick={handleSave}
-                  className="rounded-lg bg-[var(--accent)] px-6 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-[var(--accent-strong)] disabled:opacity-60"
+                  disabled={uploadingAvatar}
+                  className="rounded-lg bg-[var(--accent)] px-6 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-[var(--accent-strong)] disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   {saving ? "保存中..." : "変更を保存"}
                 </button>
