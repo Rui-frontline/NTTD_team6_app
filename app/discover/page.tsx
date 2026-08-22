@@ -48,7 +48,12 @@ export default function DiscoverPage() {
   const [reactionFeedback, setReactionFeedback] =
     useState<ReactionFeedback | null>(null);
   const [heartBurst, setHeartBurst] = useState<HeartBurst | null>(null);
-  const [showMatchCelebration, setShowMatchCelebration] = useState(false);
+  // 真偽値ではなく成立ごとに増える id を持つ。true のまま true を入れても
+  // 要素は再マウントされず、2件目のマッチで演出が再生されないため。
+  // key に渡して、成立のたびに作り直させる（heartBurst と同じ作り）。
+  const [matchCelebrationId, setMatchCelebrationId] = useState<number | null>(
+    null,
+  );
   const likeButtonRef = useRef<HTMLButtonElement | null>(null);
   const reactionFeedbackTimer = useRef<number | null>(null);
   const matchCelebrationTimer = useRef<number | null>(null);
@@ -66,7 +71,7 @@ export default function DiscoverPage() {
     setRenderedMode(mode);
     setHeartBurst(null);
     setReactionFeedback(null);
-    setShowMatchCelebration(false);
+    setMatchCelebrationId(null);
   }
 
   // 現在表示中のユーザー
@@ -149,9 +154,9 @@ export default function DiscoverPage() {
       window.clearTimeout(matchCelebrationTimer.current);
     }
 
-    setShowMatchCelebration(true);
+    setMatchCelebrationId((previous) => (previous ?? 0) + 1);
     matchCelebrationTimer.current = window.setTimeout(() => {
-      setShowMatchCelebration(false);
+      setMatchCelebrationId(null);
       matchCelebrationTimer.current = null;
     }, FEEDBACK_MS);
   };
@@ -855,9 +860,15 @@ export default function DiscoverPage() {
         </div>
       )}
 
+      {/*
+        3つの演出は同じ親の子として並ぶので、key は互いに重ならない値にする。
+        id はそれぞれ独立に 1 から始まるため、種類名を付けずに渡すと最初の
+        マッチで3つとも key="1" になり、React が対応付けを誤って要素を作り
+        直す（マッチ演出が2回再生されていた原因）。
+      */}
       {mode === "romance" && heartBurst && (
         <div
-          key={heartBurst.id}
+          key={`heart-${heartBurst.id}`}
           className={styles.heartBurst}
           style={{ left: heartBurst.x, top: heartBurst.y }}
           aria-hidden="true"
@@ -870,7 +881,7 @@ export default function DiscoverPage() {
 
       {mode === "romance" && reactionFeedback && (
         <div
-          key={reactionFeedback.id}
+          key={`toast-${reactionFeedback.id}`}
           className={styles.reactionToast}
           role="status"
           aria-live="polite"
@@ -882,8 +893,9 @@ export default function DiscoverPage() {
         </div>
       )}
 
-      {mode === "romance" && showMatchCelebration && (
+      {mode === "romance" && matchCelebrationId !== null && (
         <div
+          key={`match-${matchCelebrationId}`}
           className={styles.matchCelebration}
           role="alert"
           aria-live="assertive"
