@@ -3,6 +3,9 @@
 import Link from "next/link";
 import { useState } from "react";
 import { useSession } from "@/lib/session";
+import { JOB_TITLE_OPTIONS } from "@/lib/profile-fields";
+import { departmentLeaf, isDepartmentComplete, joinDepartmentPath } from "@/lib/departments";
+import { DepartmentPicker, Select } from "@/components/profile/fields";
 
 export function SignUpForm() {
   const { signUp } = useSession();
@@ -10,10 +13,10 @@ export function SignUpForm() {
     email: "",
     password: "",
     name: "",
-    department: "",
     jobTitle: "",
     age: "",
   });
+  const [departmentParts, setDepartmentParts] = useState<string[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
@@ -24,13 +27,26 @@ export function SignUpForm() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
+
+    // 選択式にした2つは、送る前にここでも確かめる。
+    // required が効かない（select の未選択は空文字で「入力済み」扱い）ため。
+    if (!isDepartmentComplete(departmentParts)) {
+      setError("部署はいちばん下の階層まで選んでください。");
+      return;
+    }
+    if (!(JOB_TITLE_OPTIONS as readonly string[]).includes(form.jobTitle)) {
+      setError("職種を選択してください。");
+      return;
+    }
+
     setBusy(true);
     try {
       await signUp({
         email: form.email,
         password: form.password,
         name: form.name,
-        department: form.department,
+        department: departmentLeaf(departmentParts),
+        departmentPath: joinDepartmentPath(departmentParts),
         jobTitle: form.jobTitle,
         age: Number(form.age),
       });
@@ -82,23 +98,19 @@ export function SignUpForm() {
           />
         </Field>
 
-        <Field label="部署">
-          <input
-            type="text"
-            required
-            value={form.department}
-            onChange={(e) => update("department", e.target.value)}
-            className="rounded-lg border border-line bg-surface px-3 py-2 text-sm"
-          />
-        </Field>
+        {/* 部署と職種は、マイページと同じ選択肢からしか選べないようにする。
+            ここが自由入力だと候補外の値で登録でき、そのあとマイページで
+            何も保存できなくなる */}
+        <DepartmentPicker
+          parts={departmentParts}
+          onChange={setDepartmentParts}
+        />
 
         <Field label="職種">
-          <input
-            type="text"
-            required
+          <Select
             value={form.jobTitle}
-            onChange={(e) => update("jobTitle", e.target.value)}
-            className="rounded-lg border border-line bg-surface px-3 py-2 text-sm"
+            options={JOB_TITLE_OPTIONS}
+            onChange={(v) => update("jobTitle", v)}
           />
         </Field>
 

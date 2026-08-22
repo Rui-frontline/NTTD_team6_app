@@ -12,18 +12,22 @@ import {
   JOB_TITLE_OPTIONS,
   PROFILE_FIELDS,
   UNSET,
-  UNSET_LABEL,
   USER_FIELDS,
-  numberOptions,
 } from "@/lib/profile-fields";
 import {
   departmentLeaf,
-  departmentLevels,
   findDepartmentPath,
   isDepartmentComplete,
   joinDepartmentPath,
   splitDepartmentPath,
 } from "@/lib/departments";
+import {
+  DepartmentPicker,
+  INPUT_CLASS,
+  NumberSelect,
+  Select,
+  TextInput,
+} from "./fields";
 import { TagPicker } from "./TagPicker";
 
 /** 年齢の選択肢。新規登録の入力欄と同じ 18〜99 に揃えている */
@@ -391,6 +395,9 @@ export function MyPage() {
             );
           }}
         />
+        <p className="-mt-1 text-xs text-[var(--muted)]">
+          値は仕事/恋愛で共通です。表示するかどうかは各モードのタブで設定できます。
+        </p>
 
         {/* 性別・出身大学。定義は lib/profile-fields.ts に置いてある */}
         {USER_FIELDS.map((field) => (
@@ -530,156 +537,6 @@ export function MyPage() {
         {saving ? "保存中..." : "保存する"}
       </button>
     </div>
-  );
-}
-
-/**
- * 部署を「会社 → 区分 → 本部 → 部」と辿って選ばせる。
- *
- * 階層の深さが枝によって違うので、選択欄の数は固定できない。
- * どこまで出すかは lib/departments.ts の departmentLevels が決めていて、
- * 選んだ先にまだ下があれば欄が1つ増える。
- */
-function DepartmentPicker({
-  parts,
-  fallback,
-  onChange,
-}: {
-  parts: string[];
-  /** 選択肢に無い部署が登録されている場合に、元の値を知らせるために使う */
-  fallback: string;
-  onChange: (parts: string[]) => void;
-}) {
-  const levels = departmentLevels(parts);
-  const complete = isDepartmentComplete(parts);
-  // 登録済みなのに選択肢から復元できなかった場合だけ知らせる
-  const orphaned = parts.length === 0 && fallback !== "";
-
-  return (
-    <div className="space-y-2">
-      <span className="block text-sm font-medium">部署</span>
-
-      {levels.map((level, depth) => (
-        <select
-          key={depth}
-          value={level.value}
-          aria-label={level.label}
-          onChange={(e) => {
-            // 上の段を変えたら、下の段の選択は捨てる
-            const next = parts.slice(0, depth);
-            if (e.target.value) next[depth] = e.target.value;
-            onChange(next);
-          }}
-          className={INPUT_CLASS}
-        >
-          <option value={UNSET}>{level.label}を選択</option>
-          {level.options.map((node) => (
-            <option key={node.label} value={node.label}>
-              {node.label}
-            </option>
-          ))}
-        </select>
-      ))}
-
-      {orphaned ? (
-        <p className="text-xs text-[var(--accent-strong)]">
-          現在の登録は「{fallback}」です。選択肢に無いので選び直してください。
-        </p>
-      ) : !complete ? (
-        <p className="text-xs text-[var(--muted)]">
-          いちばん下の階層まで選んでください。
-        </p>
-      ) : null}
-
-      <p className="text-xs text-[var(--muted)]">
-        値は仕事/恋愛で共通です。表示するかどうかは各モードのタブで設定できます。
-      </p>
-    </div>
-  );
-}
-
-/** 入力欄の見た目。同じ指定を何度も書かないようにまとめている */
-const INPUT_CLASS =
-  "w-full rounded-md border border-[var(--line)] bg-[var(--surface)] px-3 py-2 text-sm text-[var(--foreground)] focus:border-[var(--accent)] focus:outline-none focus:ring-1 focus:ring-[var(--accent)]";
-
-function TextInput({
-  value,
-  onChange,
-}: {
-  value: string;
-  onChange: (value: string) => void;
-}) {
-  return (
-    <input
-      type="text"
-      value={value}
-      onChange={(e) => onChange(e.target.value)}
-      className={INPUT_CLASS}
-    />
-  );
-}
-
-/** 選択式。未設定は空文字で表す */
-function Select({
-  value,
-  options,
-  onChange,
-}: {
-  value: string;
-  options: readonly string[];
-  onChange: (value: string) => void;
-}) {
-  return (
-    <select
-      value={value}
-      onChange={(e) => onChange(e.target.value)}
-      className={INPUT_CLASS}
-    >
-      <option value={UNSET}>{UNSET_LABEL}</option>
-      {options.map((option) => (
-        <option key={option} value={option}>
-          {option}
-        </option>
-      ))}
-    </select>
-  );
-}
-
-/**
- * 数値の選択。未設定は null で表す。
- *
- * input[type=number] を使わないのは、中身を全部消したときに Number("") が
- * 0 になり、「未設定」と「0」を区別できなくなるため。
- */
-function NumberSelect({
-  value,
-  min,
-  max,
-  unit,
-  onChange,
-}: {
-  value: number | null;
-  min: number;
-  max: number;
-  unit: string;
-  onChange: (value: number | null) => void;
-}) {
-  return (
-    <select
-      value={value === null ? UNSET : String(value)}
-      onChange={(e) =>
-        onChange(e.target.value === UNSET ? null : Number(e.target.value))
-      }
-      className={INPUT_CLASS}
-    >
-      <option value={UNSET}>{UNSET_LABEL}</option>
-      {numberOptions(min, max).map((n) => (
-        <option key={n} value={n}>
-          {n}
-          {unit}
-        </option>
-      ))}
-    </select>
   );
 }
 

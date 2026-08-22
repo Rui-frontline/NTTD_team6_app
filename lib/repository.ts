@@ -1,4 +1,6 @@
 import { supabase } from "@/lib/supabase";
+import { isDepartmentComplete, splitDepartmentPath } from "@/lib/departments";
+import { JOB_TITLE_OPTIONS } from "@/lib/profile-fields";
 import type {
   Board,
   BoardMessage,
@@ -314,10 +316,22 @@ export async function createUser(input: {
   id: string; // 認証アカウントの uuid
   name: string;
   department: string;
+  /** 部署を選んだ経路。「会社 / 区分 / 本部」の形 */
+  departmentPath: string;
   jobTitle: string;
   age: number;
   avatarUrl?: string;
 }): Promise<User> {
+  // 部署と職種は選択肢からしか選べない決まりなので、ここでも確かめる。
+  // 画面側の検証だけだと、登録フォームを直し忘れたときに候補外の値が
+  // 入り込み、あとからマイページで何も保存できなくなる。
+  if (!isDepartmentComplete(splitDepartmentPath(input.departmentPath))) {
+    throw new Error("部署はいちばん下の階層まで選んでください。");
+  }
+  if (!(JOB_TITLE_OPTIONS as readonly string[]).includes(input.jobTitle)) {
+    throw new Error("職種を選択してください。");
+  }
+
   const avatarUrl =
     input.avatarUrl ??
     `https://api.dicebear.com/9.x/avataaars/svg?seed=${input.id}`;
@@ -327,6 +341,7 @@ export async function createUser(input: {
     name: input.name,
     avatar_url: avatarUrl,
     department: input.department,
+    department_path: input.departmentPath,
     job_title: input.jobTitle,
     age: input.age,
     enabled_modes: ["work"], // 恋愛モードはマイページで自分でONにする
