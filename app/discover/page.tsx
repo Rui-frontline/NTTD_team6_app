@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { PageHeading } from "@/components/PageHeading";
 import { useSession } from "@/lib/session";
@@ -8,6 +8,19 @@ import { getUsers, likeUser, passUser } from "@/lib/repository";
 import type { User } from "@/lib/types";
 import type { DiscoverFilter } from "@/lib/repository";
 import { TAG_OPTIONS } from "@/lib/types";
+import styles from "./discover.module.css";
+
+type ReactionFeedback = {
+  id: number;
+  reaction: "like" | "pass";
+  message: "いいねを押しました" | "見送るを押しました";
+};
+
+type HeartBurst = {
+  id: number;
+  x: number;
+  y: number;
+};
 
 export default function DiscoverPage() {
   const { currentUser, mode } = useSession();
@@ -22,6 +35,13 @@ export default function DiscoverPage() {
   const [showFilter, setShowFilter] = useState(false);
   const [showDetailProfile, setShowDetailProfile] = useState(false);
   const [testMode, setTestMode] = useState(false); // テストモード（初期値OFF、必要時はコードで変更）
+  const [reactionFeedback, setReactionFeedback] =
+    useState<ReactionFeedback | null>(null);
+  const [heartBurst, setHeartBurst] = useState<HeartBurst | null>(null);
+  const [showMatchCelebration, setShowMatchCelebration] = useState(false);
+  const likeButtonRef = useRef<HTMLButtonElement | null>(null);
+  const reactionFeedbackTimer = useRef<number | null>(null);
+  const matchCelebrationTimer = useRef<number | null>(null);
 
   // 現在表示中のユーザー
   const currentUser_displayed = users[currentIndex] || null;
@@ -38,6 +58,65 @@ export default function DiscoverPage() {
       .finally(() => setLoading(false));
   }, [currentUser, mode, filter]);
 
+  useEffect(() => {
+    return () => {
+      if (reactionFeedbackTimer.current !== null) {
+        window.clearTimeout(reactionFeedbackTimer.current);
+      }
+      if (matchCelebrationTimer.current !== null) {
+        window.clearTimeout(matchCelebrationTimer.current);
+      }
+    };
+  }, []);
+
+  const showReactionFeedback = (reaction: "like" | "pass") => {
+    if (mode !== "romance") return;
+
+    if (reaction === "like") {
+      const buttonRect = likeButtonRef.current?.getBoundingClientRect();
+      setHeartBurst((previous) => ({
+        id: (previous?.id ?? 0) + 1,
+        x: buttonRect
+          ? buttonRect.left + buttonRect.width / 2
+          : window.innerWidth / 2,
+        y: buttonRect
+          ? buttonRect.top + buttonRect.height / 2
+          : window.innerHeight / 2,
+      }));
+    }
+
+    if (reactionFeedbackTimer.current !== null) {
+      window.clearTimeout(reactionFeedbackTimer.current);
+    }
+
+    setReactionFeedback((previous) => ({
+      id: (previous?.id ?? 0) + 1,
+      reaction,
+      message:
+        reaction === "like"
+          ? "いいねを押しました"
+          : "見送るを押しました",
+    }));
+    reactionFeedbackTimer.current = window.setTimeout(() => {
+      setReactionFeedback(null);
+      reactionFeedbackTimer.current = null;
+    }, 3000);
+  };
+
+  const showMatchFeedback = () => {
+    if (mode !== "romance") return;
+
+    if (matchCelebrationTimer.current !== null) {
+      window.clearTimeout(matchCelebrationTimer.current);
+    }
+
+    setShowMatchCelebration(true);
+    matchCelebrationTimer.current = window.setTimeout(() => {
+      setShowMatchCelebration(false);
+      matchCelebrationTimer.current = null;
+    }, 3000);
+  };
+
   // 次のユーザーに進む
   const goToNextUser = () => {
     setCurrentIndex((prev) => {
@@ -53,6 +132,8 @@ export default function DiscoverPage() {
   const handleLike = async (targetUser: User) => {
     if (!currentUser) return;
 
+    showReactionFeedback("like");
+
     // テストモード：DBに保存せず次に進むだけ
     if (testMode) {
       goToNextUser();
@@ -65,6 +146,7 @@ export default function DiscoverPage() {
       // マッチ成立の確認
       if (match) {
         console.log("マッチ成立！", match);
+        showMatchFeedback();
         // モーダルを表示
         setMatchedUser(targetUser);
         setMatchedMatchId(match.id);
@@ -81,6 +163,8 @@ export default function DiscoverPage() {
   // 見送るボタンの処理
   const handlePass = async (targetUser: User) => {
     if (!currentUser) return;
+
+    showReactionFeedback("pass");
 
     // テストモード：DBに保存せず次に進むだけ
     if (testMode) {
@@ -327,23 +411,26 @@ export default function DiscoverPage() {
             >
               ✕ 見送る
             </button>
-            <button
-              onClick={() => handleLike(currentUser_displayed)}
-              style={{
-                width: "200px",
-                height: "56px",
-                background: "var(--action-gradient)",
-                color: "#FFFFFF",
-                border: "none",
-                borderRadius: "28px",
-                cursor: "pointer",
-                fontSize: "16px",
-                fontWeight: "500",
-                boxShadow: "var(--action-shadow)",
-              }}
-            >
-              ♡ いいね
-            </button>
+            <div className={styles.likeAction}>
+              <button
+                ref={likeButtonRef}
+                onClick={() => handleLike(currentUser_displayed)}
+                style={{
+                  width: "200px",
+                  height: "56px",
+                  background: "var(--action-gradient)",
+                  color: "#FFFFFF",
+                  border: "none",
+                  borderRadius: "28px",
+                  cursor: "pointer",
+                  fontSize: "16px",
+                  fontWeight: "500",
+                  boxShadow: "var(--action-shadow)",
+                }}
+              >
+                ♡ いいね
+              </button>
+            </div>
           </div>
         </div>
       ) : (
@@ -721,6 +808,56 @@ export default function DiscoverPage() {
                 </div>
               </div>
             </div>
+          </div>
+        </div>
+      )}
+
+      {mode === "romance" && heartBurst && (
+        <div
+          key={heartBurst.id}
+          className={styles.heartBurst}
+          style={{ left: heartBurst.x, top: heartBurst.y }}
+          aria-hidden="true"
+        >
+          <span className={styles.floatingHeart}>♥</span>
+          <span className={styles.floatingHeart}>♥</span>
+          <span className={styles.floatingHeart}>♥</span>
+        </div>
+      )}
+
+      {mode === "romance" && reactionFeedback && (
+        <div
+          key={reactionFeedback.id}
+          className={styles.reactionToast}
+          role="status"
+          aria-live="polite"
+        >
+          <span className={styles.toastHeart} aria-hidden="true">
+            {reactionFeedback.reaction === "like" ? "♥" : "✓"}
+          </span>
+          {reactionFeedback.message}
+        </div>
+      )}
+
+      {mode === "romance" && showMatchCelebration && (
+        <div
+          className={styles.matchCelebration}
+          role="alert"
+          aria-live="assertive"
+        >
+          <div className={styles.matchHalo} aria-hidden="true" />
+          <div className={styles.matchSparkles} aria-hidden="true">
+            <span>✦</span>
+            <span>♥</span>
+            <span>✧</span>
+            <span>✦</span>
+            <span>♥</span>
+            <span>✧</span>
+          </div>
+          <div className={styles.matchCard}>
+            <p className={styles.matchKicker}>IT&apos;S A</p>
+            <p className={styles.matchTitle}>MATCH!!!</p>
+            <p className={styles.matchMessage}>ふたりの想いがつながりました</p>
           </div>
         </div>
       )}
