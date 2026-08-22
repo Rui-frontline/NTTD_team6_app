@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { PageHeading } from "@/components/PageHeading";
 import { useSession } from "@/lib/session";
@@ -8,6 +8,29 @@ import { getUsers, likeUser, passUser } from "@/lib/repository";
 import type { User } from "@/lib/types";
 import type { DiscoverFilter } from "@/lib/repository";
 import { TAG_OPTIONS } from "@/lib/types";
+import styles from "./discover.module.css";
+
+type ReactionFeedback = {
+  id: number;
+  reaction: "like" | "pass";
+  message: "いいねを押しました" | "見送るを押しました";
+};
+
+type HeartBurst = {
+  id: number;
+  x: number;
+  y: number;
+};
+
+/**
+ * ハート演出が終わるまでの時間。
+ * discover.module.css の float-heart (1.25s) と、いちばん遅いハートの
+ * animation-delay (200ms) の合計。片方だけ変えるとズレる。
+ */
+const HEART_BURST_MS = 1450;
+
+/** トーストとマッチ演出の表示時間。toast-life / match-backdrop-life と対。 */
+const FEEDBACK_MS = 3000;
 
 export default function DiscoverPage() {
   const { currentUser, mode } = useSession();
@@ -22,6 +45,34 @@ export default function DiscoverPage() {
   const [showFilter, setShowFilter] = useState(false);
   const [showDetailProfile, setShowDetailProfile] = useState(false);
   const [testMode, setTestMode] = useState(false); // テストモード（初期値OFF、必要時はコードで変更）
+  const [reactionFeedback, setReactionFeedback] =
+    useState<ReactionFeedback | null>(null);
+  const [heartBurst, setHeartBurst] = useState<HeartBurst | null>(null);
+  // 真偽値ではなく成立ごとに増える id を持つ。true のまま true を入れても
+  // 要素は再マウントされず、2件目のマッチで演出が再生されないため。
+  // key に渡して、成立のたびに作り直させる（heartBurst と同じ作り）。
+  const [matchCelebrationId, setMatchCelebrationId] = useState<number | null>(
+    null,
+  );
+  const likeButtonRef = useRef<HTMLButtonElement | null>(null);
+  const reactionFeedbackTimer = useRef<number | null>(null);
+  const matchCelebrationTimer = useRef<number | null>(null);
+  const heartBurstTimer = useRef<number | null>(null);
+
+  /*
+    モードを切り替えると、演出は mode === "romance" の条件で外れて再びマウント
+    される。state が残っていると、そのとき終わったはずのアニメーションが
+    最初から再生される（恋愛 → 仕事 → 恋愛でハートが飛ぶ不具合）。
+    切り替わりを検知して、その場で消す。
+    effect で setState するとカスケード描画になるため、描画中に整える。
+  */
+  const [renderedMode, setRenderedMode] = useState(mode);
+  if (renderedMode !== mode) {
+    setRenderedMode(mode);
+    setHeartBurst(null);
+    setReactionFeedback(null);
+    setMatchCelebrationId(null);
+  }
 
   // 現在表示中のユーザー
   const currentUser_displayed = users[currentIndex] || null;
@@ -37,6 +88,78 @@ export default function DiscoverPage() {
       .catch((error) => console.error("ユーザー取得エラー:", error))
       .finally(() => setLoading(false));
   }, [currentUser, mode, filter]);
+
+  useEffect(() => {
+    return () => {
+      if (reactionFeedbackTimer.current !== null) {
+        window.clearTimeout(reactionFeedbackTimer.current);
+      }
+      if (matchCelebrationTimer.current !== null) {
+        window.clearTimeout(matchCelebrationTimer.current);
+      }
+      if (heartBurstTimer.current !== null) {
+        window.clearTimeout(heartBurstTimer.current);
+      }
+    };
+  }, []);
+
+  const showReactionFeedback = (reaction: "like" | "pass") => {
+    if (mode !== "romance") return;
+
+    if (reaction === "like") {
+      const buttonRect = likeButtonRef.current?.getBoundingClientRect();
+      setHeartBurst((previous) => ({
+        id: (previous?.id ?? 0) + 1,
+        x: buttonRect
+          ? buttonRect.left + buttonRect.width / 2
+          : window.innerWidth / 2,
+        y: buttonRect
+          ? buttonRect.top + buttonRect.height / 2
+          : window.innerHeight / 2,
+      }));
+
+      // 飛び終わったら消す。残したままだと、見えないだけの div が DOM に
+      // 居座り、モードを切り替えたときに再マウントされて飛び直す。
+      if (heartBurstTimer.current !== null) {
+        window.clearTimeout(heartBurstTimer.current);
+      }
+      heartBurstTimer.current = window.setTimeout(() => {
+        setHeartBurst(null);
+        heartBurstTimer.current = null;
+      }, HEART_BURST_MS);
+    }
+
+    if (reactionFeedbackTimer.current !== null) {
+      window.clearTimeout(reactionFeedbackTimer.current);
+    }
+
+    setReactionFeedback((previous) => ({
+      id: (previous?.id ?? 0) + 1,
+      reaction,
+      message:
+        reaction === "like"
+          ? "いいねを押しました"
+          : "見送るを押しました",
+    }));
+    reactionFeedbackTimer.current = window.setTimeout(() => {
+      setReactionFeedback(null);
+      reactionFeedbackTimer.current = null;
+    }, FEEDBACK_MS);
+  };
+
+  const showMatchFeedback = () => {
+    if (mode !== "romance") return;
+
+    if (matchCelebrationTimer.current !== null) {
+      window.clearTimeout(matchCelebrationTimer.current);
+    }
+
+    setMatchCelebrationId((previous) => (previous ?? 0) + 1);
+    matchCelebrationTimer.current = window.setTimeout(() => {
+      setMatchCelebrationId(null);
+      matchCelebrationTimer.current = null;
+    }, FEEDBACK_MS);
+  };
 
   // 次のユーザーに進む
   const goToNextUser = () => {
@@ -55,6 +178,7 @@ export default function DiscoverPage() {
 
     // テストモード：DBに保存せず次に進むだけ
     if (testMode) {
+      showReactionFeedback("like");
       goToNextUser();
       return;
     }
@@ -62,9 +186,15 @@ export default function DiscoverPage() {
     try {
       const match = await likeUser(currentUser.id, targetUser.id, mode);
 
+      // 演出は書き込みが成功してから出す。await より前に出すと、
+      // 通信や権限のエラーで失敗したときに「いいねを押しました」の
+      // トーストとハートが最大3秒残り、その上に失敗アラートが出る。
+      showReactionFeedback("like");
+
       // マッチ成立の確認
       if (match) {
         console.log("マッチ成立！", match);
+        showMatchFeedback();
         // モーダルを表示
         setMatchedUser(targetUser);
         setMatchedMatchId(match.id);
@@ -84,6 +214,7 @@ export default function DiscoverPage() {
 
     // テストモード：DBに保存せず次に進むだけ
     if (testMode) {
+      showReactionFeedback("pass");
       goToNextUser();
       return;
     }
@@ -94,6 +225,9 @@ export default function DiscoverPage() {
         await passUser(currentUser.id, targetUser.id, mode);
       }
       // 仕事モードの場合は保存しない（リロードで戻る）
+
+      // handleLike と同じ理由で、演出は書き込みが成功してから出す
+      showReactionFeedback("pass");
 
       // 次のユーザーに進む
       goToNextUser();
@@ -328,6 +462,7 @@ export default function DiscoverPage() {
               ✕ 見送る
             </button>
             <button
+              ref={likeButtonRef}
               onClick={() => handleLike(currentUser_displayed)}
               style={{
                 width: "200px",
@@ -721,6 +856,63 @@ export default function DiscoverPage() {
                 </div>
               </div>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/*
+        3つの演出は同じ親の子として並ぶので、key は互いに重ならない値にする。
+        id はそれぞれ独立に 1 から始まるため、種類名を付けずに渡すと最初の
+        マッチで3つとも key="1" になり、React が対応付けを誤って要素を作り
+        直す（マッチ演出が2回再生されていた原因）。
+      */}
+      {mode === "romance" && heartBurst && (
+        <div
+          key={`heart-${heartBurst.id}`}
+          className={styles.heartBurst}
+          style={{ left: heartBurst.x, top: heartBurst.y }}
+          aria-hidden="true"
+        >
+          <span className={styles.floatingHeart}>♥</span>
+          <span className={styles.floatingHeart}>♥</span>
+          <span className={styles.floatingHeart}>♥</span>
+        </div>
+      )}
+
+      {mode === "romance" && reactionFeedback && (
+        <div
+          key={`toast-${reactionFeedback.id}`}
+          className={styles.reactionToast}
+          role="status"
+          aria-live="polite"
+        >
+          <span className={styles.toastHeart} aria-hidden="true">
+            {reactionFeedback.reaction === "like" ? "♥" : "✓"}
+          </span>
+          {reactionFeedback.message}
+        </div>
+      )}
+
+      {mode === "romance" && matchCelebrationId !== null && (
+        <div
+          key={`match-${matchCelebrationId}`}
+          className={styles.matchCelebration}
+          role="alert"
+          aria-live="assertive"
+        >
+          <div className={styles.matchHalo} aria-hidden="true" />
+          <div className={styles.matchSparkles} aria-hidden="true">
+            <span>✦</span>
+            <span>♥</span>
+            <span>✧</span>
+            <span>✦</span>
+            <span>♥</span>
+            <span>✧</span>
+          </div>
+          <div className={styles.matchCard}>
+            <p className={styles.matchKicker}>IT&apos;S A</p>
+            <p className={styles.matchTitle}>MATCH!!!</p>
+            <p className={styles.matchMessage}>ふたりの想いがつながりました</p>
           </div>
         </div>
       )}
