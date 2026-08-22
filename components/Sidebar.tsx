@@ -15,26 +15,120 @@ import { useSession } from "@/lib/session";
 export function Sidebar() {
   const [open, setOpen] = useState(true);
   const pathname = usePathname();
+  const { mode } = useSession();
+
+  if (mode === "romance") {
+    return (
+      <aside
+        className={[
+          "sticky top-0 flex h-screen shrink-0 flex-col border-r transition-[width] duration-200",
+          "bg-[var(--sidebar-bg)] border-[var(--sidebar-border)] text-[var(--sidebar-fg)]",
+          open ? "w-40" : "w-16",
+        ].join(" ")}
+      >
+        <nav className="flex flex-col gap-1 p-3">
+          <button
+            type="button"
+            onClick={() => setOpen((v) => !v)}
+            aria-label={open ? "サイドバーを畳む" : "サイドバーを開く"}
+            aria-expanded={open}
+            className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-bold text-[var(--sidebar-muted)] transition-colors hover:bg-[var(--sidebar-hover-bg)]"
+          >
+            <MenuIcon />
+          </button>
+
+          {NAV.map((item) => {
+            const active = pathname.startsWith(item.href);
+            const Icon = item.icon;
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                title={item.label}
+                aria-current={active ? "page" : undefined}
+                className={[
+                  "flex items-center gap-3 rounded-xl border px-3 py-2.5 text-sm font-bold transition-colors",
+                  active
+                    ? "border-[var(--sidebar-active-border)] bg-[var(--sidebar-active-bg)] text-[var(--sidebar-active-fg)]"
+                    : "border-transparent text-[var(--sidebar-muted)] hover:bg-[var(--sidebar-hover-bg)]",
+                ].join(" ")}
+              >
+                <Icon />
+                {open ? <span className="truncate">{item.label}</span> : null}
+              </Link>
+            );
+          })}
+        </nav>
+
+        <div className="mt-auto mb-5 flex flex-col gap-2 px-3">
+          <AccountCard open={open} />
+
+          <Link
+            href="/discover"
+            className="flex items-center gap-2 rounded-xl p-2 transition-colors hover:bg-[var(--sidebar-hover-bg)]"
+            title="MeetLink 社内コネクト"
+          >
+            <LogoMark legacy />
+            {open ? (
+              <span className="min-w-0">
+                <span className="block truncate text-sm font-extrabold tracking-tight">
+                  MeetLink
+                </span>
+                <span className="block truncate text-[11px] text-[var(--sidebar-muted)]">
+                  社内コネクト
+                </span>
+              </span>
+            ) : null}
+          </Link>
+        </div>
+      </aside>
+    );
+  }
 
   return (
     <aside
       className={[
-        "sticky top-0 flex h-screen shrink-0 flex-col border-r transition-[width] duration-200",
+        "sidebar-shell sticky top-0 z-30 flex h-screen shrink-0 flex-col border-r transition-[width] duration-200",
         "bg-[var(--sidebar-bg)] border-[var(--sidebar-border)] text-[var(--sidebar-fg)]",
-        open ? "w-40" : "w-16",
+        open ? "w-20 sm:w-56" : "w-16",
       ].join(" ")}
     >
-      <nav className="flex flex-col gap-1 p-3">
-        {/* ナビの一番上。押すと畳んでアイコンだけになる */}
+      <div className="flex min-h-22 items-center gap-2 border-b border-[var(--sidebar-active-border)] px-4">
+        <Link
+          href="/discover"
+          className="flex min-w-0 flex-1 items-center gap-3"
+          title="MeetLink 社内コネクト"
+        >
+          <LogoMark />
+          {open ? (
+            <span className="hidden min-w-0 sm:block">
+              <span className="block truncate font-serif text-lg font-semibold tracking-[0.03em] text-[var(--sidebar-fg)]">
+                MeetLink
+              </span>
+              <span className="block truncate text-[9px] tracking-[0.18em] text-[var(--sidebar-muted)]">
+                MEET. CONNECT. GROW.
+              </span>
+            </span>
+          ) : null}
+        </Link>
+
         <button
           type="button"
           onClick={() => setOpen((v) => !v)}
           aria-label={open ? "サイドバーを畳む" : "サイドバーを開く"}
           aria-expanded={open}
-          className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-bold text-[var(--sidebar-muted)] transition-colors hover:bg-[var(--sidebar-hover-bg)]"
+          className="hidden h-9 w-9 shrink-0 items-center justify-center rounded-xl text-[var(--sidebar-muted)] transition-colors hover:bg-[var(--sidebar-hover-bg)] hover:text-[var(--sidebar-fg)] sm:flex"
         >
           <MenuIcon />
         </button>
+      </div>
+
+      <nav className="flex flex-col gap-1.5 p-3 sm:p-4">
+        {open ? (
+          <span className="mb-1 hidden px-3 text-[9px] font-semibold tracking-[0.22em] text-[var(--sidebar-muted)] sm:block">
+            MENU
+          </span>
+        ) : null}
 
         {NAV.map((item) => {
           const active = pathname.startsWith(item.href);
@@ -46,40 +140,22 @@ export function Sidebar() {
               title={item.label}
               aria-current={active ? "page" : undefined}
               className={[
-                "flex items-center gap-3 rounded-xl border px-3 py-2.5 text-sm font-bold transition-colors",
+                "relative flex min-h-11 items-center gap-3 rounded-[14px] border px-3 py-2.5 text-sm font-semibold tracking-wide transition-colors",
                 active
                   ? "border-[var(--sidebar-active-border)] bg-[var(--sidebar-active-bg)] text-[var(--sidebar-active-fg)]"
-                  : "border-transparent text-[var(--sidebar-muted)] hover:bg-[var(--sidebar-hover-bg)]",
+                  : "border-transparent text-[var(--sidebar-muted)] hover:bg-[var(--sidebar-hover-bg)] hover:text-[var(--sidebar-fg)]",
               ].join(" ")}
             >
               <Icon />
-              {open ? <span className="truncate">{item.label}</span> : null}
+              {open ? <span className="hidden truncate sm:block">{item.label}</span> : null}
             </Link>
           );
         })}
       </nav>
 
-      {/* 画面の下部。上から アカウント → 保有ポイント → アプリ名 */}
-      <div className="mt-auto mb-5 flex flex-col gap-2 px-3">
+      {/* 画面の下部に現在のアカウントと保有ポイントをまとめる。 */}
+      <div className="mt-auto mb-5 flex flex-col gap-2 px-3 sm:px-4">
         <AccountCard open={open} />
-
-        <Link
-          href="/discover"
-          className="flex items-center gap-2 rounded-xl p-2 transition-colors hover:bg-[var(--sidebar-hover-bg)]"
-          title="MeetLink 社内コネクト"
-        >
-          <LogoMark />
-          {open ? (
-            <span className="min-w-0">
-              <span className="block truncate text-sm font-extrabold tracking-tight">
-                MeetLink
-              </span>
-              <span className="block truncate text-[11px] text-[var(--sidebar-muted)]">
-                社内コネクト
-              </span>
-            </span>
-          ) : null}
-        </Link>
       </div>
     </aside>
   );
@@ -91,7 +167,7 @@ export function Sidebar() {
  * 常に分かるようにしている。
  */
 function AccountCard({ open }: { open: boolean }) {
-  const { currentUser } = useSession();
+  const { currentUser, mode } = useSession();
 
   if (!currentUser) return null;
 
@@ -111,7 +187,11 @@ function AccountCard({ open }: { open: boolean }) {
         title={label}
         width={32}
         height={32}
-        className="mx-auto h-8 w-8 rounded-full bg-[var(--sidebar-hover-bg)] object-cover"
+        className={
+          mode === "romance"
+            ? "mx-auto h-8 w-8 rounded-full bg-[var(--sidebar-hover-bg)] object-cover"
+            : "mx-auto h-9 w-9 rounded-full border border-[var(--sidebar-active-border)] bg-[var(--sidebar-hover-bg)] object-cover p-0.5"
+        }
       />
     );
   }
@@ -119,7 +199,11 @@ function AccountCard({ open }: { open: boolean }) {
   return (
     <div
       title={label}
-      className="rounded-xl border border-[var(--sidebar-active-border)] bg-[var(--sidebar-active-bg)] p-2"
+      className={
+        mode === "romance"
+          ? "rounded-xl border border-[var(--sidebar-active-border)] bg-[var(--sidebar-active-bg)] p-2"
+          : "rounded-[14px] border border-[var(--sidebar-active-border)] bg-[rgba(255,255,255,0.04)] p-2.5"
+      }
     >
       <div className="flex items-center gap-2">
         {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -128,9 +212,13 @@ function AccountCard({ open }: { open: boolean }) {
           alt=""
           width={32}
           height={32}
-          className="h-8 w-8 shrink-0 rounded-full bg-[var(--sidebar-hover-bg)] object-cover"
+          className={
+            mode === "romance"
+              ? "h-8 w-8 shrink-0 rounded-full bg-[var(--sidebar-hover-bg)] object-cover"
+              : "h-9 w-9 shrink-0 rounded-full border border-[var(--logo-ring-a)] bg-[var(--sidebar-hover-bg)] object-cover p-0.5"
+          }
         />
-        <span className="min-w-0">
+        <span className={mode === "romance" ? "min-w-0" : "hidden min-w-0 sm:block"}>
           <span className="block truncate text-xs font-bold text-[var(--sidebar-active-fg)]">
             {currentUser.name}
           </span>
@@ -141,7 +229,13 @@ function AccountCard({ open }: { open: boolean }) {
       </div>
 
       {/* 罫線で区切ると、名前や部署と別の情報だと分かりやすい */}
-      <PointBalance className="mt-2 border-t border-[var(--sidebar-active-border)] pt-2 text-[var(--sidebar-active-fg)]" />
+      <PointBalance
+        className={
+          mode === "romance"
+            ? "mt-2 border-t border-[var(--sidebar-active-border)] pt-2 text-[var(--sidebar-active-fg)]"
+            : "mt-2 hidden border-t border-[var(--sidebar-active-border)] pt-2 text-[var(--sidebar-active-fg)] sm:flex"
+        }
+      />
     </div>
   );
 }
@@ -150,12 +244,12 @@ function AccountCard({ open }: { open: boolean }) {
  * 二重リングのロゴマーク。
  * 仕事モードは2つとも金色、恋愛モードは青とピンクになる（globals.css で切り替え）。
  */
-function LogoMark() {
+function LogoMark({ legacy = false }: { legacy?: boolean }) {
   return (
     <svg
       viewBox="0 0 40 24"
       aria-hidden
-      className="h-5 w-8 shrink-0"
+      className={legacy ? "h-5 w-8 shrink-0" : "h-6 w-9 shrink-0"}
       fill="none"
       strokeWidth={2.5}
     >

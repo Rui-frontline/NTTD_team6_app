@@ -12,89 +12,97 @@
 
 :root {
   /* 既定は仕事モードの色 */
-  --background: #f6f3ed;
-  --surface: #ffffff;
-  --foreground: #17171b;
-  --muted: #5b5b66;
-  --line: #e8e3d9;
+  --background: #f8f5ef;
+  --surface: #fffdf9;
+  --foreground: #16283d;
+  --muted: #687482;
+  --line: rgba(20, 30, 50, 0.09);
 
-  --accent: #16233f;
-  --accent-strong: #0f1a2e;
-  --accent-soft: #eef2f9;
+  --accent: #0c2340;
+  --accent-strong: #081c30;
+  --accent-soft: #eef1f6;
 
-  --bubble-other-bg: #f1f2f5;
-  --badge-bg: #e2622f;
+  --bubble-other-bg: #f4f1eb;
+  --badge-bg: #b99a63;
   --badge-fg: #ffffff;
 
-  --sidebar-bg: #131d33;
-  --sidebar-border: transparent;
+  --sidebar-bg: #0c2340;
+  --sidebar-border: rgba(201, 169, 110, 0.22);
   --sidebar-fg: #ffffff;
-  --sidebar-muted: #93a0bb;
-  --sidebar-hover-bg: #1b2740;
-  --sidebar-active-bg: #1e2c49;
+  --sidebar-muted: #b9c2cc;
+  --sidebar-hover-bg: rgba(255, 255, 255, 0.055);
+  --sidebar-active-bg: rgba(255, 255, 255, 0.085);
   --sidebar-active-fg: #ffffff;
-  --sidebar-active-border: #2e3d5e;
-  --logo-ring-a: #c9b184;
-  --logo-ring-b: #c9b184;
+  --sidebar-active-border: rgba(214, 183, 122, 0.42);
+  --logo-ring-a: #d6b77a;
+  --logo-ring-b: #fbf9f5;
 
-  --header-bg: #faf8f4;
-  --header-border: #e9e4d9;
+  --header-bg: rgba(251, 249, 245, 0.9);
+  --header-border: rgba(20, 30, 50, 0.08);
 
-  --tab-shell-bg: #ffffff;
-  --tab-shell-border: #e6e0d4;
-  --tab-idle-fg: #6b6f7d;
-  --tab-active-bg: #16233f;
+  --tab-shell-bg: #f4f1eb;
+  --tab-shell-border: #ded9d0;
+  --tab-idle-fg: #687482;
+  --tab-active-bg: linear-gradient(135deg, #102a43, #0a1f35);
   --tab-active-fg: #ffffff;
-  --tab-radius: 0.625rem;
+  --tab-radius: 0.75rem;
 
-  --action-gradient: linear-gradient(135deg, #3b82f6, #8b5cf6);
-  --action-shadow: 0 8px 20px rgba(59, 130, 246, 0.22);
-  --card-shadow: 0 12px 32px rgba(22, 35, 63, 0.09);
-  --soft-shadow: 0 4px 14px rgba(22, 35, 63, 0.07);
+  --action-gradient: linear-gradient(135deg, #102a43, #0a1f35);
+  --action-shadow: 0 10px 25px rgba(12, 35, 64, 0.2);
+  --card-shadow: 0 12px 40px rgba(15, 30, 50, 0.08);
+  --soft-shadow: 0 4px 12px rgba(20, 30, 50, 0.06);
+  --gold: #c9a96e;
+  --gold-soft: rgba(201, 169, 110, 0.16);
+  --input-bg: #fbfaf7;
+  --serif: "Yu Mincho", "Hiragino Mincho ProN", "Noto Serif JP", Georgia,
+    serif;
 }
 
 :root[data-mode="work"] {
   /* クリーム色の地に濃紺。吹き出しの自分側と送信ボタンがこの紺になる */
-  --background: #f6f3ed;
-  --line: #e8e3d9;
+  --background: #f8f5ef;
+  --surface: #fffdf9;
+  --foreground: #16283d;
+  --muted: #687482;
+  --line: rgba(20, 30, 50, 0.09);
 
-  --accent: #16233f;
-  --accent-strong: #0f1a2e;
-  --accent-soft: #eef2f9;
+  --accent: #0c2340;
+  --accent-strong: #081c30;
+  --accent-soft: #eef1f6;
 
   /* 相手の吹き出しは地の色に埋もれないよう、少し冷たいグレーにする */
-  --bubble-other-bg: #f1f2f5;
+  --bubble-other-bg: #f4f1eb;
   /* 未読バッジだけはアクセントと別色。紺だと埋もれて気づけない */
-  --badge-bg: #e2622f;
+  --badge-bg: #b99a63;
   --badge-fg: #ffffff;
 
   /* 濃紺の面に白文字。ロゴマークは金色 */
-  --sidebar-bg: #131d33;
-  --sidebar-border: transparent;
+  --sidebar-bg: #0c2340;
+  --sidebar-border: rgba(201, 169, 110, 0.22);
   --sidebar-fg: #ffffff;
-  --sidebar-muted: #93a0bb;
-  --sidebar-hover-bg: #1b2740;
-  --sidebar-active-bg: #1e2c49;
+  --sidebar-muted: #b9c2cc;
+  --sidebar-hover-bg: rgba(255, 255, 255, 0.055);
+  --sidebar-active-bg: rgba(255, 255, 255, 0.085);
   --sidebar-active-fg: #ffffff;
-  --sidebar-active-border: #2e3d5e;
-  --logo-ring-a: #c9b184;
-  --logo-ring-b: #c9b184;
+  --sidebar-active-border: rgba(214, 183, 122, 0.42);
+  --logo-ring-a: #d6b77a;
+  --logo-ring-b: #fbf9f5;
 
-  --header-bg: #faf8f4;
-  --header-border: #e9e4d9;
+  --header-bg: rgba(251, 249, 245, 0.9);
+  --header-border: rgba(20, 30, 50, 0.08);
 
-  --tab-shell-bg: #ffffff;
-  --tab-shell-border: #e6e0d4;
-  --tab-idle-fg: #6b6f7d;
-  --tab-active-bg: #16233f;
+  --tab-shell-bg: #f4f1eb;
+  --tab-shell-border: #ded9d0;
+  --tab-idle-fg: #687482;
+  --tab-active-bg: linear-gradient(135deg, #102a43, #0a1f35);
   --tab-active-fg: #ffffff;
   /* 仕事は角丸の四角、恋愛は丸型 */
-  --tab-radius: 0.625rem;
+  --tab-radius: 0.75rem;
 
-  --action-gradient: linear-gradient(135deg, #3b82f6, #8b5cf6);
-  --action-shadow: 0 8px 20px rgba(59, 130, 246, 0.22);
-  --card-shadow: 0 12px 32px rgba(22, 35, 63, 0.09);
-  --soft-shadow: 0 4px 14px rgba(22, 35, 63, 0.07);
+  --action-gradient: linear-gradient(135deg, #102a43, #0a1f35);
+  --action-shadow: 0 10px 25px rgba(12, 35, 64, 0.2);
+  --card-shadow: 0 12px 40px rgba(15, 30, 50, 0.08);
+  --soft-shadow: 0 4px 12px rgba(20, 30, 50, 0.06);
 }
 
 :root[data-mode="romance"] {
@@ -172,12 +180,200 @@
 body {
   background: var(--background);
   color: var(--foreground);
+  isolation: isolate;
   /* Geist は日本語を含まないので、和文はOSのゴシックにフォールバックさせる */
   font-family: var(--font-geist-sans), "Hiragino Kaku Gothic ProN",
     "Hiragino Sans", "Yu Gothic UI", "Yu Gothic", "Noto Sans JP", Meiryo,
     system-ui, sans-serif;
 
+  letter-spacing: 0.01em;
   transition: background-color 240ms ease, color 240ms ease;
+}
+
+body::before,
+body::after {
+  position: fixed;
+  z-index: -1;
+  border-radius: 999px;
+  content: "";
+  pointer-events: none;
+  filter: blur(10px);
+}
+
+body::before {
+  top: -14rem;
+  right: -9rem;
+  width: 38rem;
+  height: 34rem;
+  background: radial-gradient(
+    ellipse,
+    rgba(120, 130, 255, 0.075),
+    rgba(180, 160, 255, 0.035) 48%,
+    transparent 72%
+  );
+}
+
+body::after {
+  right: 8%;
+  bottom: -18rem;
+  width: 42rem;
+  height: 35rem;
+  background: radial-gradient(
+    ellipse,
+    rgba(115, 145, 180, 0.065),
+    rgba(180, 160, 255, 0.025) 52%,
+    transparent 74%
+  );
+}
+
+:root[data-mode="work"] h1,
+:root[data-mode="work"] h2,
+:root[data-mode="work"] h3 {
+  font-family: var(--serif);
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+button,
+a {
+  -webkit-tap-highlight-color: transparent;
+}
+
+:root[data-mode="work"] button:focus-visible,
+:root[data-mode="work"] a:focus-visible,
+:root[data-mode="work"] input:focus-visible,
+:root[data-mode="work"] select:focus-visible,
+:root[data-mode="work"] textarea:focus-visible {
+  outline: 2px solid var(--gold);
+  outline-offset: 3px;
+}
+
+:root[data-mode="work"] input,
+:root[data-mode="work"] select,
+:root[data-mode="work"] textarea {
+  background-color: var(--input-bg);
+}
+
+::selection {
+  background: var(--gold-soft);
+  color: var(--accent-strong);
+}
+
+/* 共通の上質なカード表現。画面固有の寸法や情報構造には触れない。 */
+.premium-card {
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  background: var(--surface);
+  box-shadow: var(--card-shadow);
+}
+
+.premium-control {
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--surface);
+  box-shadow: var(--soft-shadow);
+}
+
+.premium-primary {
+  border-radius: 14px;
+  background: var(--action-gradient);
+  box-shadow: var(--action-shadow);
+  transition: transform 180ms ease, box-shadow 180ms ease, opacity 180ms ease;
+}
+
+.premium-primary:hover:not(:disabled) {
+  transform: translateY(-2px);
+}
+
+.premium-outline {
+  border: 1px solid var(--accent);
+  border-radius: 14px;
+  background: var(--surface);
+  color: var(--accent);
+  transition: background-color 180ms ease, color 180ms ease,
+    transform 180ms ease;
+}
+
+.premium-outline:hover:not(:disabled) {
+  background: var(--accent);
+  color: #fff;
+}
+
+.sidebar-shell {
+  background-color: var(--sidebar-bg);
+}
+
+:root[data-mode="work"] .sidebar-shell {
+  background-image: linear-gradient(180deg, #102a43 0%, #081c30 100%);
+  box-shadow: 10px 0 34px rgba(12, 35, 64, 0.08);
+}
+
+.app-header {
+  backdrop-filter: blur(18px);
+}
+
+:root[data-mode="work"] .page-heading h1 {
+  font-family: var(--serif);
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+:root[data-mode="romance"] body {
+  letter-spacing: normal;
+}
+
+:root[data-mode="romance"] body::before,
+:root[data-mode="romance"] body::after {
+  display: none;
+}
+
+:root[data-mode="romance"] .page-heading {
+  margin-bottom: 1.5rem;
+}
+
+:root[data-mode="romance"] .page-heading-accent {
+  display: none;
+}
+
+:root[data-mode="romance"] .page-heading h1 {
+  color: var(--foreground);
+  font-family: inherit;
+  font-size: 1.5rem;
+  font-weight: 800;
+  letter-spacing: -0.025em;
+  line-height: 2rem;
+}
+
+:root[data-mode="romance"] .page-heading p {
+  margin-top: 0.25rem;
+  line-height: normal;
+}
+
+:root[data-mode="romance"] .profile-field-label {
+  margin-bottom: 0.25rem;
+  color: var(--foreground);
+}
+
+.auth-card {
+  border: 1px solid var(--line);
+  border-radius: 24px;
+  background: rgba(255, 253, 249, 0.94);
+  box-shadow: 0 22px 70px rgba(15, 30, 50, 0.1);
+}
+
+@media (max-width: 760px) {
+  body::before {
+    right: -24rem;
+  }
+
+  body::after {
+    right: -24rem;
+  }
 }
 
 /* スクロールしても途切れない、薄い水彩紙の下地。 */

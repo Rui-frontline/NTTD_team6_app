@@ -4,6 +4,337 @@
   height: 56px;
 }
 
+.discoverStage {
+  width: 100%;
+  max-width: 1080px;
+  margin: 0 auto;
+  padding: 4px 0 64px !important;
+}
+
+.profileStack {
+  gap: 24px !important;
+}
+
+.profileGrid {
+  display: grid !important;
+  grid-template-columns: minmax(280px, 360px) minmax(400px, 1fr);
+  align-items: stretch !important;
+  width: 100%;
+  max-width: 1000px;
+  margin: 64px auto 0;
+  gap: 28px !important;
+}
+
+.photoCard,
+.profileCard {
+  height: 520px !important;
+  border: 1px solid var(--line);
+  border-radius: 20px !important;
+  background: var(--surface);
+  box-shadow: var(--card-shadow) !important;
+}
+
+.photoCard {
+  position: relative;
+  width: 100% !important;
+  align-items: stretch !important;
+  justify-content: stretch !important;
+}
+
+.photoCard::after {
+  position: absolute;
+  inset: auto 0 0;
+  height: 28%;
+  background: linear-gradient(transparent, rgba(8, 28, 48, 0.2));
+  content: "";
+  pointer-events: none;
+}
+
+.profilePhoto {
+  display: block;
+  border-radius: 19px;
+  transition: transform 500ms ease;
+}
+
+.photoCard:hover .profilePhoto {
+  transform: scale(1.018);
+}
+
+.profileCard {
+  width: 100% !important;
+  padding: 34px 36px !important;
+  gap: 17px !important;
+  scrollbar-color: #ded9d0 transparent;
+}
+
+.profileCard::before {
+  color: var(--gold);
+  content: "PROFILE";
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.24em;
+}
+
+.profileName {
+  color: var(--accent) !important;
+  font-family: var(--serif);
+  font-size: clamp(26px, 2.4vw, 32px) !important;
+  font-weight: 600 !important;
+  letter-spacing: 0.04em;
+}
+
+.profileMeta {
+  margin-top: -8px !important;
+  font-size: 14px !important;
+  letter-spacing: 0.03em;
+}
+
+.profileDivider {
+  flex: 0 0 1px;
+  background: #eae6df !important;
+}
+
+.profileSection {
+  position: relative;
+  padding-left: 42px;
+}
+
+.profileSection::before {
+  position: absolute;
+  top: -2px;
+  left: 0;
+  display: grid;
+  width: 30px;
+  height: 30px;
+  place-items: center;
+  border-radius: 50%;
+  background: #f4f1eb;
+  color: #556070;
+  content: "·";
+  font-size: 22px;
+  line-height: 1;
+}
+
+.profileChip {
+  padding: 6px 12px !important;
+  border: 1px solid rgba(49, 65, 90, 0.05);
+  border-radius: 999px !important;
+  background: var(--accent-soft) !important;
+  color: var(--accent-strong) !important;
+  font-size: 12px !important;
+  letter-spacing: 0.02em;
+}
+
+.filterButton,
+.passButton,
+.closeButton,
+.clearButton {
+  border: 1px solid var(--line) !important;
+  border-radius: 14px !important;
+  background: var(--surface) !important;
+  color: var(--accent) !important;
+  box-shadow: var(--soft-shadow) !important;
+  transition: transform 180ms ease, background-color 180ms ease,
+    color 180ms ease, border-color 180ms ease !important;
+}
+
+.filterButton {
+  top: 4px !important;
+  right: 0 !important;
+  padding: 10px 17px !important;
+}
+
+.filterButton::before {
+  margin-right: 8px;
+  color: var(--gold);
+  content: "⌁";
+}
+
+.filterButton:hover,
+.passButton:hover,
+.closeButton:hover,
+.clearButton:hover {
+  border-color: rgba(12, 35, 64, 0.18) !important;
+  background: #f4f1eb !important;
+  transform: translateY(-1px);
+}
+
+.detailButton {
+  align-self: stretch;
+  padding: 12px 18px !important;
+  border: 1px solid var(--accent) !important;
+  border-radius: 14px !important;
+  background: transparent !important;
+  color: var(--accent) !important;
+  text-decoration: none !important;
+  transition: background-color 180ms ease, color 180ms ease !important;
+}
+
+.detailButton:hover {
+  background: var(--accent) !important;
+  color: #fff !important;
+}
+
+.actionRow {
+  gap: 14px !important;
+}
+
+.passButton,
+.likeButton {
+  width: 200px !important;
+  height: 56px !important;
+  border-radius: 14px !important;
+}
+
+.likeButton {
+  background: var(--action-gradient) !important;
+  box-shadow: var(--action-shadow) !important;
+  transition: transform 180ms ease, box-shadow 180ms ease !important;
+}
+
+.likeButton:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 14px 30px rgba(12, 35, 64, 0.23) !important;
+}
+
+.overlay {
+  background: rgba(8, 28, 48, 0.48) !important;
+  backdrop-filter: blur(7px);
+}
+
+.filterPanel {
+  width: min(420px, 92vw) !important;
+  padding: 30px !important;
+  border-left: 1px solid rgba(201, 169, 110, 0.24);
+  background: var(--surface) !important;
+}
+
+.filterPanel h2,
+.detailModal h1,
+.matchModal h2,
+.matchModal h3 {
+  color: var(--accent) !important;
+  font-family: var(--serif);
+  font-weight: 600 !important;
+}
+
+.filterPanel label {
+  display: block;
+  color: var(--foreground);
+  font-size: 13px;
+}
+
+.filterPanel input,
+.filterPanel select {
+  min-height: 44px;
+  border: 1px solid #ded9d0;
+  border-radius: 12px;
+  background: #fbfaf7;
+  color: var(--foreground);
+  outline: none;
+}
+
+.filterPanel input:focus,
+.filterPanel select:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(12, 35, 64, 0.06);
+}
+
+.clearButton {
+  min-height: 46px;
+}
+
+.detailModal,
+.matchModal {
+  width: min(900px, calc(100vw - 40px)) !important;
+  border: 1px solid var(--line);
+  border-radius: 20px !important;
+  background: var(--surface) !important;
+  box-shadow: 0 24px 80px rgba(8, 28, 48, 0.18) !important;
+}
+
+.detailPhoto img {
+  border-radius: 16px !important;
+}
+
+.detailContent {
+  min-width: 0;
+}
+
+.matchModal {
+  max-width: 650px;
+}
+
+@media (max-width: 1000px) {
+  .profileGrid {
+    grid-template-columns: minmax(250px, 0.78fr) minmax(360px, 1.22fr);
+    gap: 20px !important;
+  }
+
+  .profileCard {
+    padding: 28px !important;
+  }
+}
+
+@media (max-width: 800px) {
+  .profileGrid {
+    grid-template-columns: 1fr;
+    max-width: 600px;
+    margin-top: 62px;
+  }
+
+  .photoCard {
+    height: min(64vh, 560px) !important;
+  }
+
+  .profileCard {
+    height: auto !important;
+    min-height: 480px;
+  }
+
+  .detailLayout {
+    flex-direction: column;
+  }
+
+  .detailPhoto {
+    width: 100% !important;
+  }
+
+  .detailPhoto img {
+    max-height: 440px;
+  }
+}
+
+@media (max-width: 560px) {
+  .filterButton {
+    position: static !important;
+    align-self: flex-end;
+  }
+
+  .profileGrid {
+    margin-top: 18px;
+  }
+
+  .profileCard {
+    padding: 25px 21px !important;
+  }
+
+  .actionRow {
+    flex-direction: column-reverse;
+  }
+
+  .likeAction,
+  .passButton,
+  .likeButton {
+    width: 100% !important;
+  }
+
+  .detailModal,
+  .matchModal {
+    padding: 24px !important;
+  }
+}
+
 .heartBurst {
   position: fixed;
   z-index: 4300;
@@ -395,4 +726,234 @@
   .matchSparkles span {
     animation: none;
   }
+}
+
+/* 恋愛モードは今回のプレミアムUI適用前の見た目を維持する。 */
+:global(:root[data-mode="romance"]) .discoverStage {
+  max-width: none;
+  margin: 0;
+  padding: 20px 0 60px !important;
+}
+
+:global(:root[data-mode="romance"]) .profileStack {
+  gap: 20px !important;
+}
+
+:global(:root[data-mode="romance"]) .profileGrid {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: auto;
+  max-width: none;
+  margin: 0;
+  gap: 32px !important;
+}
+
+:global(:root[data-mode="romance"]) .photoCard {
+  width: 300px !important;
+  height: 500px !important;
+  border: 0;
+  border-radius: 28px !important;
+  box-shadow: var(--card-shadow) !important;
+}
+
+:global(:root[data-mode="romance"]) .photoCard::after,
+:global(:root[data-mode="romance"]) .profileCard::before,
+:global(:root[data-mode="romance"]) .profileSection::before,
+:global(:root[data-mode="romance"]) .filterButton::before {
+  display: none;
+}
+
+:global(:root[data-mode="romance"]) .profilePhoto {
+  border-radius: 0;
+  transform: none;
+}
+
+:global(:root[data-mode="romance"]) .photoCard:hover .profilePhoto {
+  transform: none;
+}
+
+:global(:root[data-mode="romance"]) .profileCard {
+  width: 600px !important;
+  height: 500px !important;
+  padding: 32px !important;
+  border: 0;
+  border-radius: 28px !important;
+  gap: 20px !important;
+  box-shadow: var(--card-shadow) !important;
+}
+
+:global(:root[data-mode="romance"]) .profileName {
+  color: var(--foreground) !important;
+  font-family: inherit;
+  font-size: 28px !important;
+  font-weight: bold !important;
+  letter-spacing: normal;
+}
+
+:global(:root[data-mode="romance"]) .profileMeta {
+  margin: 0 !important;
+  font-size: 16px !important;
+  letter-spacing: normal;
+}
+
+:global(:root[data-mode="romance"]) .profileDivider {
+  background: var(--line) !important;
+}
+
+:global(:root[data-mode="romance"]) .profileSection {
+  padding-left: 0;
+}
+
+:global(:root[data-mode="romance"]) .profileChip {
+  padding: 6px 16px !important;
+  border: 0;
+  border-radius: 20px !important;
+  background: var(--accent-soft) !important;
+  color: var(--accent-strong) !important;
+  font-size: 14px !important;
+  letter-spacing: normal;
+}
+
+:global(:root[data-mode="romance"]) .filterButton {
+  top: 20px !important;
+  right: 20px !important;
+  padding: 10px 20px !important;
+  border: 1px solid var(--line) !important;
+  border-radius: 20px !important;
+  background: var(--surface) !important;
+  color: var(--foreground) !important;
+  box-shadow: var(--soft-shadow) !important;
+  transform: none;
+}
+
+:global(:root[data-mode="romance"]) .detailButton {
+  align-self: auto;
+  padding: 12px 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  color: var(--accent-strong) !important;
+  text-decoration: underline !important;
+}
+
+:global(:root[data-mode="romance"]) .detailButton:hover {
+  background: transparent !important;
+  color: var(--accent-strong) !important;
+}
+
+:global(:root[data-mode="romance"]) .actionRow {
+  flex-direction: row;
+  gap: 20px !important;
+}
+
+:global(:root[data-mode="romance"]) .passButton,
+:global(:root[data-mode="romance"]) .likeButton {
+  width: 200px !important;
+  height: 56px !important;
+  border-radius: 28px !important;
+  transform: none;
+}
+
+:global(:root[data-mode="romance"]) .passButton {
+  border: 1px solid var(--line) !important;
+  background: var(--surface) !important;
+  color: var(--foreground) !important;
+  box-shadow: var(--soft-shadow) !important;
+}
+
+:global(:root[data-mode="romance"]) .likeButton {
+  background: var(--action-gradient) !important;
+  color: #fff !important;
+  box-shadow: var(--action-shadow) !important;
+}
+
+:global(:root[data-mode="romance"]) .overlay {
+  background: rgba(0, 0, 0, 0.6) !important;
+  backdrop-filter: none;
+}
+
+:global(:root[data-mode="romance"]) .filterPanel {
+  width: 400px !important;
+  padding: 20px !important;
+  border-left: 0;
+  background: var(--surface) !important;
+}
+
+:global(:root[data-mode="romance"]) .filterPanel h2,
+:global(:root[data-mode="romance"]) .detailModal h1,
+:global(:root[data-mode="romance"]) .matchModal h2,
+:global(:root[data-mode="romance"]) .matchModal h3 {
+  color: inherit !important;
+  font-family: inherit;
+  font-weight: bold !important;
+}
+
+:global(:root[data-mode="romance"]) .filterPanel label {
+  display: inline;
+  color: inherit;
+  font-size: inherit;
+}
+
+:global(:root[data-mode="romance"]) .filterPanel input,
+:global(:root[data-mode="romance"]) .filterPanel select {
+  min-height: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: inherit;
+  outline: revert;
+  box-shadow: none;
+}
+
+:global(:root[data-mode="romance"]) .closeButton,
+:global(:root[data-mode="romance"]) .clearButton {
+  border: 0 !important;
+  background: var(--accent-soft) !important;
+  color: var(--accent-strong) !important;
+  box-shadow: none !important;
+  transform: none;
+}
+
+:global(:root[data-mode="romance"]) .filterPanel .closeButton {
+  border-radius: 3px !important;
+}
+
+:global(:root[data-mode="romance"]) .detailModal .closeButton {
+  border-radius: 20px !important;
+}
+
+:global(:root[data-mode="romance"]) .clearButton {
+  min-height: 0;
+  border-radius: 5px !important;
+}
+
+:global(:root[data-mode="romance"]) .detailModal {
+  width: 900px !important;
+  padding: 40px !important;
+  border: 0;
+  border-radius: 28px !important;
+  box-shadow: var(--card-shadow) !important;
+}
+
+:global(:root[data-mode="romance"]) .detailLayout {
+  flex-direction: row;
+}
+
+:global(:root[data-mode="romance"]) .detailPhoto {
+  width: 300px !important;
+}
+
+:global(:root[data-mode="romance"]) .detailPhoto img {
+  max-height: none;
+  border-radius: 20px !important;
+}
+
+:global(:root[data-mode="romance"]) .matchModal {
+  width: auto !important;
+  max-width: 650px;
+  padding: 40px !important;
+  border: 0;
+  border-radius: 28px !important;
+  box-shadow: var(--card-shadow) !important;
 }

@@ -13,9 +13,15 @@ export function PageHeading({
   description: string;
 }) {
   return (
-    <div className="mb-6">
-      <h1 className="text-2xl font-extrabold tracking-tight">{title}</h1>
-      <p className="mt-1 text-sm text-muted">{description}</p>
+    <div className="page-heading mb-7">
+      <div
+        className="page-heading-accent mb-3 h-px w-9 bg-[var(--gold)]"
+        aria-hidden="true"
+      />
+      <h1 className="text-[1.75rem] leading-tight text-[var(--accent)] sm:text-[2rem]">
+        {title}
+      </h1>
+      <p className="mt-2 text-sm leading-relaxed text-muted">{description}</p>
     </div>
   );
 }

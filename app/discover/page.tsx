@@ -209,7 +209,7 @@ export default function DiscoverPage() {
     {/* paddingTop は 60px から詰めている。右上の操作ボタンは absolute で
         top: 20px に置かれているため、画面幅によってはカードと重なるが、
         重なるのはテストモードなど開発用のボタンなので許容している */}
-    <div style={{
+    <div className={styles.discoverStage} style={{
       display: "flex",
       flexDirection: "column",
       padding: "20px 0 60px",
@@ -217,6 +217,7 @@ export default function DiscoverPage() {
     }}>
       {/* フィルターボタン（右上） */}
       <button
+        className={styles.filterButton}
         onClick={() => setShowFilter(true)}
         style={{
           position: "absolute",
@@ -237,20 +238,20 @@ export default function DiscoverPage() {
       </button>
 
       {currentUser_displayed ? (
-        <div style={{
+        <div className={styles.profileStack} style={{
           display: "flex",
           flexDirection: "column",
           gap: "20px",
         }}>
           {/* 写真とプロフィール */}
-          <div style={{
+          <div className={styles.profileGrid} style={{
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
             gap: "32px",
           }}>
             {/* 左：写真カード */}
-            <div style={{
+            <div className={styles.photoCard} style={{
               width: "300px",
               height: "500px",
               backgroundColor: "var(--surface)",
@@ -263,6 +264,7 @@ export default function DiscoverPage() {
               flexShrink: 0,
             }}>
               <img
+                className={styles.profilePhoto}
                 src={currentUser_displayed.avatarUrl}
                 alt={currentUser_displayed.name}
                 style={{
@@ -274,7 +276,7 @@ export default function DiscoverPage() {
             </div>
 
             {/* 右：プロフィールカード */}
-            <div style={{
+            <div className={styles.profileCard} style={{
               width: "600px",
               height: "500px",
               backgroundColor: "var(--surface)",
@@ -288,7 +290,7 @@ export default function DiscoverPage() {
               flexShrink: 0,
             }}>
               {/* 名前 */}
-              <h1 style={{
+              <h1 className={styles.profileName} style={{
                 margin: 0,
                 fontSize: "28px",
                 fontWeight: "bold",
@@ -298,7 +300,7 @@ export default function DiscoverPage() {
               </h1>
 
               {/* 基本情報 */}
-              <p style={{
+              <p className={styles.profileMeta} style={{
                 margin: 0,
                 fontSize: "16px",
                 color: "var(--muted)",
@@ -310,11 +312,11 @@ export default function DiscoverPage() {
               </p>
 
               {/* 区切り線 */}
-              <div style={{ height: "1px", backgroundColor: "var(--line)" }} />
+              <div className={styles.profileDivider} style={{ height: "1px", backgroundColor: "var(--line)" }} />
 
               {/* 年齢（恋愛モードのみ） */}
               {mode === "romance" && (
-                <div>
+                <div className={styles.profileSection}>
                   <p style={{ margin: "0 0 8px 0", fontSize: "14px", fontWeight: "bold", color: "var(--foreground)" }}>
                     年齢
                   </p>
@@ -325,13 +327,14 @@ export default function DiscoverPage() {
               )}
 
               {/* タグ */}
-              <div>
+              <div className={styles.profileSection}>
                 <p style={{ margin: "0 0 8px 0", fontSize: "14px", fontWeight: "bold", color: "var(--foreground)" }}>
                   タグ
                 </p>
                 <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
                   {(mode === "work" ? currentUser_displayed.work.tags : currentUser_displayed.romance.tags).map((tag) => (
                     <span
+                      className={styles.profileChip}
                       key={tag}
                       style={{
                         padding: "6px 16px",
@@ -348,10 +351,10 @@ export default function DiscoverPage() {
               </div>
 
               {/* 区切り線 */}
-              <div style={{ height: "1px", backgroundColor: "var(--line)" }} />
+              <div className={styles.profileDivider} style={{ height: "1px", backgroundColor: "var(--line)" }} />
 
               {/* 自己紹介 */}
-              <div>
+              <div className={styles.profileSection}>
                 <p style={{ margin: "0 0 12px 0", fontSize: "14px", fontWeight: "bold", color: "var(--foreground)" }}>
                   自己紹介
                 </p>
@@ -370,6 +373,7 @@ export default function DiscoverPage() {
 
               {/* 詳細プロフィールを見るボタン */}
               <button
+                className={styles.detailButton}
                 onClick={() => setShowDetailProfile(true)}
                 style={{
                   marginTop: "auto",
@@ -389,12 +393,13 @@ export default function DiscoverPage() {
           </div>
 
           {/* ボタン */}
-          <div style={{
+          <div className={styles.actionRow} style={{
             display: "flex",
             justifyContent: "center",
             gap: "20px",
           }}>
             <button
+              className={styles.passButton}
               onClick={() => handlePass(currentUser_displayed)}
               style={{
                 width: "200px",
@@ -413,6 +418,7 @@ export default function DiscoverPage() {
             </button>
             <div className={styles.likeAction}>
               <button
+                className={styles.likeButton}
                 ref={likeButtonRef}
                 onClick={() => handleLike(currentUser_displayed)}
                 style={{
@@ -479,6 +485,7 @@ export default function DiscoverPage() {
       {/* フィルターパネル（右からスライドイン） */}
       {showFilter && (
         <div
+          className={styles.overlay}
           style={{
             position: "fixed",
             top: 0,
@@ -491,6 +498,7 @@ export default function DiscoverPage() {
           onClick={() => setShowFilter(false)}
         >
           <div
+            className={styles.filterPanel}
             style={{
               position: "absolute",
               top: 0,
@@ -508,6 +516,7 @@ export default function DiscoverPage() {
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px" }}>
               <h2 style={{ margin: 0 }}>フィルター</h2>
               <button
+                className={styles.closeButton}
                 onClick={() => setShowFilter(false)}
                 style={{
                   padding: "5px 15px",
@@ -645,6 +654,7 @@ export default function DiscoverPage() {
             )}
 
             <button
+              className={styles.clearButton}
               onClick={() => {
                 setFilter({});
                 setShowFilter(false);
@@ -669,6 +679,7 @@ export default function DiscoverPage() {
       {/* 詳細プロフィールモーダル */}
       {showDetailProfile && currentUser_displayed && (
         <div
+          className={styles.overlay}
           style={{
             position: "fixed",
             top: 0,
@@ -684,6 +695,7 @@ export default function DiscoverPage() {
           onClick={() => setShowDetailProfile(false)}
         >
           <div
+            className={styles.detailModal}
             style={{
               width: "900px",
               maxHeight: "90vh",
@@ -698,6 +710,7 @@ export default function DiscoverPage() {
             {/* 閉じるボタン */}
             <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: "20px" }}>
               <button
+                className={styles.closeButton}
                 onClick={() => setShowDetailProfile(false)}
                 style={{
                   padding: "8px 20px",
@@ -714,9 +727,9 @@ export default function DiscoverPage() {
             </div>
 
             {/* 写真とプロフィールを横並び */}
-            <div style={{ display: "flex", gap: "32px" }}>
+            <div className={styles.detailLayout} style={{ display: "flex", gap: "32px" }}>
               {/* 写真 */}
-              <div style={{ width: "300px", flexShrink: 0 }}>
+              <div className={styles.detailPhoto} style={{ width: "300px", flexShrink: 0 }}>
                 <img
                   src={currentUser_displayed.avatarUrl}
                   alt={currentUser_displayed.name}
@@ -730,7 +743,7 @@ export default function DiscoverPage() {
               </div>
 
               {/* 詳細情報 */}
-              <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: "24px" }}>
+              <div className={styles.detailContent} style={{ flex: 1, display: "flex", flexDirection: "column", gap: "24px" }}>
                 {/* 名前 */}
                 <h1 style={{
                   margin: 0,
@@ -773,6 +786,7 @@ export default function DiscoverPage() {
                   <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
                     {(mode === "work" ? currentUser_displayed.work.tags : currentUser_displayed.romance.tags).map((tag) => (
                       <span
+                        className={styles.profileChip}
                         key={tag}
                         style={{
                           padding: "8px 20px",
@@ -865,6 +879,7 @@ export default function DiscoverPage() {
       {/* マッチ成立モーダル */}
       {matchedUser && (
         <div
+          className={styles.overlay}
           style={{
             position: "fixed",
             top: 0,
@@ -884,6 +899,7 @@ export default function DiscoverPage() {
           }}
         >
           <div
+            className={styles.matchModal}
             style={{
               backgroundColor: "var(--surface)",
               padding: "40px",
@@ -989,6 +1005,7 @@ export default function DiscoverPage() {
             {/* ボタン */}
             <div style={{ display: "flex", gap: "12px", justifyContent: "center" }}>
               <button
+                className={styles.passButton}
                 onClick={() => {
                   setMatchedUser(null);
                   setMatchedMatchId(null);
@@ -1008,6 +1025,7 @@ export default function DiscoverPage() {
                 後で
               </button>
               <button
+                className={styles.likeButton}
                 onClick={() => {
                   // 成立した会話を開いた状態でトーク画面へ。
                   // window.location.href だとページ全体が再読み込みされ、

@@ -1,6 +1,7 @@
 "use client";
 
 import { isImageBody } from "@/lib/image";
+import { useSession } from "@/lib/session";
 import type { MatchSummary } from "@/lib/types";
 
 /**
@@ -45,6 +46,7 @@ function MatchListItem({
   onSelect: (summary: MatchSummary) => void;
 }) {
   const { partner, latestMessage, unreadCount } = summary;
+  const { mode } = useSession();
 
   return (
     <button
@@ -52,8 +54,16 @@ function MatchListItem({
       onClick={() => onSelect(summary)}
       aria-pressed={selected}
       className={[
-        "flex w-full items-center gap-3 border-b border-line px-4 py-3 text-left transition-colors",
-        selected ? "bg-accent-soft" : "hover:bg-background",
+        mode === "romance"
+          ? "flex w-full items-center gap-3 border-b border-line px-4 py-3 text-left transition-colors"
+          : "flex w-full items-center gap-3 border-b border-l-[3px] border-b-line px-4 py-3.5 text-left transition-colors",
+        mode === "romance"
+          ? selected
+            ? "bg-accent-soft"
+            : "hover:bg-background"
+          : selected
+            ? "border-l-accent bg-[#EEF2F7]"
+            : "border-l-transparent hover:bg-[#F8F5EF]",
       ].join(" ")}
     >
       {/* ダミー画像なので next/image ではなく img を使う */}
@@ -63,13 +73,31 @@ function MatchListItem({
         alt=""
         width={40}
         height={40}
-        className="h-10 w-10 shrink-0 rounded-full bg-accent-soft"
+        className={
+          mode === "romance"
+            ? "h-10 w-10 shrink-0 rounded-full bg-accent-soft"
+            : "h-11 w-11 shrink-0 rounded-full border border-[var(--gold-soft)] bg-accent-soft object-cover p-0.5"
+        }
       />
 
       {/* min-w-0 が無いと、この子要素が中身の幅まで広がって truncate が効かない */}
       <span className="min-w-0 flex-1">
-        <span className="block truncate text-sm font-bold">{partner.name}</span>
-        <span className="block truncate text-sm text-muted">
+        <span
+          className={
+            mode === "romance"
+              ? "block truncate text-sm font-bold"
+              : "block truncate text-sm font-semibold text-[var(--accent)]"
+          }
+        >
+          {partner.name}
+        </span>
+        <span
+          className={
+            mode === "romance"
+              ? "block truncate text-sm text-muted"
+              : "mt-0.5 block truncate text-xs leading-relaxed text-muted"
+          }
+        >
           {latestMessage
             ? previewText(latestMessage.body)
             : "まだメッセージがありません"}

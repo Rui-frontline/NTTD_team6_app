@@ -15,8 +15,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "社内マッチング",
-  description: "社内限定のマッチングアプリ",
+  title: "MeetLink | 社内コネクト",
+  description: "人と想いをつなぐ、社内限定のマッチングアプリ",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

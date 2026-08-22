@@ -17,6 +17,7 @@ import {
   getUser,
 } from "@/lib/repository";
 import type { Board, BoardMessage, User } from "@/lib/types";
+import styles from "./board.module.css";
 
 export default function BoardPage() {
   const { currentUser, mode } = useSession();
@@ -48,7 +49,11 @@ export default function BoardPage() {
   }
 
   return (
-    <div style={{ padding: "24px 32px" }}>
+    <div
+      className={styles.boardPage}
+      data-mode={mode}
+      style={{ padding: "24px 32px" }}
+    >
       <PageHeading
         title="募集"
         description={
@@ -71,6 +76,7 @@ export default function BoardPage() {
         {/* フィルター */}
         <div style={{ display: "flex", gap: "12px" }}>
           <button
+            className={[styles.segmentButton, showOnlyActive ? styles.segmentActive : ""].join(" ")}
             onClick={() => setShowOnlyActive(true)}
             style={{
               padding: "8px 16px",
@@ -86,6 +92,7 @@ export default function BoardPage() {
             募集中のみ
           </button>
           <button
+            className={[styles.segmentButton, !showOnlyActive ? styles.segmentActive : ""].join(" ")}
             onClick={() => setShowOnlyActive(false)}
             style={{
               padding: "8px 16px",
@@ -104,6 +111,7 @@ export default function BoardPage() {
 
         {/* 新規投稿ボタン */}
         <button
+          className={styles.primaryButton}
           onClick={() => setShowCreateModal(true)}
           style={{
             padding: "12px 24px",
@@ -154,6 +162,7 @@ export default function BoardPage() {
                 恋愛モードを利用するには、マイページで機能をONにしてください
               </p>
               <button
+                className={styles.primaryButton}
                 onClick={() => router.push("/me")}
                 style={{
                   padding: "12px 32px",
@@ -258,6 +267,7 @@ function BoardCard({
 
   return (
     <div
+      className={styles.boardCard}
       onClick={onClick}
       style={{
         backgroundColor: "#FFFFFF",
@@ -282,6 +292,7 @@ function BoardCard({
       {/* ステータスバッジ */}
       <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
         <span
+          className={board.status === "募集中" ? styles.statusActive : styles.statusIdle}
           style={{
             padding: "4px 12px",
             borderRadius: "12px",
@@ -296,6 +307,7 @@ function BoardCard({
         </span>
         {isOwner && (
           <span
+            className={styles.ownerBadge}
             style={{
               padding: "4px 12px",
               borderRadius: "12px",
@@ -411,6 +423,7 @@ function CreateBoardModal({
 
   return (
     <div
+      className={styles.modalOverlay}
       style={{
         position: "fixed",
         top: 0,
@@ -426,6 +439,7 @@ function CreateBoardModal({
       onClick={onClose}
     >
       <div
+        className={styles.modalCard}
         onClick={(e) => e.stopPropagation()}
         style={{
           backgroundColor: "#FFFFFF",
@@ -556,6 +570,7 @@ function CreateBoardModal({
           {/* ボタン */}
           <div style={{ display: "flex", gap: "12px", justifyContent: "flex-end" }}>
             <button
+              className={styles.secondaryButton}
               onClick={onClose}
               style={{
                 padding: "12px 24px",
@@ -571,6 +586,7 @@ function CreateBoardModal({
               キャンセル
             </button>
             <button
+              className={styles.primaryButton}
               onClick={handleSubmit}
               disabled={submitting}
               style={{
@@ -712,6 +728,7 @@ function BoardDetailModal({
 
   return (
     <div
+      className={styles.modalOverlay}
       style={{
         position: "fixed",
         top: 0,
@@ -727,6 +744,7 @@ function BoardDetailModal({
       onClick={onClose}
     >
       <div
+        className={styles.detailModal}
         onClick={(e) => e.stopPropagation()}
         style={{
           backgroundColor: "#FFFFFF",
@@ -753,6 +771,7 @@ function BoardDetailModal({
           <div style={{ flex: 1 }}>
             <div style={{ display: "flex", gap: "8px", marginBottom: "12px" }}>
               <span
+                className={board.status === "募集中" ? styles.statusActive : styles.statusIdle}
                 style={{
                   padding: "4px 12px",
                   borderRadius: "12px",
@@ -879,6 +898,7 @@ function BoardDetailModal({
               </p>
               {board.status === "募集中" && (
                 <button
+                  className={styles.primaryButton}
                   onClick={handleJoin}
                   style={{
                     padding: "12px 32px",
@@ -943,6 +963,13 @@ function BoardDetailModal({
                         />
                         <div style={{ flex: 1 }}>
                           <div
+                            className={
+                              board.mode === "work"
+                                ? isMine
+                                  ? styles.mineMessage
+                                  : styles.otherMessage
+                                : undefined
+                            }
                             style={{
                               fontSize: "12px",
                               color: "#6B7280",
@@ -1001,6 +1028,7 @@ function BoardDetailModal({
                   }}
                 />
                 <button
+                  className={styles.primaryButton}
                   onClick={handleSendMessage}
                   disabled={!newMessage.trim()}
                   style={{
