@@ -31,7 +31,7 @@ export function SignUpForm() {
     // 選択式にした2つは、送る前にここでも確かめる。
     // required が効かない（select の未選択は空文字で「入力済み」扱い）ため。
     if (!isDepartmentComplete(departmentParts)) {
-      setError("部署はいちばん下の階層まで選んでください。");
+      setError("会社・部署はいちばん下の階層まで選んでください。");
       return;
     }
     if (!(JOB_TITLE_OPTIONS as readonly string[]).includes(form.jobTitle)) {

@@ -45,14 +45,95 @@ const BODY_TYPE_OPTIONS = [
   "ぽっちゃり",
 ] as const;
 
+/**
+ * MBTI の16タイプ。
+ * アルファベット順ではなく、分析家 → 外交官 → 番人 → 探検家 の
+ * 一般的なグループ順に並べている。近いタイプが隣り合って探しやすいため。
+ */
 const PERSONALITY_OPTIONS = [
-  "穏やか",
-  "明るい",
-  "社交的",
-  "落ち着いている",
-  "真面目",
-  "好奇心旺盛",
-  "マイペース",
+  // 分析家
+  "INTJ",
+  "INTP",
+  "ENTJ",
+  "ENTP",
+  // 外交官
+  "INFJ",
+  "INFP",
+  "ENFJ",
+  "ENFP",
+  // 番人
+  "ISTJ",
+  "ISFJ",
+  "ESTJ",
+  "ESFJ",
+  // 探検家
+  "ISTP",
+  "ISFP",
+  "ESTP",
+  "ESFP",
+] as const;
+
+/**
+ * 都道府県。JISの並び（北から南）にしている。
+ * 地方ごとにコメントで区切っているのは、抜けがないか目で確かめられるようにするため。
+ */
+const PREFECTURE_OPTIONS = [
+  // 北海道・東北
+  "北海道",
+  "青森県",
+  "岩手県",
+  "宮城県",
+  "秋田県",
+  "山形県",
+  "福島県",
+  // 関東
+  "茨城県",
+  "栃木県",
+  "群馬県",
+  "埼玉県",
+  "千葉県",
+  "東京都",
+  "神奈川県",
+  // 中部
+  "新潟県",
+  "富山県",
+  "石川県",
+  "福井県",
+  "山梨県",
+  "長野県",
+  "岐阜県",
+  "静岡県",
+  "愛知県",
+  // 近畿
+  "三重県",
+  "滋賀県",
+  "京都府",
+  "大阪府",
+  "兵庫県",
+  "奈良県",
+  "和歌山県",
+  // 中国
+  "鳥取県",
+  "島根県",
+  "岡山県",
+  "広島県",
+  "山口県",
+  // 四国
+  "徳島県",
+  "香川県",
+  "愛媛県",
+  "高知県",
+  // 九州・沖縄
+  "福岡県",
+  "佐賀県",
+  "長崎県",
+  "熊本県",
+  "大分県",
+  "宮崎県",
+  "鹿児島県",
+  "沖縄県",
+  // 47都道府県に当てはまらない人のため
+  "海外",
 ] as const;
 
 const LIVING_WITH_OPTIONS = [
@@ -147,8 +228,8 @@ export const PROFILE_FIELDS: Record<Mode, ProfileField[]> = {
     { kind: "select", key: "holiday", label: "休日", options: HOLIDAY_OPTIONS },
     { kind: "select", key: "smoking", label: "タバコ", options: SMOKING_OPTIONS },
     { kind: "select", key: "drinking", label: "お酒", options: DRINKING_OPTIONS },
-    { kind: "text", key: "hometown", label: "出身" },
-    { kind: "text", key: "residence", label: "住んでる場所" },
+    { kind: "select", key: "hometown", label: "出身", options: PREFECTURE_OPTIONS },
+    { kind: "select", key: "residence", label: "住んでる場所", options: PREFECTURE_OPTIONS },
     { kind: "number", key: "preferredAgeMin", label: "希望する相手の最低年齢", min: 18, max: 99, unit: "歳" },
     { kind: "number", key: "preferredAgeMax", label: "希望する相手の最高年齢", min: 18, max: 99, unit: "歳" },
     { kind: "select", key: "wantsChildren", label: "子供がほしいか", options: WANTS_CHILDREN_OPTIONS },
