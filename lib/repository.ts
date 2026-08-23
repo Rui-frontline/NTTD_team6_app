@@ -290,7 +290,16 @@ async function getExcludedUserIds(
     .eq("mode", mode)
     .in("type", types);
   if (error) throw error;
-  return new Set((data ?? []).map((r: { to_user_id: string }) => r.to_user_id));
+
+  const excluded = new Set(
+    (data ?? []).map((r: { to_user_id: string }) => r.to_user_id),
+  );
+
+  // ブロックした相手は、いいね／見送りの有無にかかわらず二度と出さない
+  for (const id of await getBlockedUserIds(currentUserId, mode)) {
+    excluded.add(id);
+  }
+  return excluded;
 }
 
 function matchesFilter(user: User, mode: Mode, f: DiscoverFilter): boolean {
@@ -560,6 +569,60 @@ type MatchReadRow = {
   last_read_at: string;
 };
 
+// ───────────────────────── ブロック ─────────────────────────
+
+/**
+ * 相手をブロックする。
+ *
+ * 以後その相手は、自分のトーク一覧にも探す画面にも出てこなくなる。
+ * ブロックしたことは相手には伝わらず、相手の画面は変わらない
+ * （blocks の select を blocker 本人に限っているため。supabase/blocks.sql 参照）。
+ *
+ * supabase/blocks.sql を実行していない環境では失敗する。
+ */
+export async function blockUser(
+  blockerId: string,
+  blockedId: string,
+  mode: Mode,
+): Promise<void> {
+  const { error } = await supabase.from("blocks").insert({
+    blocker_id: blockerId,
+    blocked_id: blockedId,
+    mode,
+  });
+  // すでにブロック済みなら、そのままで目的は達成されている
+  if (error && error.code !== "23505") throw error;
+}
+
+/**
+ * 自分がブロックした相手の ID。
+ *
+ * supabase/blocks.sql をまだ流していない環境ではここが必ず失敗する。
+ * 一覧を丸ごとエラーにすると画面が真っ白になってしまうので、
+ * 警告を出して「ブロック無し」として続ける（match_reads と同じ方針）。
+ */
+async function getBlockedUserIds(
+  userId: string,
+  mode: Mode,
+): Promise<Set<string>> {
+  const { data, error } = await supabase
+    .from("blocks")
+    .select("blocked_id")
+    .eq("blocker_id", userId)
+    .eq("mode", mode);
+
+  if (error) {
+    console.warn(
+      "ブロックの一覧を取得できませんでした。supabase/blocks.sql を実行してください。",
+      error,
+    );
+    return new Set();
+  }
+  return new Set(
+    (data ?? []).map((r: { blocked_id: string }) => r.blocked_id),
+  );
+}
+
 /** トーク画面のマッチ一覧。相手・最新メッセージ・未読件数をまとめて返す */
 export async function getMatches(
   userId: string,
@@ -573,7 +636,15 @@ export async function getMatches(
     .order("created_at", { ascending: false });
   if (error) throw error;
 
-  const matches = (data as MatchRow[]).map(toMatch);
+  const allMatches = (data as MatchRow[]).map(toMatch);
+  if (allMatches.length === 0) return [];
+
+  // ブロックした相手との会話は、この先まとめて無かったことにする。
+  // ここで絞っておけば、相手・メッセージ・既読位置の取得も減る。
+  const blocked = await getBlockedUserIds(userId, mode);
+  const matches = allMatches.filter(
+    (m) => !blocked.has(m.userIds[0] === userId ? m.userIds[1] : m.userIds[0]),
+  );
   if (matches.length === 0) return [];
 
   const partnerIds = matches.map((m) =>
