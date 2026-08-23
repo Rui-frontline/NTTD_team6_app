@@ -91,12 +91,14 @@ export function Sidebar() {
   return (
     <aside
       className={[
-        "work-sidebar sticky top-0 flex h-screen shrink-0 flex-col border-r transition-[width] duration-200",
+        "work-sidebar sticky top-0 h-dvh self-start shrink-0 border-r transition-[width] duration-200",
         "bg-[var(--sidebar-bg)] border-[var(--sidebar-border)] text-[var(--sidebar-fg)]",
         mobileOpen ? "w-60" : "w-16",
         open ? "sm:w-60" : "sm:w-16",
       ].join(" ")}
     >
+      {/* 紺色の aside 全体を固定し、メニュー内にはスクロール領域を作らない。 */}
+      <div className="flex h-full flex-col overflow-y-clip">
       <div className="flex min-h-24 items-center border-b border-[var(--sidebar-active-border)] px-3 sm:hidden">
         {mobileOpen ? (
           <>
@@ -196,6 +198,7 @@ export function Sidebar() {
         <div className="hidden sm:block">
           <AccountCard open={open} />
         </div>
+      </div>
       </div>
     </aside>
   );

@@ -39,10 +39,8 @@ export function TalkPanel({
   /** ブロックが成立したことを知らせる。一覧からこのマッチを消すのは親の仕事 */
   onBlocked: (matchId: string) => void;
 }) {
-<<<<<<< HEAD
   const isWork = mode === "work";
-=======
-  const { currentUser, mode } = useSession();
+  const { currentUser } = useSession();
 
   // 確認ダイアログを出している対象の match id。null なら出していない。
   // 「開いているか」と「誰に対してか」を1つの state にまとめておくと、
@@ -80,7 +78,6 @@ export function TalkPanel({
       setBlocking(false);
     }
   }, [blocking, currentUser, mode, onBlocked, summary]);
->>>>>>> main
 
   return (
     <section

@@ -1,33 +1,35 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { PageHeading } from "@/components/PageHeading";
 import { useSession } from "@/lib/session";
 import { getUsers, likeUser, passUser } from "@/lib/repository";
-import type { User } from "@/lib/types";
+import type { Mode, User } from "@/lib/types";
 import type { DiscoverFilter } from "@/lib/repository";
 import { TAG_OPTIONS } from "@/lib/types";
 import styles from "./discover.module.css";
 
 type ReactionFeedback = {
   id: number;
+  mode: Mode;
   reaction: "like" | "pass";
   message: "いいねを押しました" | "見送るを押しました";
 };
 
-type HeartBurst = {
+type LikeBurst = {
   id: number;
+  mode: Mode;
   x: number;
   y: number;
 };
 
 /**
- * ハート演出が終わるまでの時間。
- * discover.module.css の float-heart (1.25s) と、いちばん遅いハートの
- * animation-delay (200ms) の合計。片方だけ変えるとズレる。
+ * いいね演出が終わるまでの時間。
+ * discover.module.css の float-heart / float-work-star (1.25s) と、
+ * いちばん遅い記号の animation-delay (200ms) の合計。片方だけ変えるとズレる。
  */
-const HEART_BURST_MS = 1450;
+const LIKE_BURST_MS = 1450;
 
 /** トーストとマッチ演出の表示時間。toast-life / match-backdrop-life と対。 */
 const FEEDBACK_MS = 3000;
@@ -152,29 +154,35 @@ export default function DiscoverPage() {
   const [testMode, setTestMode] = useState(false); // テストモード（初期値OFF、必要時はコードで変更）
   const [reactionFeedback, setReactionFeedback] =
     useState<ReactionFeedback | null>(null);
-  const [heartBurst, setHeartBurst] = useState<HeartBurst | null>(null);
+  const [likeBurst, setLikeBurst] = useState<LikeBurst | null>(null);
   // 真偽値ではなく成立ごとに増える id を持つ。true のまま true を入れても
   // 要素は再マウントされず、2件目のマッチで演出が再生されないため。
-  // key に渡して、成立のたびに作り直させる（heartBurst と同じ作り）。
+  // key に渡して、成立のたびに作り直させる（likeBurst と同じ作り）。
   const [matchCelebrationId, setMatchCelebrationId] = useState<number | null>(
     null,
   );
   const likeButtonRef = useRef<HTMLButtonElement | null>(null);
   const reactionFeedbackTimer = useRef<number | null>(null);
   const matchCelebrationTimer = useRef<number | null>(null);
-  const heartBurstTimer = useRef<number | null>(null);
+  const likeBurstTimer = useRef<number | null>(null);
+  const reactionModeVersionRef = useRef(0);
+
+  // 通信待ち中にモードが変わった場合、古い画面で始めた操作の演出や
+  // currentIndex 更新を、新しいモードへ持ち込まない。
+  useLayoutEffect(() => {
+    reactionModeVersionRef.current += 1;
+  }, [mode]);
 
   /*
-    モードを切り替えると、演出は mode === "romance" の条件で外れて再びマウント
-    される。state が残っていると、そのとき終わったはずのアニメーションが
-    最初から再生される（恋愛 → 仕事 → 恋愛でハートが飛ぶ不具合）。
-    切り替わりを検知して、その場で消す。
+    モードを切り替えると、同じ state でも記号と配色が変わる。state が残って
+    いると、そのとき終わったはずのアニメーションが別モードの見た目で再生
+    されるため、切り替わりを検知してその場で消す。
     effect で setState するとカスケード描画になるため、描画中に整える。
   */
   const [renderedMode, setRenderedMode] = useState(mode);
   if (renderedMode !== mode) {
     setRenderedMode(mode);
-    setHeartBurst(null);
+    setLikeBurst(null);
     setReactionFeedback(null);
     setMatchCelebrationId(null);
   }
@@ -202,19 +210,25 @@ export default function DiscoverPage() {
       if (matchCelebrationTimer.current !== null) {
         window.clearTimeout(matchCelebrationTimer.current);
       }
-      if (heartBurstTimer.current !== null) {
-        window.clearTimeout(heartBurstTimer.current);
+      if (likeBurstTimer.current !== null) {
+        window.clearTimeout(likeBurstTimer.current);
       }
     };
   }, []);
 
-  const showReactionFeedback = (reaction: "like" | "pass") => {
-    if (mode !== "romance") return;
+  const showReactionFeedback = (
+    reaction: "like" | "pass",
+    reactionModeVersion: number,
+  ) => {
+    if (reactionModeVersion !== reactionModeVersionRef.current) {
+      return false;
+    }
 
     if (reaction === "like") {
       const buttonRect = likeButtonRef.current?.getBoundingClientRect();
-      setHeartBurst((previous) => ({
+      setLikeBurst((previous) => ({
         id: (previous?.id ?? 0) + 1,
+        mode,
         x: buttonRect
           ? buttonRect.left + buttonRect.width / 2
           : window.innerWidth / 2,
@@ -225,13 +239,13 @@ export default function DiscoverPage() {
 
       // 飛び終わったら消す。残したままだと、見えないだけの div が DOM に
       // 居座り、モードを切り替えたときに再マウントされて飛び直す。
-      if (heartBurstTimer.current !== null) {
-        window.clearTimeout(heartBurstTimer.current);
+      if (likeBurstTimer.current !== null) {
+        window.clearTimeout(likeBurstTimer.current);
       }
-      heartBurstTimer.current = window.setTimeout(() => {
-        setHeartBurst(null);
-        heartBurstTimer.current = null;
-      }, HEART_BURST_MS);
+      likeBurstTimer.current = window.setTimeout(() => {
+        setLikeBurst(null);
+        likeBurstTimer.current = null;
+      }, LIKE_BURST_MS);
     }
 
     if (reactionFeedbackTimer.current !== null) {
@@ -240,6 +254,7 @@ export default function DiscoverPage() {
 
     setReactionFeedback((previous) => ({
       id: (previous?.id ?? 0) + 1,
+      mode,
       reaction,
       message:
         reaction === "like"
@@ -250,6 +265,8 @@ export default function DiscoverPage() {
       setReactionFeedback(null);
       reactionFeedbackTimer.current = null;
     }, FEEDBACK_MS);
+
+    return true;
   };
 
   const showMatchFeedback = () => {
@@ -280,10 +297,11 @@ export default function DiscoverPage() {
   // いいねボタンの処理
   const handleLike = async (targetUser: User) => {
     if (!currentUser) return;
+    const reactionModeVersion = reactionModeVersionRef.current;
 
     // テストモード：DBに保存せず次に進むだけ
     if (testMode) {
-      showReactionFeedback("like");
+      if (!showReactionFeedback("like", reactionModeVersion)) return;
       goToNextUser();
       return;
     }
@@ -293,8 +311,8 @@ export default function DiscoverPage() {
 
       // 演出は書き込みが成功してから出す。await より前に出すと、
       // 通信や権限のエラーで失敗したときに「いいねを押しました」の
-      // トーストとハートが最大3秒残り、その上に失敗アラートが出る。
-      showReactionFeedback("like");
+      // トーストといいね演出が最大3秒残り、その上に失敗アラートが出る。
+      if (!showReactionFeedback("like", reactionModeVersion)) return;
 
       // マッチ成立の確認
       if (match) {
@@ -308,6 +326,7 @@ export default function DiscoverPage() {
       // 次のユーザーに進む
       goToNextUser();
     } catch (error) {
+      if (reactionModeVersion !== reactionModeVersionRef.current) return;
       console.error("いいね送信エラー:", error);
       alert("いいねの送信に失敗しました");
     }
@@ -316,10 +335,11 @@ export default function DiscoverPage() {
   // 見送るボタンの処理
   const handlePass = async (targetUser: User) => {
     if (!currentUser) return;
+    const reactionModeVersion = reactionModeVersionRef.current;
 
     // テストモード：DBに保存せず次に進むだけ
     if (testMode) {
-      showReactionFeedback("pass");
+      if (!showReactionFeedback("pass", reactionModeVersion)) return;
       goToNextUser();
       return;
     }
@@ -332,11 +352,12 @@ export default function DiscoverPage() {
       // 仕事モードの場合は保存しない（リロードで戻る）
 
       // handleLike と同じ理由で、演出は書き込みが成功してから出す
-      showReactionFeedback("pass");
+      if (!showReactionFeedback("pass", reactionModeVersion)) return;
 
       // 次のユーザーに進む
       goToNextUser();
     } catch (error) {
+      if (reactionModeVersion !== reactionModeVersionRef.current) return;
       console.error("見送りエラー:", error);
       alert("見送りに失敗しました");
     }
@@ -418,7 +439,7 @@ export default function DiscoverPage() {
             {/* 左：写真カード */}
             <div className={isWork ? styles.workPhotoCard : undefined} style={{
               width: "300px",
-              height: "500px",
+              height: isWork ? "auto" : "500px",
               backgroundColor: "var(--surface)",
               borderRadius: "28px",
               boxShadow: "var(--card-shadow)",
@@ -456,12 +477,12 @@ export default function DiscoverPage() {
             {/* 右：プロフィールカード */}
             <div className={isWork ? styles.workProfileCard : undefined} style={{
               width: "600px",
-              height: "500px",
+              height: isWork ? "auto" : "500px",
               backgroundColor: "var(--surface)",
               borderRadius: "28px",
               boxShadow: "var(--card-shadow)",
               padding: "32px",
-              overflowY: "auto",
+              overflowY: isWork ? "visible" : "auto",
               display: "flex",
               flexDirection: "column",
               gap: "20px",
@@ -1088,28 +1109,45 @@ export default function DiscoverPage() {
         マッチで3つとも key="1" になり、React が対応付けを誤って要素を作り
         直す（マッチ演出が2回再生されていた原因）。
       */}
-      {mode === "romance" && heartBurst && (
+      {likeBurst && likeBurst.mode === mode && (
         <div
-          key={`heart-${heartBurst.id}`}
-          className={styles.heartBurst}
-          style={{ left: heartBurst.x, top: heartBurst.y }}
+          key={`like-${likeBurst.id}`}
+          className={styles.likeBurst}
+          style={{ left: likeBurst.x, top: likeBurst.y }}
           aria-hidden="true"
         >
-          <span className={styles.floatingHeart}>♥</span>
-          <span className={styles.floatingHeart}>♥</span>
-          <span className={styles.floatingHeart}>♥</span>
+          {isWork ? (
+            <>
+              <span className={styles.floatingWorkStar}>★</span>
+              <span className={styles.floatingWorkStar}>★</span>
+              <span className={styles.floatingWorkStar}>★</span>
+            </>
+          ) : (
+            <>
+              <span className={styles.floatingHeart}>♥</span>
+              <span className={styles.floatingHeart}>♥</span>
+              <span className={styles.floatingHeart}>♥</span>
+            </>
+          )}
         </div>
       )}
 
-      {mode === "romance" && reactionFeedback && (
+      {reactionFeedback && reactionFeedback.mode === mode && (
         <div
           key={`toast-${reactionFeedback.id}`}
-          className={styles.reactionToast}
+          className={`${styles.reactionToast} ${isWork ? styles.workReactionToast : ""}`}
           role="status"
           aria-live="polite"
         >
-          <span className={styles.toastHeart} aria-hidden="true">
-            {reactionFeedback.reaction === "like" ? "♥" : "✓"}
+          <span
+            className={`${styles.toastIcon} ${isWork ? styles.workToastIcon : ""}`}
+            aria-hidden="true"
+          >
+            {reactionFeedback.reaction === "like"
+              ? isWork
+                ? "★"
+                : "♥"
+              : "✓"}
           </span>
           {reactionFeedback.message}
         </div>
