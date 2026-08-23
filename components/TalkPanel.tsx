@@ -5,7 +5,7 @@ import { fileToMessageImage, isImageBody } from "@/lib/image";
 import { getMessages, sendMessage } from "@/lib/repository";
 import { useSession } from "@/lib/session";
 import { usePolling } from "@/lib/usePolling";
-import type { MatchSummary, Message } from "@/lib/types";
+import type { MatchSummary, Message, Mode } from "@/lib/types";
 
 /**
  * 右からスライドインしてくるトークパネル。
@@ -16,12 +16,14 @@ import type { MatchSummary, Message } from "@/lib/types";
  * ここでは常に描画しておいて、translate-x だけを切り替えている。
  */
 export function TalkPanel({
+  mode,
   open,
   summary,
   onClose,
   onSent,
   onRead,
 }: {
+  mode: Mode;
   open: boolean;
   /** 表示する相手。閉じるアニメーション中も中身を残したいので、閉じても null にしない */
   summary: MatchSummary | null;
@@ -34,6 +36,8 @@ export function TalkPanel({
    */
   onRead: (matchId: string, readAt: string) => void;
 }) {
+  const isWork = mode === "work";
+
   return (
     <section
       // 閉じている間は中身を丸ごと無効化する。
@@ -52,7 +56,13 @@ export function TalkPanel({
     >
       {summary ? (
         <>
-          <header className="flex items-center gap-3 border-b border-line px-4 py-3">
+          <header
+            className={
+              isWork
+                ? "flex items-center gap-3 border-b border-[#EAE6DF] bg-[rgba(255,253,252,0.9)] px-5 py-3.5"
+                : "flex items-center gap-3 border-b border-line px-4 py-3"
+            }
+          >
             {/* ダミー画像なので next/image ではなく img を使う */}
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
@@ -60,16 +70,30 @@ export function TalkPanel({
               alt=""
               width={32}
               height={32}
-              className="h-8 w-8 shrink-0 rounded-full bg-accent-soft"
+              className={
+                isWork
+                  ? "h-9 w-9 shrink-0 rounded-full border border-[rgba(201,169,110,0.32)] bg-[#EEF1F6] object-cover p-0.5"
+                  : "h-8 w-8 shrink-0 rounded-full bg-accent-soft"
+              }
             />
-            <span className="min-w-0 flex-1 truncate text-sm font-bold">
+            <span
+              className={
+                isWork
+                  ? "min-w-0 flex-1 truncate text-base font-semibold text-[#0C2340]"
+                  : "min-w-0 flex-1 truncate text-sm font-bold"
+              }
+            >
               {summary.partner.name}
             </span>
             <button
               type="button"
               onClick={onClose}
               aria-label="トークを閉じる"
-              className="rounded-full px-2 py-1 text-lg leading-none text-muted transition-colors hover:bg-background hover:text-foreground"
+              className={
+                isWork
+                  ? "flex h-9 w-9 items-center justify-center rounded-full text-lg leading-none text-muted transition-colors hover:bg-[#F4F1EB] hover:text-[#0C2340]"
+                  : "rounded-full px-2 py-1 text-lg leading-none text-muted transition-colors hover:bg-background hover:text-foreground"
+              }
             >
               ×
             </button>
@@ -83,6 +107,7 @@ export function TalkPanel({
           */}
           <Conversation
             key={summary.match.id}
+            mode={mode}
             matchId={summary.match.id}
             open={open}
             onSent={onSent}
@@ -96,17 +121,20 @@ export function TalkPanel({
 
 /** 1つのマッチぶんの会話。state はすべてこの相手に紐づく */
 function Conversation({
+  mode,
   matchId,
   open,
   onSent,
   onRead,
 }: {
+  mode: Mode;
   matchId: string;
   open: boolean;
   onSent: (created: Message) => void;
   onRead: (matchId: string, readAt: string) => void;
 }) {
   const { currentUser } = useSession();
+  const isWork = mode === "work";
   const [messages, setMessages] = useState<Message[]>([]);
   const [loaded, setLoaded] = useState(false);
   const [input, setInput] = useState("");
@@ -231,7 +259,14 @@ function Conversation({
 
   return (
     <div className="flex flex-1 flex-col overflow-hidden">
-      <div ref={scrollRef} className="flex-1 overflow-y-auto px-3 py-3">
+      <div
+        ref={scrollRef}
+        className={
+          isWork
+            ? "flex-1 overflow-y-auto bg-[rgba(248,245,239,0.34)] px-4 py-5"
+            : "flex-1 overflow-y-auto px-3 py-3"
+        }
+      >
         {!loaded ? (
           <div className="flex h-full items-center justify-center text-sm text-muted">
             読み込み中…
@@ -241,7 +276,7 @@ function Conversation({
             まだメッセージはありません。
           </div>
         ) : (
-          <div className="flex flex-col gap-2">
+          <div className={isWork ? "flex flex-col gap-3" : "flex flex-col gap-2"}>
             {messages.map((message) => {
               const mine = message.senderId === currentUser?.id;
               return (
@@ -274,10 +309,16 @@ function Conversation({
                     ) : (
                       <div
                         className={[
-                          "max-w-full rounded-2xl px-3 py-2 text-sm whitespace-pre-wrap break-words",
+                          isWork
+                            ? "max-w-full rounded-[16px] px-4 py-2.5 text-sm leading-relaxed whitespace-pre-wrap break-words"
+                            : "max-w-full rounded-2xl px-3 py-2 text-sm whitespace-pre-wrap break-words",
                           mine
-                            ? "ml-auto bg-accent text-white"
-                            : "bg-[var(--bubble-other-bg)] border border-line",
+                            ? isWork
+                              ? "ml-auto bg-[#0C2340] text-white shadow-[0_5px_14px_rgba(12,35,64,0.12)]"
+                              : "ml-auto bg-accent text-white"
+                            : isWork
+                              ? "border border-[#EAE6DF] bg-[#FFFDFC] text-[#0C2340]"
+                              : "bg-[var(--bubble-other-bg)] border border-line",
                         ].join(" ")}
                       >
                         {message.body}
@@ -294,7 +335,13 @@ function Conversation({
         )}
       </div>
 
-      <div className="border-t border-line bg-surface">
+      <div
+        className={
+          isWork
+            ? "border-t border-[#EAE6DF] bg-[#FFFDFC]"
+            : "border-t border-line bg-surface"
+        }
+      >
         {error ? (
           <p className="px-3 pb-2 pt-3 text-xs text-accent">{error}</p>
         ) : null}
@@ -307,7 +354,13 @@ function Conversation({
           健全なサービスを運営する目的で運営者がメッセージの内容を確認・削除することがあります。相手への配慮あるやり取りをお願いいたします。これに同意した上で送信してください。
         </p>
 
-        <div className="flex items-end gap-2 px-3 pb-3 pt-2">
+        <div
+          className={
+            isWork
+              ? "flex items-end gap-2 px-4 pb-4 pt-2"
+              : "flex items-end gap-2 px-3 pb-3 pt-2"
+          }
+        >
           {/*
             accept="image/*" にしておくと、スマホでは OS のシートに
             「写真を選ぶ」と「カメラで撮影」の両方が並ぶ。
@@ -330,7 +383,11 @@ function Conversation({
             disabled={busy}
             aria-label="写真を送る"
             title="写真を送る"
-            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-line bg-surface text-muted transition-colors hover:border-accent hover:text-accent disabled:cursor-not-allowed disabled:opacity-50"
+            className={
+              isWork
+                ? "flex h-11 w-11 shrink-0 items-center justify-center rounded-[14px] border border-[#DED9D0] bg-[#FBFAF7] text-muted transition-colors hover:border-[#0C2340] hover:text-[#0C2340] disabled:cursor-not-allowed disabled:opacity-50"
+                : "flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-line bg-surface text-muted transition-colors hover:border-accent hover:text-accent disabled:cursor-not-allowed disabled:opacity-50"
+            }
           >
             <svg
               width="20"
@@ -360,7 +417,11 @@ function Conversation({
             }}
             rows={1}
             placeholder="メッセージを入力"
-            className="max-h-32 min-h-11 flex-1 resize-none rounded-xl border border-line bg-surface px-3 py-2 text-sm outline-none placeholder:text-muted focus:border-accent"
+            className={
+              isWork
+                ? "max-h-32 min-h-11 flex-1 resize-none rounded-[14px] border border-[#DED9D0] bg-[#FBFAF7] px-4 py-2.5 text-sm outline-none placeholder:text-muted focus:border-[#0C2340] focus:shadow-[0_0_0_3px_rgba(12,35,64,0.05)]"
+                : "max-h-32 min-h-11 flex-1 resize-none rounded-xl border border-line bg-surface px-3 py-2 text-sm outline-none placeholder:text-muted focus:border-accent"
+            }
           />
           <button
             type="button"
@@ -368,7 +429,11 @@ function Conversation({
               void handleSend();
             }}
             disabled={busy || input.trim() === ""}
-            className="rounded-xl bg-accent px-3 py-2 text-sm font-bold text-white transition-opacity disabled:cursor-not-allowed disabled:opacity-50"
+            className={
+              isWork
+                ? "min-h-11 rounded-[14px] bg-[#0C2340] px-5 py-2 text-sm font-semibold text-white shadow-[0_8px_20px_rgba(12,35,64,0.18)] transition-[transform,box-shadow,opacity] hover:-translate-y-0.5 hover:shadow-[0_10px_24px_rgba(12,35,64,0.22)] disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:translate-y-0"
+                : "rounded-xl bg-accent px-3 py-2 text-sm font-bold text-white transition-opacity disabled:cursor-not-allowed disabled:opacity-50"
+            }
           >
             {busy ? "送信中" : "送信"}
           </button>

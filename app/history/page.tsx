@@ -5,6 +5,7 @@ import { PageHeading } from "@/components/PageHeading";
 import { useSession } from "@/lib/session";
 import { getReactionHistory, deleteReaction, getUser } from "@/lib/repository";
 import type { Reaction, User } from "@/lib/types";
+import styles from "./history.module.css";
 
 type ReactionWithUser = Reaction & {
   user: User;
@@ -12,6 +13,7 @@ type ReactionWithUser = Reaction & {
 
 export default function HistoryPage() {
   const { currentUser, mode } = useSession();
+  const isWork = mode === "work";
   const [reactions, setReactions] = useState<ReactionWithUser[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -55,22 +57,31 @@ export default function HistoryPage() {
   }
 
   return (
-    <div style={{ padding: "24px 32px" }}>
+    <div
+      className={isWork ? styles.workPage : undefined}
+      style={{ padding: "24px 32px" }}
+    >
       <PageHeading
         title="履歴"
         description="あなたがいいね・見送りした人の一覧です"
       />
 
       {loading ? (
-        <div style={{ textAlign: "center", marginTop: "40px", fontSize: "18px", color: "#666" }}>
+        <div
+          className={isWork ? styles.workLoadingState : undefined}
+          style={{ textAlign: "center", marginTop: "40px", fontSize: "18px", color: "#666" }}
+        >
           読み込み中...
         </div>
       ) : reactions.length === 0 ? (
-        <div style={{ textAlign: "center", marginTop: "40px", fontSize: "18px", color: "#666" }}>
+        <div
+          className={isWork ? styles.workEmptyState : undefined}
+          style={{ textAlign: "center", marginTop: "40px", fontSize: "18px", color: "#666" }}
+        >
           まだ履歴がありません
         </div>
       ) : (
-        <div style={{
+        <div className={isWork ? styles.workGrid : undefined} style={{
           display: "grid",
           gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))",
           gap: "24px",
@@ -79,6 +90,7 @@ export default function HistoryPage() {
           {reactions.map((reaction) => (
             <div
               key={reaction.toUserId}
+              className={isWork ? styles.workCard : undefined}
               style={{
                 backgroundColor: "#FFFFFF",
                 borderRadius: "16px",
@@ -95,17 +107,29 @@ export default function HistoryPage() {
                 alignItems: "center",
                 justifyContent: "space-between",
               }}>
-                <span style={{
-                  padding: "6px 12px",
-                  borderRadius: "12px",
-                  fontSize: "14px",
-                  fontWeight: "500",
-                  backgroundColor: reaction.type === "like" ? "#FEF3F2" : "#F3F4F6",
-                  color: reaction.type === "like" ? "#DC2626" : "#6B7280",
-                }}>
+                <span
+                  className={
+                    isWork
+                      ? reaction.type === "like"
+                        ? styles.workLikeBadge
+                        : styles.workPassBadge
+                      : undefined
+                  }
+                  style={{
+                    padding: "6px 12px",
+                    borderRadius: "12px",
+                    fontSize: "14px",
+                    fontWeight: "500",
+                    backgroundColor: reaction.type === "like" ? "#FEF3F2" : "#F3F4F6",
+                    color: reaction.type === "like" ? "#DC2626" : "#6B7280",
+                  }}
+                >
                   {reaction.type === "like" ? "♡ いいね" : "✕ 見送り"}
                 </span>
-                <span style={{ fontSize: "12px", color: "#9CA3AF" }}>
+                <span
+                  className={isWork ? styles.workDate : undefined}
+                  style={{ fontSize: "12px", color: "#9CA3AF" }}
+                >
                   {new Date(reaction.createdAt).toLocaleDateString("ja-JP")}
                 </span>
               </div>
@@ -113,6 +137,7 @@ export default function HistoryPage() {
               {/* アイコンと名前 */}
               <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
                 <img
+                  className={isWork ? styles.workAvatar : undefined}
                   src={reaction.user.avatarUrl}
                   alt={reaction.user.name}
                   style={{
@@ -123,10 +148,16 @@ export default function HistoryPage() {
                   }}
                 />
                 <div>
-                  <p style={{ margin: 0, fontSize: "18px", fontWeight: "bold", color: "#1E1B4B" }}>
+                  <p
+                    className={isWork ? styles.workName : undefined}
+                    style={{ margin: 0, fontSize: "18px", fontWeight: "bold", color: "#1E1B4B" }}
+                  >
                     {reaction.user.name}
                   </p>
-                  <p style={{ margin: "4px 0 0 0", fontSize: "14px", color: "#6B7280" }}>
+                  <p
+                    className={isWork ? styles.workMeta : undefined}
+                    style={{ margin: "4px 0 0 0", fontSize: "14px", color: "#6B7280" }}
+                  >
                     {mode === "romance" && !reaction.user.romance.showDepartment
                       ? reaction.user.jobTitle
                       : `${reaction.user.department} / ${reaction.user.jobTitle}`}
@@ -136,6 +167,7 @@ export default function HistoryPage() {
 
               {/* 取り消しボタン */}
               <button
+                className={isWork ? styles.workCancelButton : undefined}
                 onClick={() => handleDelete(reaction)}
                 style={{
                   padding: "10px",
