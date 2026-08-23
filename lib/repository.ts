@@ -1,6 +1,7 @@
 import { supabase } from "@/lib/supabase";
 import { isDepartmentComplete, splitDepartmentPath } from "@/lib/departments";
 import { JOB_TITLE_OPTIONS } from "@/lib/profile-fields";
+import type { DailyProgress, ItemId } from "@/lib/points";
 import { MODES } from "@/lib/types";
 import type {
   Board,
@@ -924,16 +925,17 @@ export async function getClaimedMilestones(
 }
 
 export type ClaimResult = {
-  /** 今回はじめて受け取った段。何も無ければ空 */
+  /** 今回はじめて届いた段。何も無ければ空 */
   claimed: number[];
-  /** 今回増えたポイント */
+  /** 今回 受け取り箱に入れた額。残高はまだ増えない */
   awarded: number;
-  /** 増やしたあとの残高 */
-  points: number;
 };
 
 /**
- * 届いている段のうち、まだ受け取っていないものをまとめて受け取る。
+ * 届いている段のうち、まだ箱に入れていないものを受け取り箱へ入れる。
+ *
+ * ここでは残高は増えない。増えるのはポイント画面で claimPointRewards() を
+ * 呼んだとき。
  *
  * 二度目が付かないことは DB 側の主キーが保証している。画面が段を覚えて
  * おく必要はないので、保存のたびに呼んでよい（届いていなければ何も起きない）。
@@ -958,8 +960,184 @@ export async function claimProfileMilestones(
   return {
     claimed: result.claimed ?? [],
     awarded: result.awarded ?? 0,
+  };
+}
+
+// ───────────────────────── 受け取り箱・ミッション・交換 ─────────────────────────
+
+/** ポイントの増減1件。履歴に出す */
+export type PointEvent = {
+  id: string;
+  /** 増減。交換は負数 */
+  amount: number;
+  /** 'profile_50_work' / 'daily_login' / 'exchange_coffee_ticket' など */
+  reason: string;
+  createdAt: string;
+};
+
+type PointEventRow = {
+  id: number;
+  amount: number;
+  reason: string;
+  created_at: string;
+};
+
+/**
+ * ポイントの履歴を新しい順に読む。
+ *
+ * 表示名は reason から画面側で作る（lib/points.ts の pointEventLabel）。
+ * 履歴に文言を保存していないのは、あとから言い回しを直せるようにするため。
+ */
+export async function getPointEvents(
+  userId: string,
+  limit = 50,
+): Promise<PointEvent[]> {
+  const { data, error } = await supabase
+    .from("point_events")
+    .select("id, amount, reason, created_at")
+    .eq("user_id", userId)
+    .order("created_at", { ascending: false })
+    .limit(limit);
+  if (error) throw error;
+
+  return (data as PointEventRow[]).map((row) => ({
+    id: String(row.id),
+    amount: row.amount,
+    reason: row.reason,
+    createdAt: row.created_at,
+  }));
+}
+
+/** 受け取り箱に届いている1件 */
+export type PointReward = {
+  id: string;
+  amount: number;
+  reason: string;
+  /** 受信箱に出す文言。DB が持っている */
+  label: string;
+  createdAt: string;
+};
+
+type PointRewardRow = {
+  id: number;
+  amount: number;
+  reason: string;
+  label: string;
+  created_at: string;
+};
+
+/** 受け取り箱の未受け取りぶんを、届いた順に読む */
+export async function getPendingRewards(
+  userId: string,
+): Promise<PointReward[]> {
+  const { data, error } = await supabase
+    .from("point_rewards")
+    .select("id, amount, reason, label, created_at")
+    .eq("user_id", userId)
+    .is("claimed_at", null)
+    .order("created_at", { ascending: true });
+  if (error) throw error;
+
+  return (data as PointRewardRow[]).map((row) => ({
+    id: String(row.id),
+    amount: row.amount,
+    reason: row.reason,
+    label: row.label,
+    createdAt: row.created_at,
+  }));
+}
+
+export type RewardClaimResult = {
+  /** 受け取った件数 */
+  claimed: number;
+  /** 今回増えたポイント */
+  awarded: number;
+  /** 増やしたあとの残高 */
+  points: number;
+};
+
+/**
+ * 受け取り箱の中身を受け取る。残高に加算され、履歴にも残る。
+ *
+ * ids を省略すると未受け取りをすべて受け取る（まとめて受け取る）。
+ * 二重に受け取れないことは DB 側が保証しているので、押し過ぎても増えない。
+ */
+export async function claimPointRewards(
+  ids?: string[],
+): Promise<RewardClaimResult> {
+  const { data, error } = await supabase.rpc("claim_point_rewards", {
+    p_ids: ids ? ids.map(Number) : null,
+  });
+  if (error) throw error;
+
+  const result = (data ?? {}) as Partial<RewardClaimResult>;
+  return {
+    claimed: result.claimed ?? 0,
+    awarded: result.awarded ?? 0,
     points: result.points ?? 0,
   };
+}
+
+/**
+ * 今日のデイリーミッションの進捗を取り、達成済みのものを受け取り箱へ入れる。
+ *
+ * 「読むだけ」ではなく箱入れも行うので、ポイント画面を開いたときに呼ぶ。
+ * 何度呼んでも、同じ日の同じミッションは一度しか箱に入らない。
+ *
+ * 日付の境界（JST 0:00）と達成の判定は DB 側が持つ。端末の時計は使わない。
+ */
+export async function syncDailyMissions(): Promise<DailyProgress> {
+  const { data, error } = await supabase.rpc("sync_daily_missions");
+  if (error) throw error;
+
+  const result = (data ?? {}) as Partial<DailyProgress>;
+  return {
+    date: result.date ?? "",
+    replies: result.replies ?? 0,
+    likes: result.likes ?? 0,
+    achieved: result.achieved ?? [],
+  };
+}
+
+/** 持ち物。交換していない種類は入っていない */
+export type UserItems = Partial<Record<ItemId, number>>;
+
+export async function getUserItems(userId: string): Promise<UserItems> {
+  const { data, error } = await supabase
+    .from("user_items")
+    .select("item, quantity")
+    .eq("user_id", userId);
+  if (error) throw error;
+
+  const items: UserItems = {};
+  for (const row of (data ?? []) as { item: ItemId; quantity: number }[]) {
+    items[row.item] = row.quantity;
+  }
+  return items;
+}
+
+export type ExchangeResult = {
+  item: ItemId;
+  label: string;
+  cost: number;
+  /** 交換したあとの所持数 */
+  quantity: number;
+  /** 引いたあとの残高 */
+  points: number;
+};
+
+/**
+ * ポイントを使ってアイテムを1つ交換する。
+ *
+ * 値段は DB 側が持っている（lib/points.ts の ITEMS は表示用の写し）。
+ * 残高が足りなければ例外になるので、呼ぶ前に画面でも押せないようにしておく。
+ */
+export async function exchangeItem(item: ItemId): Promise<ExchangeResult> {
+  const { data, error } = await supabase.rpc("exchange_item", {
+    p_item: item,
+  });
+  if (error) throw error;
+  return data as ExchangeResult;
 }
 
 // ───────────────────────── 募集掲示板 ─────────────────────────

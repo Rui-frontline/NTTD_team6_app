@@ -4,13 +4,18 @@
 -- 充実度が 50% / 80% / 100% に届いた時点で、それぞれ 50 / 80 / 100 ポイント。
 -- 一度受け取った段は二度と受け取れない（下げてから上げ直しても増えない）。
 --
+-- 届いたポイントは残高に直接入らず、いったん受け取り箱（point_rewards）に入る。
+-- 残高が増えるのは、ポイント画面で受け取ったとき。
+--
 -- 段は「ユーザー × モード × 段」の1行として持つ。仕事モードと恋愛モードは
 -- 別々に数えるので、仕事で 50% を受け取っていても恋愛では改めて受け取れる。
 --
--- 先に supabase/points.sql を実行しておくこと（users.points と point_events を作る）。
+-- 先に supabase/points.sql と supabase/point_rewards.sql を実行しておくこと
+-- （前者が users.points と point_events、後者が受け取り箱を作る）。
 --
 -- Supabase の SQL Editor でこのファイルの内容を実行してください。
 -- 実行しないと、マイページの保存でポイントが付きません（保存自体は通ります）。
+-- 即時付与だった頃に実行済みの環境でも、もう一度流せば箱入れに切り替わります。
 --
 -- 何度実行しても壊れません（if not exists / create or replace / drop policy if exists）。
 
@@ -42,12 +47,15 @@ create policy profile_milestones_select_own on public.profile_milestones
 -- ───────────────────────── 受け取り ─────────────────────────
 
 /*
-  届いている段のうち、まだ受け取っていないものをまとめて受け取る。
+  届いている段のうち、まだ箱に入れていないものをまとめて受け取り箱へ入れる。
 
-  戻り値の例（50% と 80% を同時に受け取り、残高が 430 になった場合）
-    { "claimed": [50, 80], "awarded": 130, "points": 430 }
+  戻り値の例（50% と 80% が同時に届いた場合）
+    { "claimed": [50, 80], "awarded": 130 }
 
-  ・受け取りの記録・履歴・残高の更新を1つの関数にまとめている。
+  awarded は「箱に入れた額」で、残高はまだ増えない。増えるのは
+  ポイント画面で claim_point_rewards() を呼んだとき。
+
+  ・段の記録と箱入れを1つの関数にまとめている。
     画面から分けて呼ぶと、途中で失敗したときに食い違う余地が生まれる。
     関数の中は1トランザクションなので、まとめて成功かまとめて失敗になる。
 
@@ -77,7 +85,6 @@ declare
   v_inserted  int;
   v_claimed   int[] := '{}';
   v_awarded   int   := 0;
-  v_points    int;
 begin
   if v_user_id is null then
     raise exception 'ログインが必要です';
@@ -105,24 +112,21 @@ begin
     v_claimed := v_claimed || v_milestone;
     v_awarded := v_awarded + v_milestone;
 
-    insert into public.point_events (user_id, amount, reason)
-    values (v_user_id, v_milestone, 'profile_' || v_milestone || '_' || p_mode);
+    -- 残高には足さず、受け取り箱へ入れる
+    insert into public.point_rewards (user_id, amount, reason, label)
+    values (
+      v_user_id,
+      v_milestone,
+      'profile_' || v_milestone || '_' || p_mode,
+      'プロフィール達成（'
+        || case p_mode when 'work' then '仕事' else '恋愛' end
+        || 'モード ' || v_milestone || '%）'
+    );
   end loop;
-
-  if v_awarded = 0 then
-    select points into v_points from public.users where id = v_user_id;
-    return jsonb_build_object('claimed', '[]'::jsonb, 'awarded', 0, 'points', coalesce(v_points, 0));
-  end if;
-
-  update public.users
-     set points = greatest(0, points + v_awarded)
-   where id = v_user_id
-  returning points into v_points;
 
   return jsonb_build_object(
     'claimed', to_jsonb(v_claimed),
-    'awarded', v_awarded,
-    'points',  coalesce(v_points, 0)
+    'awarded', v_awarded
   );
 end;
 $$;
@@ -132,8 +136,8 @@ $$;
 -- 受け取った段
 -- select * from public.profile_milestones order by created_at desc;
 
--- ポイントの履歴（profile_ で始まるものが今回の獲得）
--- select * from public.point_events order by created_at desc limit 20;
+-- 受け取り箱に届いたぶん（claimed_at が null なら未受け取り）
+-- select * from public.point_rewards where reason like 'profile_%' order by created_at desc;
 
 -- もう一度テストしたいとき。段の記録を消すと再び受け取れるようになる。
 -- 残高そのものを戻す手順は supabase/points_manual.sql にある。
