@@ -704,9 +704,13 @@ export function MyPage() {
               {saved && !error && (
                 <p className="mb-4 rounded-lg border border-[var(--accent)] bg-[var(--accent-soft)] px-4 py-3 text-sm text-[var(--accent-strong)]">
                   保存しました
+                  {/*
+                    残高はここでは増えない。届いたぶんは受け取り箱に入り、
+                    ポイント画面で受け取ったときに増える。
+                  */}
                   {awarded > 0 ? (
                     <span className="ml-2 font-bold">
-                      ＋{awarded}ポイント獲得！
+                      ＋{awarded}ポイントを受け取り箱に届けました
                     </span>
                   ) : null}
                 </p>

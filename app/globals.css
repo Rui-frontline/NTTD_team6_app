@@ -47,6 +47,10 @@
   --tab-active-fg: #ffffff;
   --tab-radius: 0.625rem;
 
+  /* ポイントの帯（--accent の面）に乗せるボタン。地の色と競合しない差し色 */
+  --reward-bg: #e9cd97;
+  --reward-fg: #16233f;
+
   --action-gradient: linear-gradient(135deg, #3b82f6, #8b5cf6);
   --action-shadow: 0 8px 20px rgba(59, 130, 246, 0.22);
   --card-shadow: 0 12px 32px rgba(22, 35, 63, 0.09);
@@ -90,6 +94,10 @@
   --tab-active-fg: #ffffff;
   /* 仕事は角丸の四角、恋愛は丸型 */
   --tab-radius: 0.625rem;
+
+  /* ポイントの帯（--accent の面）に乗せるボタン。地の色と競合しない差し色 */
+  --reward-bg: #e9cd97;
+  --reward-fg: #16233f;
 
   --action-gradient: linear-gradient(135deg, #3b82f6, #8b5cf6);
   --action-shadow: 0 8px 20px rgba(59, 130, 246, 0.22);
@@ -144,6 +152,10 @@
   --tab-active-bg: linear-gradient(135deg, #ff4f7b 0%, #ff6f91 58%, #ff91ab 100%);
   --tab-active-fg: #ffffff;
   --tab-radius: 9999px;
+
+  /* コーラルの面に乗せるので、ピンクではなくアイボリーで抜く */
+  --reward-bg: #fffaf1;
+  --reward-fg: #b72d52;
 
   --action-gradient: linear-gradient(135deg, #ff4f7b 0%, #ff6f91 52%, #ff91ab 100%);
   --action-shadow: 0 10px 24px rgba(255, 79, 123, 0.25);
