@@ -1,6 +1,7 @@
 import { supabase } from "@/lib/supabase";
 import { isDepartmentComplete, splitDepartmentPath } from "@/lib/departments";
 import { JOB_TITLE_OPTIONS } from "@/lib/profile-fields";
+import { MODES } from "@/lib/types";
 import type {
   Board,
   BoardMessage,
@@ -884,6 +885,81 @@ export async function awardPoints(
   });
   if (error) throw error;
   return (data as number) ?? 0;
+}
+
+/** 受け取り済みの充実度の段。モードごとに分けて返す */
+export type ClaimedMilestones = Record<Mode, number[]>;
+
+/**
+ * 自分が受け取った充実度の段を読む。バーの目盛りに印を付けるために使う。
+ *
+ * 他人のぶんは RLS で読めない（supabase/profile_milestones.sql 参照）。
+ * SQL をまだ流していない環境では空を返し、画面は印なしで動く。
+ * ここで例外にすると、ポイントと関係のないマイページ全体が開かなくなるため。
+ */
+export async function getClaimedMilestones(
+  userId: string,
+): Promise<ClaimedMilestones> {
+  const claimed: ClaimedMilestones = { work: [], romance: [] };
+
+  const { data, error } = await supabase
+    .from("profile_milestones")
+    .select("mode, milestone")
+    .eq("user_id", userId);
+  if (error) {
+    console.error(
+      "受け取り済みの段を取得できませんでした。supabase/profile_milestones.sql を実行してください。",
+      error,
+    );
+    return claimed;
+  }
+
+  for (const row of (data ?? []) as { mode: Mode; milestone: number }[]) {
+    claimed[row.mode]?.push(row.milestone);
+  }
+  for (const mode of MODES) {
+    claimed[mode].sort((a, b) => a - b);
+  }
+  return claimed;
+}
+
+export type ClaimResult = {
+  /** 今回はじめて受け取った段。何も無ければ空 */
+  claimed: number[];
+  /** 今回増えたポイント */
+  awarded: number;
+  /** 増やしたあとの残高 */
+  points: number;
+};
+
+/**
+ * 届いている段のうち、まだ受け取っていないものをまとめて受け取る。
+ *
+ * 二度目が付かないことは DB 側の主キーが保証している。画面が段を覚えて
+ * おく必要はないので、保存のたびに呼んでよい（届いていなければ何も起きない）。
+ *
+ * percent は lib/profile-completion.ts の profileCompletion() で出した値を、
+ * 「保存した内容」から計算して渡すこと。下書きから渡すと、保存していない
+ * 内容でポイントが付いてしまう。
+ *
+ * supabase/profile_milestones.sql を実行していない環境では失敗する。
+ */
+export async function claimProfileMilestones(
+  mode: Mode,
+  percent: number,
+): Promise<ClaimResult> {
+  const { data, error } = await supabase.rpc("claim_profile_milestones", {
+    p_mode: mode,
+    p_percent: percent,
+  });
+  if (error) throw error;
+
+  const result = (data ?? {}) as Partial<ClaimResult>;
+  return {
+    claimed: result.claimed ?? [],
+    awarded: result.awarded ?? 0,
+    points: result.points ?? 0,
+  };
 }
 
 // ───────────────────────── 募集掲示板 ─────────────────────────

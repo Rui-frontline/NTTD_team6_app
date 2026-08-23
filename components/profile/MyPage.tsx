@@ -1,11 +1,19 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useSession } from "@/lib/session";
-import { updateProfile, updateUser } from "@/lib/repository";
+import {
+  claimProfileMilestones,
+  getClaimedMilestones,
+  updateProfile,
+  updateUser,
+} from "@/lib/repository";
+import type { ClaimedMilestones } from "@/lib/repository";
 import { fileToAvatarImage } from "@/lib/image";
+import { profileCompletion } from "@/lib/profile-completion";
 import { PageHeading } from "@/components/PageHeading";
 import { PointBalance } from "@/components/PointBalance";
+import { ProfileCompletion } from "./ProfileCompletion";
 import type { Mode, Profile, User } from "@/lib/types";
 import { MODE_LABEL, TAG_OPTIONS } from "@/lib/types";
 import type { ProfileField } from "@/lib/profile-fields";
@@ -56,10 +64,33 @@ export function MyPage() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
+  /** 保存時に受け取れたポイント。0 なら何も出さない */
+  const [awarded, setAwarded] = useState(0);
 
   // 隠しファイル入力を「写真を変更」ボタンから開くための参照
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
+
+  // 受け取り済みの充実度の段。バーの目盛りに印を付けるのに使う。
+  //
+  // effect の中で同期的に setState すると React 19 の set-state-in-effect に
+  // 触れるので、更新は .then() の中だけで行う。
+  // 取得に失敗しても getClaimedMilestones が空を返すので、画面は印なしで動く。
+  const [claimed, setClaimed] = useState<ClaimedMilestones>({
+    work: [],
+    romance: [],
+  });
+  const userId = currentUser?.id ?? null;
+  useEffect(() => {
+    if (!userId) return;
+    let alive = true;
+    getClaimedMilestones(userId).then((next) => {
+      if (alive) setClaimed(next);
+    });
+    return () => {
+      alive = false;
+    };
+  }, [userId]);
 
   // 下書きにcurrentUserを取り込むのは「表示するユーザーが変わったとき」だけにする。
   //
@@ -95,6 +126,11 @@ export function MyPage() {
 
   const candidates = TAG_OPTIONS[mode];
   const modeProfile = draft[mode];
+
+  // バーの2層。ポイントの判定に使うのは保存済みのほうだけで、
+  // 下書きのほうは「保存すればここまで伸びる」を見せるためにしか使わない。
+  const savedCompletion = profileCompletion(currentUser ?? draft, mode);
+  const draftCompletion = profileCompletion(draft, mode);
 
   // 経路を持っていない古いデータは、いちばん下の名前から逆引きして復元する。
   // 選択肢に無い部署（ダミーデータなど）は空のままになり、選び直してもらう。
@@ -185,6 +221,7 @@ export function MyPage() {
     setDraft(currentUser);
     setError(null);
     setSaved(false);
+    setAwarded(0);
   };
 
   const handleSave = async () => {
@@ -242,6 +279,7 @@ export function MyPage() {
 
     setSaving(true);
     setError(null);
+    setAwarded(0);
 
     // updateUser成功後にupdateProfileが失敗した場合、ここに戻す値。
     // enabledModesも含むので、「参加ONだけ通って古いプロフィールのまま
@@ -285,15 +323,58 @@ export function MyPage() {
         throw profileError;
       }
 
-      await refreshUser(); // DBから読み直してローカルのcurrentUserも最新化
+      /*
+        充実度の段に届いていたらポイントを受け取る。
+
+        数えるのは「DBに送ったのと同じ内容」。下書きから数えると、
+        保存していない入力でポイントが付いてしまう。trim した3項目だけ
+        差し替えたものを渡す（updateUser に渡した値と揃える）。
+
+        二度目が付かないことは DB 側の主キーが持っているので、
+        画面は届いているかどうかだけを見て毎回呼んでよい。
+      */
+      const savedUser: User = {
+        ...draft,
+        name,
+        department,
+        departmentPath,
+        jobTitle,
+        university: draft.university.trim(),
+      };
+      const percent = profileCompletion(savedUser, mode).percent;
+
+      let claimResult = { claimed: [] as number[], awarded: 0 };
+      try {
+        claimResult = await claimProfileMilestones(mode, percent);
+      } catch (claimError) {
+        // 受け取りに失敗しても保存は成功している。ここで例外を投げると
+        // 「保存できたのにエラー表示」になるので、記録するだけにする。
+        // 段の判定はDB側なので、次に保存したときに取りこぼしを回収できる。
+        console.error("ポイントの受け取りに失敗しました", claimError);
+      }
+      if (claimResult.claimed.length > 0) {
+        setClaimed((prev) => ({
+          ...prev,
+          [mode]: [...prev[mode], ...claimResult.claimed].sort((a, b) => a - b),
+        }));
+      }
+      setAwarded(claimResult.awarded);
+
+      // 残高と保存内容をまとめて読み直す。
+      // ポイントを受け取ったあとに呼ぶので、サイドバーの残高も一度で揃う。
+      await refreshUser();
       // 前後の空白を落とした値で保存したので、入力欄の表示も揃えておく
       setDraft((prev) =>
         prev ? { ...prev, name, department, departmentPath, jobTitle } : prev,
       );
 
       // 保存できたことを一時的に知らせる。3秒で自動的に消す。
+      // ポイントの獲得も同じ枠に出すので、一緒に片付ける。
       setSaved(true);
-      window.setTimeout(() => setSaved(false), 3000);
+      window.setTimeout(() => {
+        setSaved(false);
+        setAwarded(0);
+      }, 3000);
     } catch (e) {
       setError("保存に失敗しました。もう一度お試しください。");
       console.error(e);
@@ -366,6 +447,15 @@ export function MyPage() {
                 保存するまで反映されません
               </p>
             </div>
+
+            <hr className="my-6 border-[var(--line)]" />
+
+            {/* 充実度はモードごとに別々に数える。目盛りの印もモードごと */}
+            <ProfileCompletion
+              saved={savedCompletion}
+              draft={draftCompletion}
+              claimed={claimed[mode]}
+            />
 
             <hr className="my-6 border-[var(--line)]" />
 
@@ -614,6 +704,11 @@ export function MyPage() {
               {saved && !error && (
                 <p className="mb-4 rounded-lg border border-[var(--accent)] bg-[var(--accent-soft)] px-4 py-3 text-sm text-[var(--accent-strong)]">
                   保存しました
+                  {awarded > 0 ? (
+                    <span className="ml-2 font-bold">
+                      ＋{awarded}ポイント獲得！
+                    </span>
+                  ) : null}
                 </p>
               )}
 
