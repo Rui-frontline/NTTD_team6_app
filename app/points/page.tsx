@@ -17,6 +17,7 @@ import {
   syncDailyMissions,
 } from "@/lib/repository";
 import type { PointEvent, PointReward, UserItems } from "@/lib/repository";
+import { POINT_HISTORY_LIMIT } from "@/lib/points";
 import type { DailyProgress, ItemId } from "@/lib/points";
 
 type Tab = "missions" | "shop";
@@ -68,7 +69,7 @@ export default function PointsPage() {
     });
     const [pending, history, owned] = await Promise.all([
       getPendingRewards(id),
-      getPointEvents(id),
+      getPointEvents(id, POINT_HISTORY_LIMIT),
       getUserItems(id),
     ]);
     return { daily, pending, history, owned };

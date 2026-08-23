@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { formatPoints } from "@/components/PointBalance";
-import { pointEventLabel } from "@/lib/points";
+import { POINT_HISTORY_LIMIT, pointEventLabel } from "@/lib/points";
 import type { PointEvent } from "@/lib/repository";
 
 /** 折りたたんでいるときに出す件数。デザイン案は横並びで3件 */
@@ -28,7 +28,11 @@ export function PointHistory({ events }: { events: PointEvent[] }) {
             onClick={() => setExpanded((v) => !v)}
             className="text-xs font-medium text-[var(--accent)] transition-colors hover:text-[var(--accent-strong)]"
           >
-            {expanded ? "閉じる" : `すべて見る（${events.length}件）`} ›
+            {/*
+              「すべて見る」とは書かない。読んでいるのは最新
+              POINT_HISTORY_LIMIT 件までで、それより古いぶんは出ないため。
+            */}
+            {expanded ? "閉じる" : `最新${POINT_HISTORY_LIMIT}件を見る`} ›
           </button>
         ) : null}
       </div>

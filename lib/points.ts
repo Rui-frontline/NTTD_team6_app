@@ -80,6 +80,14 @@ export const ITEMS: Item[] = [
   },
 ];
 
+/**
+ * 履歴を何件まで読むか。
+ *
+ * ボタンの文言（「最新50件を見る」）にも使うので、読む件数と表示が
+ * ずれないよう1箇所に置いている。
+ */
+export const POINT_HISTORY_LIMIT = 50;
+
 /** 今日の進捗。sync_daily_missions() が返すものと同じ形 */
 export type DailyProgress = {
   /** JST の日付 */
