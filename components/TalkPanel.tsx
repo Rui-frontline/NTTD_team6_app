@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { fileToMessageImage, isImageBody } from "@/lib/image";
-import { getMessages, sendMessage } from "@/lib/repository";
+import { blockUser, getMessages, sendMessage } from "@/lib/repository";
 import { useSession } from "@/lib/session";
 import { usePolling } from "@/lib/usePolling";
 import type { MatchSummary, Message, Mode } from "@/lib/types";
@@ -22,6 +22,7 @@ export function TalkPanel({
   onClose,
   onSent,
   onRead,
+  onBlocked,
 }: {
   mode: Mode;
   open: boolean;
@@ -35,8 +36,51 @@ export function TalkPanel({
    * 依存に入るので、毎回作り直すと取得が止まらなくなる）。
    */
   onRead: (matchId: string, readAt: string) => void;
+  /** ブロックが成立したことを知らせる。一覧からこのマッチを消すのは親の仕事 */
+  onBlocked: (matchId: string) => void;
 }) {
+<<<<<<< HEAD
   const isWork = mode === "work";
+=======
+  const { currentUser, mode } = useSession();
+
+  // 確認ダイアログを出している対象の match id。null なら出していない。
+  // 「開いているか」と「誰に対してか」を1つの state にまとめておくと、
+  // 相手が入れ替わったときの取り消しを1か所で書ける。
+  const [confirmingMatchId, setConfirmingMatchId] = useState<string | null>(
+    null,
+  );
+  const [blocking, setBlocking] = useState(false);
+  const [blockError, setBlockError] = useState<string | null>(null);
+
+  // 相手が変わったり、パネルが閉じたりしたら確認を取り消す。
+  // 出しっぱなしにすると、次に開いた別の相手にそのまま適用されかねない。
+  // effect ではなくレンダー中に調整するのは、このファイルの他の箇所と同じ理由。
+  if (
+    confirmingMatchId !== null &&
+    (!open || confirmingMatchId !== summary?.match.id)
+  ) {
+    setConfirmingMatchId(null);
+    setBlockError(null);
+  }
+
+  const handleBlock = useCallback(async () => {
+    if (!currentUser || !summary || blocking) return;
+
+    setBlocking(true);
+    setBlockError(null);
+
+    try {
+      await blockUser(currentUser.id, summary.partner.id, mode);
+      setConfirmingMatchId(null);
+      onBlocked(summary.match.id);
+    } catch (err: unknown) {
+      setBlockError(blockErrorMessage(err));
+    } finally {
+      setBlocking(false);
+    }
+  }, [blocking, currentUser, mode, onBlocked, summary]);
+>>>>>>> main
 
   return (
     <section
@@ -85,6 +129,35 @@ export function TalkPanel({
             >
               {summary.partner.name}
             </span>
+
+            {/*
+              ブロックは恋愛モードだけ。仕事モードでは相手が同僚なので、
+              業務の連絡経路を個人の判断で断てるようにはしない。
+            */}
+            {mode === "romance" ? (
+              <button
+                type="button"
+                onClick={() => setConfirmingMatchId(summary.match.id)}
+                aria-label={`${summary.partner.name}さんをブロックする`}
+                title="ブロック"
+                className="shrink-0 rounded-full p-1.5 text-muted transition-colors hover:bg-background hover:text-accent"
+              >
+                <svg
+                  width="18"
+                  height="18"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.8"
+                  strokeLinecap="round"
+                  aria-hidden="true"
+                >
+                  <circle cx="12" cy="12" r="9" />
+                  <path d="m5.64 5.64 12.72 12.72" />
+                </svg>
+              </button>
+            ) : null}
+
             <button
               type="button"
               onClick={onClose}
@@ -113,10 +186,87 @@ export function TalkPanel({
             onSent={onSent}
             onRead={onRead}
           />
+
+          {/* 確認ダイアログ。パネルの中だけを覆うので、左の一覧は見えたまま */}
+          {confirmingMatchId !== null ? (
+            <div className="absolute inset-0 z-10 flex items-center justify-center bg-black/40 p-6">
+              <div
+                role="dialog"
+                aria-modal="true"
+                aria-label="ブロックの確認"
+                className="w-full max-w-xs rounded-2xl border border-line bg-surface p-5 shadow-lg"
+              >
+                <p className="text-center text-sm font-bold">
+                  {summary.partner.name}さんをブロックしますか？
+                </p>
+                <p className="mt-2 text-xs leading-relaxed text-muted">
+                  ブロックすると、この会話はトーク一覧から消え、探す画面にも表示されなくなります。
+                  相手に通知はされません。
+                </p>
+
+                {blockError ? (
+                  <p className="mt-3 text-xs text-accent">{blockError}</p>
+                ) : null}
+
+                {/*
+                  取り消し（NO）を左、実行（YES）を右に置いている。
+                  消えたら戻せない操作なので、押し慣れた位置に YES を置かない。
+                */}
+                <div className="mt-4 flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setConfirmingMatchId(null)}
+                    disabled={blocking}
+                    className="flex-1 rounded-xl border border-line px-3 py-2 text-sm font-bold transition-colors hover:bg-background disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    NO
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      void handleBlock();
+                    }}
+                    disabled={blocking}
+                    className="flex-1 rounded-xl bg-accent px-3 py-2 text-sm font-bold text-white transition-opacity disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    {blocking ? "処理中" : "YES"}
+                  </button>
+                </div>
+              </div>
+            </div>
+          ) : null}
         </>
       ) : null}
     </section>
   );
+}
+
+/**
+ * ブロックに失敗したときに画面へ出す文言。
+ *
+ * 「ブロックできませんでした」とだけ出すと、原因が分からず手が止まる。
+ * 実際いちばん多いのは supabase/blocks.sql の実行忘れなので、
+ * そのときは推測ではなく、やることをそのまま書く。
+ */
+function blockErrorMessage(err: unknown): string {
+  const code =
+    typeof err === "object" && err !== null && "code" in err
+      ? String((err as { code: unknown }).code)
+      : "";
+
+  // PGRST205: PostgREST がテーブルを見つけられない
+  // 42P01:    PostgreSQL の relation does not exist
+  if (code === "PGRST205" || code === "42P01") {
+    return "ブロックの保存先がまだありません。Supabase の SQL Editor で supabase/blocks.sql を実行してください。";
+  }
+
+  // 42501: RLS で弾かれた。ポリシーか、ログインしているユーザーがずれている
+  if (code === "42501") {
+    return "ブロックの権限がありません。supabase/blocks.sql のポリシーを確認してください。";
+  }
+
+  if (err instanceof Error && err.message) return err.message;
+  return "ブロックできませんでした。";
 }
 
 /** 1つのマッチぶんの会話。state はすべてこの相手に紐づく */

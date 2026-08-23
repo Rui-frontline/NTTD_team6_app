@@ -1,6 +1,8 @@
 import { supabase } from "@/lib/supabase";
 import { isDepartmentComplete, splitDepartmentPath } from "@/lib/departments";
 import { JOB_TITLE_OPTIONS } from "@/lib/profile-fields";
+import type { DailyProgress, ItemId } from "@/lib/points";
+import { MODES } from "@/lib/types";
 import type {
   Board,
   BoardMessage,
@@ -290,7 +292,16 @@ async function getExcludedUserIds(
     .eq("mode", mode)
     .in("type", types);
   if (error) throw error;
-  return new Set((data ?? []).map((r: { to_user_id: string }) => r.to_user_id));
+
+  const excluded = new Set(
+    (data ?? []).map((r: { to_user_id: string }) => r.to_user_id),
+  );
+
+  // ブロックした相手は、いいね／見送りの有無にかかわらず二度と出さない
+  for (const id of await getBlockedUserIds(currentUserId, mode)) {
+    excluded.add(id);
+  }
+  return excluded;
 }
 
 function matchesFilter(user: User, mode: Mode, f: DiscoverFilter): boolean {
@@ -560,6 +571,60 @@ type MatchReadRow = {
   last_read_at: string;
 };
 
+// ───────────────────────── ブロック ─────────────────────────
+
+/**
+ * 相手をブロックする。
+ *
+ * 以後その相手は、自分のトーク一覧にも探す画面にも出てこなくなる。
+ * ブロックしたことは相手には伝わらず、相手の画面は変わらない
+ * （blocks の select を blocker 本人に限っているため。supabase/blocks.sql 参照）。
+ *
+ * supabase/blocks.sql を実行していない環境では失敗する。
+ */
+export async function blockUser(
+  blockerId: string,
+  blockedId: string,
+  mode: Mode,
+): Promise<void> {
+  const { error } = await supabase.from("blocks").insert({
+    blocker_id: blockerId,
+    blocked_id: blockedId,
+    mode,
+  });
+  // すでにブロック済みなら、そのままで目的は達成されている
+  if (error && error.code !== "23505") throw error;
+}
+
+/**
+ * 自分がブロックした相手の ID。
+ *
+ * supabase/blocks.sql をまだ流していない環境ではここが必ず失敗する。
+ * 一覧を丸ごとエラーにすると画面が真っ白になってしまうので、
+ * 警告を出して「ブロック無し」として続ける（match_reads と同じ方針）。
+ */
+async function getBlockedUserIds(
+  userId: string,
+  mode: Mode,
+): Promise<Set<string>> {
+  const { data, error } = await supabase
+    .from("blocks")
+    .select("blocked_id")
+    .eq("blocker_id", userId)
+    .eq("mode", mode);
+
+  if (error) {
+    console.warn(
+      "ブロックの一覧を取得できませんでした。supabase/blocks.sql を実行してください。",
+      error,
+    );
+    return new Set();
+  }
+  return new Set(
+    (data ?? []).map((r: { blocked_id: string }) => r.blocked_id),
+  );
+}
+
 /** トーク画面のマッチ一覧。相手・最新メッセージ・未読件数をまとめて返す */
 export async function getMatches(
   userId: string,
@@ -573,7 +638,15 @@ export async function getMatches(
     .order("created_at", { ascending: false });
   if (error) throw error;
 
-  const matches = (data as MatchRow[]).map(toMatch);
+  const allMatches = (data as MatchRow[]).map(toMatch);
+  if (allMatches.length === 0) return [];
+
+  // ブロックした相手との会話は、この先まとめて無かったことにする。
+  // ここで絞っておけば、相手・メッセージ・既読位置の取得も減る。
+  const blocked = await getBlockedUserIds(userId, mode);
+  const matches = allMatches.filter(
+    (m) => !blocked.has(m.userIds[0] === userId ? m.userIds[1] : m.userIds[0]),
+  );
   if (matches.length === 0) return [];
 
   const partnerIds = matches.map((m) =>
@@ -813,6 +886,258 @@ export async function awardPoints(
   });
   if (error) throw error;
   return (data as number) ?? 0;
+}
+
+/** 受け取り済みの充実度の段。モードごとに分けて返す */
+export type ClaimedMilestones = Record<Mode, number[]>;
+
+/**
+ * 自分が受け取った充実度の段を読む。バーの目盛りに印を付けるために使う。
+ *
+ * 他人のぶんは RLS で読めない（supabase/profile_milestones.sql 参照）。
+ * SQL をまだ流していない環境では空を返し、画面は印なしで動く。
+ * ここで例外にすると、ポイントと関係のないマイページ全体が開かなくなるため。
+ */
+export async function getClaimedMilestones(
+  userId: string,
+): Promise<ClaimedMilestones> {
+  const claimed: ClaimedMilestones = { work: [], romance: [] };
+
+  const { data, error } = await supabase
+    .from("profile_milestones")
+    .select("mode, milestone")
+    .eq("user_id", userId);
+  if (error) {
+    console.error(
+      "受け取り済みの段を取得できませんでした。supabase/profile_milestones.sql を実行してください。",
+      error,
+    );
+    return claimed;
+  }
+
+  for (const row of (data ?? []) as { mode: Mode; milestone: number }[]) {
+    claimed[row.mode]?.push(row.milestone);
+  }
+  for (const mode of MODES) {
+    claimed[mode].sort((a, b) => a - b);
+  }
+  return claimed;
+}
+
+export type ClaimResult = {
+  /** 今回はじめて届いた段。何も無ければ空 */
+  claimed: number[];
+  /** 今回 受け取り箱に入れた額。残高はまだ増えない */
+  awarded: number;
+};
+
+/**
+ * 届いている段のうち、まだ箱に入れていないものを受け取り箱へ入れる。
+ *
+ * ここでは残高は増えない。増えるのはポイント画面で claimPointRewards() を
+ * 呼んだとき。
+ *
+ * 二度目が付かないことは DB 側の主キーが保証している。画面が段を覚えて
+ * おく必要はないので、保存のたびに呼んでよい（届いていなければ何も起きない）。
+ *
+ * percent は lib/profile-completion.ts の profileCompletion() で出した値を、
+ * 「保存した内容」から計算して渡すこと。下書きから渡すと、保存していない
+ * 内容でポイントが付いてしまう。
+ *
+ * supabase/profile_milestones.sql を実行していない環境では失敗する。
+ */
+export async function claimProfileMilestones(
+  mode: Mode,
+  percent: number,
+): Promise<ClaimResult> {
+  const { data, error } = await supabase.rpc("claim_profile_milestones", {
+    p_mode: mode,
+    p_percent: percent,
+  });
+  if (error) throw error;
+
+  const result = (data ?? {}) as Partial<ClaimResult>;
+  return {
+    claimed: result.claimed ?? [],
+    awarded: result.awarded ?? 0,
+  };
+}
+
+// ───────────────────────── 受け取り箱・ミッション・交換 ─────────────────────────
+
+/** ポイントの増減1件。履歴に出す */
+export type PointEvent = {
+  id: string;
+  /** 増減。交換は負数 */
+  amount: number;
+  /** 'profile_50_work' / 'daily_login' / 'exchange_coffee_ticket' など */
+  reason: string;
+  createdAt: string;
+};
+
+type PointEventRow = {
+  id: number;
+  amount: number;
+  reason: string;
+  created_at: string;
+};
+
+/**
+ * ポイントの履歴を新しい順に読む。
+ *
+ * 表示名は reason から画面側で作る（lib/points.ts の pointEventLabel）。
+ * 履歴に文言を保存していないのは、あとから言い回しを直せるようにするため。
+ */
+export async function getPointEvents(
+  userId: string,
+  limit = 50,
+): Promise<PointEvent[]> {
+  const { data, error } = await supabase
+    .from("point_events")
+    .select("id, amount, reason, created_at")
+    .eq("user_id", userId)
+    .order("created_at", { ascending: false })
+    .limit(limit);
+  if (error) throw error;
+
+  return (data as PointEventRow[]).map((row) => ({
+    id: String(row.id),
+    amount: row.amount,
+    reason: row.reason,
+    createdAt: row.created_at,
+  }));
+}
+
+/** 受け取り箱に届いている1件 */
+export type PointReward = {
+  id: string;
+  amount: number;
+  reason: string;
+  /** 受信箱に出す文言。DB が持っている */
+  label: string;
+  createdAt: string;
+};
+
+type PointRewardRow = {
+  id: number;
+  amount: number;
+  reason: string;
+  label: string;
+  created_at: string;
+};
+
+/** 受け取り箱の未受け取りぶんを、届いた順に読む */
+export async function getPendingRewards(
+  userId: string,
+): Promise<PointReward[]> {
+  const { data, error } = await supabase
+    .from("point_rewards")
+    .select("id, amount, reason, label, created_at")
+    .eq("user_id", userId)
+    .is("claimed_at", null)
+    .order("created_at", { ascending: true });
+  if (error) throw error;
+
+  return (data as PointRewardRow[]).map((row) => ({
+    id: String(row.id),
+    amount: row.amount,
+    reason: row.reason,
+    label: row.label,
+    createdAt: row.created_at,
+  }));
+}
+
+export type RewardClaimResult = {
+  /** 受け取った件数 */
+  claimed: number;
+  /** 今回増えたポイント */
+  awarded: number;
+  /** 増やしたあとの残高 */
+  points: number;
+};
+
+/**
+ * 受け取り箱の中身を受け取る。残高に加算され、履歴にも残る。
+ *
+ * ids を省略すると未受け取りをすべて受け取る（まとめて受け取る）。
+ * 二重に受け取れないことは DB 側が保証しているので、押し過ぎても増えない。
+ */
+export async function claimPointRewards(
+  ids?: string[],
+): Promise<RewardClaimResult> {
+  const { data, error } = await supabase.rpc("claim_point_rewards", {
+    p_ids: ids ? ids.map(Number) : null,
+  });
+  if (error) throw error;
+
+  const result = (data ?? {}) as Partial<RewardClaimResult>;
+  return {
+    claimed: result.claimed ?? 0,
+    awarded: result.awarded ?? 0,
+    points: result.points ?? 0,
+  };
+}
+
+/**
+ * 今日のデイリーミッションの進捗を取り、達成済みのものを受け取り箱へ入れる。
+ *
+ * 「読むだけ」ではなく箱入れも行うので、ポイント画面を開いたときに呼ぶ。
+ * 何度呼んでも、同じ日の同じミッションは一度しか箱に入らない。
+ *
+ * 日付の境界（JST 0:00）と達成の判定は DB 側が持つ。端末の時計は使わない。
+ */
+export async function syncDailyMissions(): Promise<DailyProgress> {
+  const { data, error } = await supabase.rpc("sync_daily_missions");
+  if (error) throw error;
+
+  const result = (data ?? {}) as Partial<DailyProgress>;
+  return {
+    date: result.date ?? "",
+    replies: result.replies ?? 0,
+    likes: result.likes ?? 0,
+    achieved: result.achieved ?? [],
+  };
+}
+
+/** 持ち物。交換していない種類は入っていない */
+export type UserItems = Partial<Record<ItemId, number>>;
+
+export async function getUserItems(userId: string): Promise<UserItems> {
+  const { data, error } = await supabase
+    .from("user_items")
+    .select("item, quantity")
+    .eq("user_id", userId);
+  if (error) throw error;
+
+  const items: UserItems = {};
+  for (const row of (data ?? []) as { item: ItemId; quantity: number }[]) {
+    items[row.item] = row.quantity;
+  }
+  return items;
+}
+
+export type ExchangeResult = {
+  item: ItemId;
+  label: string;
+  cost: number;
+  /** 交換したあとの所持数 */
+  quantity: number;
+  /** 引いたあとの残高 */
+  points: number;
+};
+
+/**
+ * ポイントを使ってアイテムを1つ交換する。
+ *
+ * 値段は DB 側が持っている（lib/points.ts の ITEMS は表示用の写し）。
+ * 残高が足りなければ例外になるので、呼ぶ前に画面でも押せないようにしておく。
+ */
+export async function exchangeItem(item: ItemId): Promise<ExchangeResult> {
+  const { data, error } = await supabase.rpc("exchange_item", {
+    p_item: item,
+  });
+  if (error) throw error;
+  return data as ExchangeResult;
 }
 
 // ───────────────────────── 募集掲示板 ─────────────────────────

@@ -395,6 +395,17 @@ function BoardIcon() {
   );
 }
 
+/** 重ねたコイン。ポイントの残高を思わせる形にしている */
+function PointIcon() {
+  return (
+    <svg {...iconProps()}>
+      <ellipse cx="12" cy="7" rx="7" ry="3" />
+      <path d="M5 7v5c0 1.7 3.1 3 7 3s7-1.3 7-3V7" />
+      <path d="M5 12v5c0 1.7 3.1 3 7 3s7-1.3 7-3v-5" />
+    </svg>
+  );
+}
+
 function PersonIcon() {
   return (
     <svg {...iconProps()}>
@@ -409,5 +420,6 @@ const NAV = [
   { href: "/talk", label: "トーク", icon: TalkIcon },
   { href: "/board", label: "募集", icon: BoardIcon },
   { href: "/history", label: "履歴", icon: HistoryIcon },
+  { href: "/points", label: "ポイント", icon: PointIcon },
   { href: "/me", label: "マイページ", icon: PersonIcon },
 ];
