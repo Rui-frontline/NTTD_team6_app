@@ -263,6 +263,21 @@ export function TalkScreen({
                   : prev,
               );
             }}
+            onBlocked={(matchId: string) => {
+              // 次のポーリングを待たずに消す。
+              // getMatches もブロック済みを外して返すので、復活はしない。
+              setResult((prev) =>
+                prev === null
+                  ? prev
+                  : {
+                      ...prev,
+                      matches: prev.matches.filter(
+                        (summary) => summary.match.id !== matchId,
+                      ),
+                    },
+              );
+              setOpen(false);
+            }}
           />
         </div>
       </div>
