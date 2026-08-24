@@ -11,12 +11,57 @@ type Message = {
   timestamp: Date;
 };
 
+type Situation = {
+  id: string;
+  label: string;
+  description: string;
+};
+
+const ROMANCE_SITUATIONS: Situation[] = [
+  {
+    id: "first_date",
+    label: "初デート",
+    description: "初めてのデートでの会話。相手のことを知り、楽しい時間を過ごしましょう",
+  },
+  {
+    id: "second_date",
+    label: "2回目のデート",
+    description: "2回目のデート。前回より距離を縮めて、より深い話をしてみましょう",
+  },
+  {
+    id: "confession",
+    label: "告白",
+    description: "気持ちを伝えるシーン。誠実に、相手の気持ちも考えながら話しましょう",
+  },
+];
+
+const WORK_SITUATIONS: Situation[] = [
+  {
+    id: "business_negotiation",
+    label: "商談",
+    description: "クライアントとの商談。相手のニーズを理解し、提案を進めましょう",
+  },
+  {
+    id: "presentation",
+    label: "プレゼン",
+    description: "社内プレゼン。要点を明確に伝え、質疑応答に対応しましょう",
+  },
+  {
+    id: "report_to_boss",
+    label: "上司への報告",
+    description: "上司への進捗報告。簡潔に状況を説明し、判断を仰ぎましょう",
+  },
+];
+
 export default function AiTalkPage() {
   const router = useRouter();
   const { currentUser, mode } = useSession();
+  const [selectedSituation, setSelectedSituation] = useState<string | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [turnCount, setTurnCount] = useState(0);
+  const [showEvaluation, setShowEvaluation] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // 自動スクロール
@@ -24,9 +69,12 @@ export default function AiTalkPage() {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  // モード変更時にメッセージをクリア
+  // モード変更時にシチュエーション選択とメッセージをリセット
   useEffect(() => {
+    setSelectedSituation(null);
     setMessages([]);
+    setTurnCount(0);
+    setShowEvaluation(false);
   }, [mode]);
 
   if (!currentUser) {
@@ -47,6 +95,10 @@ export default function AiTalkPage() {
     setInput("");
     setIsLoading(true);
 
+    // ターンカウントを増やす
+    const newTurnCount = turnCount + 1;
+    setTurnCount(newTurnCount);
+
     try {
       // TODO: ここにClaude API呼び出しを実装
       // 以下はダミーの応答です。実際のAPI呼び出しに置き換えてください。
@@ -56,6 +108,7 @@ export default function AiTalkPage() {
       //   headers: { "Content-Type": "application/json" },
       //   body: JSON.stringify({
       //     mode,
+      //     situation: selectedSituation,
       //     messages: [...messages, userMessage].map(m => ({
       //       role: m.role,
       //       content: m.content,
@@ -82,6 +135,11 @@ export default function AiTalkPage() {
       };
 
       setMessages((prev) => [...prev, aiMessage]);
+
+      // 10ターンに達したら評価画面を表示
+      if (newTurnCount >= 10) {
+        setShowEvaluation(true);
+      }
     } catch (error) {
       console.error("AI応答エラー:", error);
       alert("メッセージの送信に失敗しました");
@@ -97,20 +155,32 @@ export default function AiTalkPage() {
     }
   };
 
+  const getSituations = () => {
+    return mode === "romance" ? ROMANCE_SITUATIONS : WORK_SITUATIONS;
+  };
+
   const getTitle = () => {
-    return mode === "romance" ? "異性との会話練習" : "ビジネス会話練習";
+    if (!selectedSituation) {
+      return mode === "romance" ? "異性との会話練習" : "ビジネス会話練習";
+    }
+    const situation = getSituations().find((s) => s.id === selectedSituation);
+    return situation?.label || "";
   };
 
   const getDescription = () => {
-    return mode === "romance"
-      ? "AIと会話して、デートやカジュアルな会話の練習をしましょう"
-      : "AIと会話して、ビジネスシーンでのコミュニケーションを練習しましょう";
+    if (!selectedSituation) {
+      return mode === "romance"
+        ? "シチュエーションを選んで会話練習を始めましょう"
+        : "シチュエーションを選んで会話練習を始めましょう";
+    }
+    const situation = getSituations().find((s) => s.id === selectedSituation);
+    return situation?.description || "";
   };
 
   // 恋愛モードがOFFの場合の表示
   if (mode === "romance" && !currentUser.enabledModes.includes("romance")) {
     return (
-      <div className="flex h-screen w-full flex-col">
+      <div className="flex h-full w-full flex-col -mx-6 -my-8">
         <header className="flex h-16 shrink-0 items-center justify-between border-b border-[var(--card-border)] bg-[var(--card-bg)] px-6">
           <h1 className="text-lg font-bold text-[var(--fg)]">AI対話練習</h1>
           <ModeSwitch />
@@ -152,101 +222,265 @@ export default function AiTalkPage() {
     );
   }
 
-  return (
-    <div className="flex h-screen w-full flex-col">
-      {/* ヘッダー */}
-      <header className="flex h-16 shrink-0 items-center justify-between border-b border-[var(--card-border)] bg-[var(--card-bg)] px-6">
-        <div>
-          <h1 className="text-lg font-bold text-[var(--fg)]">{getTitle()}</h1>
-          <p className="text-sm text-[var(--fg-muted)]">{getDescription()}</p>
+  // シチュエーション選択画面
+  if (!selectedSituation) {
+    return (
+      <div
+        className={`flex h-full w-full flex-col ${
+          mode === "work"
+            ? "-mx-5 -my-7 sm:-mx-8 sm:-my-8 lg:-mx-12 lg:-my-10 xl:-mx-14"
+            : "-mx-6 -my-8"
+        }`}
+      >
+        <header className="flex h-16 shrink-0 items-center justify-between border-b border-[var(--card-border)] bg-[var(--card-bg)] px-6">
+          <div>
+            <h1 className="text-lg font-bold text-[var(--fg)]">{getTitle()}</h1>
+            <p className="text-sm text-[var(--fg-muted)]">{getDescription()}</p>
+          </div>
+          <ModeSwitch />
+        </header>
+        <div className="flex-1 overflow-y-auto bg-[var(--bg)] p-6">
+          <div className="mx-auto max-w-4xl">
+            <h2 className="mb-6 text-xl font-bold text-[var(--fg)]">
+              シチュエーションを選択してください
+            </h2>
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+              {getSituations().map((situation) => (
+                <button
+                  key={situation.id}
+                  onClick={() => setSelectedSituation(situation.id)}
+                  className="rounded-xl border border-[var(--card-border)] bg-[var(--card-bg)] p-6 text-left transition-all hover:border-[var(--primary)] hover:shadow-lg"
+                >
+                  <h3 className="mb-2 text-lg font-bold text-[var(--fg)]">
+                    {situation.label}
+                  </h3>
+                  <p className="text-sm text-[var(--fg-muted)]">
+                    {situation.description}
+                  </p>
+                </button>
+              ))}
+            </div>
+          </div>
         </div>
-        <ModeSwitch />
+      </div>
+    );
+  }
+
+  // 評価画面
+  if (showEvaluation) {
+    return (
+      <div
+        className={`flex h-full w-full flex-col ${
+          mode === "work"
+            ? "-mx-5 -my-7 sm:-mx-8 sm:-my-8 lg:-mx-12 lg:-my-10 xl:-mx-14"
+            : "-mx-6 -my-8"
+        }`}
+      >
+        <header className="flex h-16 shrink-0 items-center justify-between border-b border-[var(--card-border)] bg-[var(--card-bg)] px-6">
+          <h1 className="text-lg font-bold text-[var(--fg)]">会話練習完了！</h1>
+          <ModeSwitch />
+        </header>
+        <div className="flex-1 overflow-y-auto bg-[var(--bg)] p-6">
+          <div className="mx-auto max-w-3xl space-y-6">
+            {/* 総合評価 */}
+            <div className="rounded-xl border border-[var(--card-border)] bg-[var(--card-bg)] p-6">
+              <h2 className="mb-4 text-xl font-bold text-[var(--fg)]">
+                総合評価
+              </h2>
+              <div className="mb-4 text-center">
+                <div className="text-5xl font-bold text-[var(--primary)]">
+                  85点
+                </div>
+                <p className="mt-2 text-sm text-[var(--fg-muted)]">
+                  ※Claude APIを実装すると実際の評価が表示されます
+                </p>
+              </div>
+            </div>
+
+            {/* スコア詳細 */}
+            <div className="rounded-xl border border-[var(--card-border)] bg-[var(--card-bg)] p-6">
+              <h2 className="mb-4 text-xl font-bold text-[var(--fg)]">
+                スコア詳細
+              </h2>
+              <div className="space-y-3">
+                {[
+                  { label: "質問力", score: 90 },
+                  { label: "共感力", score: 85 },
+                  { label: "会話の広げ方", score: 80 },
+                ].map((item) => (
+                  <div key={item.label}>
+                    <div className="mb-1 flex justify-between text-sm">
+                      <span className="text-[var(--fg)]">{item.label}</span>
+                      <span className="font-bold text-[var(--fg)]">
+                        {item.score}点
+                      </span>
+                    </div>
+                    <div className="h-2 overflow-hidden rounded-full bg-[var(--bg)]">
+                      <div
+                        className="h-full bg-[var(--primary)]"
+                        style={{ width: `${item.score}%` }}
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* 良かった点 */}
+            <div className="rounded-xl border border-[var(--card-border)] bg-[var(--card-bg)] p-6">
+              <h2 className="mb-4 text-xl font-bold text-[var(--fg)]">
+                良かった点
+              </h2>
+              <ul className="space-y-2 text-sm text-[var(--fg)]">
+                <li>• 相手の話をよく聞いて質問していました</li>
+                <li>• 自然な会話の流れを作れていました</li>
+                <li>• 共感を示す表現が適切でした</li>
+              </ul>
+            </div>
+
+            {/* 改善点 */}
+            <div className="rounded-xl border border-[var(--card-border)] bg-[var(--card-bg)] p-6">
+              <h2 className="mb-4 text-xl font-bold text-[var(--fg)]">
+                改善できる点
+              </h2>
+              <ul className="space-y-2 text-sm text-[var(--fg)]">
+                <li>• より具体的な質問をすると会話が深まります</li>
+                <li>• 自己開示を増やすと親密度が上がります</li>
+              </ul>
+            </div>
+
+            {/* アクションボタン */}
+            <div className="flex gap-4">
+              <button
+                onClick={() => {
+                  setMessages([]);
+                  setTurnCount(0);
+                  setShowEvaluation(false);
+                }}
+                className="flex-1 rounded-xl bg-[var(--primary)] py-3 font-bold text-white transition-opacity hover:opacity-90"
+              >
+                もう一度練習する
+              </button>
+              <button
+                onClick={() => {
+                  setSelectedSituation(null);
+                  setMessages([]);
+                  setTurnCount(0);
+                  setShowEvaluation(false);
+                }}
+                className="flex-1 rounded-xl border border-[var(--card-border)] bg-[var(--card-bg)] py-3 font-bold text-[var(--fg)] transition-colors hover:bg-[var(--bg)]"
+              >
+                シチュエーション変更
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div
+      className={`flex h-full w-full flex-col ${
+        mode === "work"
+          ? "-mx-5 -my-7 sm:-mx-8 sm:-my-8 lg:-mx-12 lg:-my-10 xl:-mx-14"
+          : "-mx-6 -my-8"
+      }`}
+    >
+      {/* ヘッダー */}
+      <header className="flex shrink-0 items-center justify-between border-b border-[var(--card-border)] bg-[var(--card-bg)] px-4 py-2">
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-3">
+            <h1 className="text-base font-bold text-[var(--fg)]">{getTitle()}</h1>
+            <span className="shrink-0 rounded-full bg-[var(--bg)] px-3 py-1 text-xs font-bold text-[var(--fg)]">
+              {turnCount}/10
+            </span>
+          </div>
+        </div>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => {
+              setSelectedSituation(null);
+              setMessages([]);
+              setTurnCount(0);
+              setShowEvaluation(false);
+            }}
+            className="rounded-lg border border-[var(--card-border)] bg-[var(--card-bg)] px-3 py-1.5 text-xs font-bold text-[var(--fg)] transition-colors hover:bg-[var(--bg)]"
+          >
+            変更
+          </button>
+          <ModeSwitch />
+        </div>
       </header>
 
       {/* メッセージエリア */}
-      <div className="flex-1 overflow-y-auto bg-[var(--bg)] p-6">
-        {messages.length === 0 ? (
-          <div className="flex h-full items-center justify-center">
-            <div className="text-center">
-              <p className="text-lg font-bold text-[var(--fg)]">
-                会話を始めましょう
-              </p>
-              <p className="mt-2 text-sm text-[var(--fg-muted)]">
-                下のメッセージ欄から話しかけてください
-              </p>
-            </div>
-          </div>
-        ) : (
-          <div className="mx-auto max-w-3xl space-y-4">
-            {messages.map((message, index) => (
+      <div className="flex-1 min-h-0 overflow-y-auto bg-[var(--bg)] px-4 py-2">
+        <div className="mx-auto max-w-3xl space-y-3">
+          {messages.map((message, index) => (
+            <div
+              key={index}
+              className={`flex ${
+                message.role === "user" ? "justify-end" : "justify-start"
+              }`}
+            >
               <div
-                key={index}
-                className={`flex ${
-                  message.role === "user" ? "justify-end" : "justify-start"
+                className={`max-w-[70%] rounded-2xl px-4 py-2.5 ${
+                  message.role === "user"
+                    ? "bg-black text-white"
+                    : "bg-[var(--card-bg)] text-[var(--fg)] border border-[var(--card-border)]"
                 }`}
               >
-                <div
-                  className={`max-w-[70%] rounded-2xl px-4 py-3 ${
+                <p className="whitespace-pre-wrap break-words">
+                  {message.content}
+                </p>
+                <p
+                  className={`mt-1 text-xs ${
                     message.role === "user"
-                      ? "bg-black text-white"
-                      : "bg-[var(--card-bg)] text-[var(--fg)] border border-[var(--card-border)]"
+                      ? "text-white/70"
+                      : "text-[var(--fg-muted)]"
                   }`}
                 >
-                  <p className="whitespace-pre-wrap break-words">
-                    {message.content}
-                  </p>
-                  <p
-                    className={`mt-1 text-xs ${
-                      message.role === "user"
-                        ? "text-white/70"
-                        : "text-[var(--fg-muted)]"
-                    }`}
-                  >
-                    {message.timestamp.toLocaleTimeString("ja-JP", {
-                      hour: "2-digit",
-                      minute: "2-digit",
-                    })}
-                  </p>
-                </div>
+                  {message.timestamp.toLocaleTimeString("ja-JP", {
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  })}
+                </p>
               </div>
-            ))}
-            {isLoading && (
-              <div className="flex justify-start">
-                <div className="max-w-[70%] rounded-2xl border border-[var(--card-border)] bg-[var(--card-bg)] px-4 py-3">
-                  <p className="text-[var(--fg-muted)]">入力中...</p>
-                </div>
+            </div>
+          ))}
+          {isLoading && (
+            <div className="flex justify-start">
+              <div className="max-w-[70%] rounded-2xl border border-[var(--card-border)] bg-[var(--card-bg)] px-4 py-2.5">
+                <p className="text-[var(--fg-muted)]">入力中...</p>
               </div>
-            )}
-            <div ref={messagesEndRef} />
-          </div>
-        )}
+            </div>
+          )}
+          <div ref={messagesEndRef} />
+        </div>
       </div>
 
       {/* 入力エリア */}
-      <div className="shrink-0 border-t border-[var(--card-border)] bg-[var(--card-bg)] p-4">
+      <div className="shrink-0 border-t border-[var(--card-border)] bg-[var(--card-bg)] px-4 py-2">
         <div className="mx-auto max-w-3xl">
           <div className="flex gap-2">
             <textarea
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={handleKeyDown}
-              placeholder="メッセージを入力..."
+              placeholder="メッセージを入力... (Enter: 送信 / Shift+Enter: 改行)"
               disabled={isLoading}
               rows={1}
-              className="flex-1 resize-none rounded-xl border border-[var(--card-border)] bg-[var(--bg)] px-4 py-3 text-[var(--fg)] placeholder-[var(--fg-muted)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)] disabled:opacity-50"
-              style={{ minHeight: "48px", maxHeight: "120px" }}
+              className="flex-1 resize-none rounded-xl border border-[var(--card-border)] bg-[var(--bg)] px-3 py-2 text-[var(--fg)] placeholder-[var(--fg-muted)] focus:outline-none focus:ring-2 focus:ring-black disabled:opacity-50"
+              style={{ minHeight: "40px", maxHeight: "80px" }}
             />
             <button
               onClick={handleSend}
               disabled={!input.trim() || isLoading}
-              className="rounded-xl bg-[var(--primary)] px-6 py-3 font-bold text-white transition-opacity hover:opacity-90 disabled:opacity-50"
+              className="rounded-xl bg-black px-5 py-2 font-bold text-white transition-opacity hover:opacity-80 disabled:opacity-50"
             >
               送信
             </button>
           </div>
-          <p className="mt-2 text-xs text-[var(--fg-muted)]">
-            Enter で送信、Shift + Enter で改行
-          </p>
         </div>
       </div>
     </div>
