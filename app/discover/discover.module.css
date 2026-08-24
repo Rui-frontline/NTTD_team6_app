@@ -121,8 +121,18 @@
 
 .workProfileGrid {
   display: grid !important;
-  /* 恋愛モードの写真 300px / プロフィール 600px と外寸を揃える。 */
-  grid-template-columns: 300px 600px;
+  /*
+    恋愛モードの写真 300px / プロフィール 600px と外寸を揃える。
+    ただし固定幅ではなく 1:2 の比率で持ち、幅が足りない画面では
+    2列のまま縮める。max-width で 300 + 32 + 600 に頭打ちにしているので、
+    広い画面での見た目は固定幅のときと変わらない。
+
+    固定幅だと、幅が 932px を1pxでも下回った時点で1列に落ちる。
+    ノートPC（1280px 幅）はサイドバー 240px と本文余白を引くと
+    ちょうど足りず、モニターでは2列・ノートでは1列という差になっていた。
+  */
+  grid-template-columns: minmax(0, 1fr) minmax(0, 2fr);
+  max-width: 932px;
   align-items: stretch !important;
   justify-content: center !important;
   width: 100%;
@@ -511,8 +521,11 @@
   max-width: 650px;
 }
 
-/* 240px の仕事用サイドバーと本文余白を含めても、固定幅カードがはみ出さない位置で1列化する。 */
-@media (max-width: 1284px) {
+/*
+  ここまで狭いと、2列にしても写真が 210px ほどまで痩せて見づらい。
+  幅が足りないから折るのではなく、読めなくなる手前で折る。
+*/
+@media (max-width: 1023px) {
   .workProfileGrid {
     grid-template-columns: minmax(0, 1fr);
     grid-auto-rows: 1fr;

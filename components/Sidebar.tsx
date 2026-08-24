@@ -19,14 +19,33 @@ export function Sidebar() {
   const { mode } = useSession();
 
   if (mode === "romance") {
+    const romanceWidth = open ? "w-40" : "w-16";
     return (
-      <aside
-        className={[
-          "sticky top-0 flex h-screen shrink-0 flex-col border-r transition-[width] duration-200",
-          "bg-[var(--sidebar-bg)] border-[var(--sidebar-border)] text-[var(--sidebar-fg)]",
-          open ? "w-40" : "w-16",
-        ].join(" ")}
-      >
+      <>
+        {/*
+          仕事モードと同じ「場所取り＋ fixed」の作り。
+          見た目（幅・ロゴの位置・畳み方）は変えていない。
+
+          もとは sticky と h-screen だったが、面の高さが画面ぶんしか無く、
+          本文がそれより長い画面では下端に塗り残しができる。仕事モードで
+          クリーム色の帯として見つかったのと同じ構造で、恋愛モードは
+          面がほぼ白、地も淡いピンクなので見えにくかっただけ。
+        */}
+        <div
+          aria-hidden
+          className={[
+            "shrink-0 transition-[width] duration-200",
+            romanceWidth,
+          ].join(" ")}
+        />
+
+        <aside
+          className={[
+            "fixed inset-y-0 left-0 flex flex-col border-r transition-[width] duration-200",
+            "bg-[var(--sidebar-bg)] border-[var(--sidebar-border)] text-[var(--sidebar-fg)]",
+            romanceWidth,
+          ].join(" ")}
+        >
         <nav className="flex flex-col gap-1 p-3">
         {/* ナビの一番上。押すと畳んでアイコンだけになる */}
         <button
@@ -84,21 +103,51 @@ export function Sidebar() {
             ) : null}
           </Link>
         </div>
-      </aside>
+        </aside>
+      </>
     );
   }
 
+  // 幅の指定は「場所取り」と「実体」の両方で使うので、ここで作って共有する
+  const widthClass = [
+    mobileOpen ? "w-60" : "w-16",
+    open ? "sm:w-60" : "sm:w-16",
+  ].join(" ");
+
   return (
-    <aside
-      className={[
-        "work-sidebar sticky top-0 h-dvh self-start shrink-0 border-r transition-[width] duration-200",
-        "bg-[var(--sidebar-bg)] border-[var(--sidebar-border)] text-[var(--sidebar-fg)]",
-        mobileOpen ? "w-60" : "w-16",
-        open ? "sm:w-60" : "sm:w-16",
-      ].join(" ")}
-    >
-      {/* 紺色の aside 全体を固定し、メニュー内にはスクロール領域を作らない。 */}
-      <div className="flex h-full flex-col overflow-y-clip">
+    <>
+      {/*
+        場所取り。実体は下の fixed な aside なので、本文が下に潜り込まないよう
+        同じ幅の空き箱を flex の並びに置いておく。
+      */}
+      <div
+        aria-hidden
+        className={["shrink-0 transition-[width] duration-200", widthClass].join(
+          " ",
+        )}
+      />
+
+      {/*
+        紺色の面は fixed で画面の上下いっぱいに貼る。
+
+        はじめは sticky と h-dvh でやっていたが、面の高さが画面ぶんしか無く、
+        本文がそれより長い画面（探す）では左下にクリーム色が 48px 残っていた。
+        次に高さ指定を外して flex の伸長に任せたが、それでも伸びなかった
+        （親は 1041px あるのに aside は 993px のまま。原因は特定できていない）。
+
+        fixed なら親の高さにもスクロール量にも左右されず、常に画面を覆う。
+        z-index は付けない。本文側が z-10 なので、モーダルは今までどおり
+        サイドバーの上に出る。
+
+        メニュー内にスクロール領域は作らない（overflow-y-clip）。
+      */}
+      <aside
+        className={[
+          "work-sidebar fixed inset-y-0 left-0 flex flex-col overflow-y-clip border-r transition-[width] duration-200",
+          "bg-[var(--sidebar-bg)] border-[var(--sidebar-border)] text-[var(--sidebar-fg)]",
+          widthClass,
+        ].join(" ")}
+      >
       <div className="flex min-h-24 items-center border-b border-[var(--sidebar-active-border)] px-3 sm:hidden">
         {mobileOpen ? (
           <>
@@ -199,8 +248,8 @@ export function Sidebar() {
           <AccountCard open={open} />
         </div>
       </div>
-      </div>
-    </aside>
+      </aside>
+    </>
   );
 }
 
