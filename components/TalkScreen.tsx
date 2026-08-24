@@ -201,22 +201,48 @@ export function TalkScreen({
     return <p className="text-sm text-muted">読み込み中…</p>;
   }
 
+  const isWork = mode === "work";
+
   return (
-    <div className="flex h-[calc(100dvh-9rem)] flex-col gap-3">
+    <div
+      className={
+        isWork
+          ? "mx-auto flex h-[calc(100dvh-9rem)] w-full max-w-6xl flex-col gap-3"
+          : "flex h-[calc(100dvh-9rem)] flex-col gap-3"
+      }
+    >
       <PageHeading
         title="トーク"
         description="マッチした人との会話を確認できます。"
       />
 
       {error ? (
-        <p className="rounded-lg bg-accent-soft px-3 py-2 text-sm text-accent">
+        <p
+          className={
+            isWork
+              ? "rounded-[14px] border border-[rgba(20,30,50,0.08)] bg-[#EEF1F6] px-4 py-3 text-sm text-[#0C2340]"
+              : "rounded-lg bg-accent-soft px-3 py-2 text-sm text-accent"
+          }
+        >
           {error}
         </p>
       ) : null}
 
       {/* overflow-hidden が、画面外に逃がしたパネルのはみ出しを隠している */}
-      <div className="flex flex-1 overflow-hidden rounded-lg border border-line bg-surface">
-        <div className="w-72 shrink-0 overflow-y-auto border-r border-line">
+      <div
+        className={
+          isWork
+            ? "relative flex flex-1 overflow-hidden rounded-[20px] border border-[rgba(20,30,50,0.08)] bg-[#FFFDFC] shadow-[0_10px_30px_rgba(15,25,40,0.06)]"
+            : "flex flex-1 overflow-hidden rounded-lg border border-line bg-surface"
+        }
+      >
+        <div
+          className={
+            isWork
+              ? "w-full shrink-0 overflow-y-auto bg-[rgba(255,253,252,0.78)] md:w-72 md:border-r md:border-[#EAE6DF]"
+              : "w-72 shrink-0 overflow-y-auto border-r border-line"
+          }
+        >
           {loading ? (
             <p className="px-4 py-3 text-sm text-muted">読み込み中…</p>
           ) : matches.length === 0 ? (
@@ -225,6 +251,7 @@ export function TalkScreen({
             </p>
           ) : (
             <MatchList
+              mode={mode}
               matches={matches}
               selectedMatchId={selected?.match.id ?? null}
               onSelect={(summary) => {
@@ -236,8 +263,18 @@ export function TalkScreen({
         </div>
 
         {/* パネルは absolute で置くので、その基準になる relative をここに付ける */}
-        <div className="relative flex-1">
+        <div
+          className={
+            isWork
+              ? [
+                  "absolute inset-0 z-10 min-w-0 bg-[#FFFDFC] md:pointer-events-auto md:relative md:z-auto md:flex-1",
+                  open ? "pointer-events-auto" : "pointer-events-none",
+                ].join(" ")
+              : "relative flex-1"
+          }
+        >
           <TalkPanel
+            mode={mode}
             open={open}
             summary={selected}
             onClose={() => setOpen(false)}

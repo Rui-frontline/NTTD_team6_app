@@ -15,7 +15,7 @@ const PUBLIC_PATHS = ["/login", "/signup"];
  * ログイン・新規登録以外の画面は、未ログインなら /login に飛ばす。
  */
 export function AppShell({ children }: { children: React.ReactNode }) {
-  const { isAuthenticated, loading } = useSession();
+  const { isAuthenticated, loading, mode } = useSession();
   const pathname = usePathname();
   const router = useRouter();
 
@@ -53,12 +53,26 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   // 飾りは本文より前に置き、本文側に relative z-10 を付けて上に重ねる。
   // こうすると飾りが文字の下に回り、読みにくくならない。
   return (
-    <div className="flex min-h-screen">
+    <div
+      className={
+        mode === "work"
+          ? "work-app-shell relative flex min-h-screen isolate"
+          : "flex min-h-screen"
+      }
+    >
       <RomanceDecor />
       <Sidebar />
       <div className="relative z-10 flex min-h-screen min-w-0 flex-1 flex-col">
         <Header />
-        <main className="flex-1 px-6 py-8">{children}</main>
+        <main
+          className={
+            mode === "work"
+              ? "flex-1 px-5 py-7 sm:px-8 sm:py-8 lg:px-12 lg:py-10 xl:px-14"
+              : "flex-1 px-6 py-8"
+          }
+        >
+          {children}
+        </main>
       </div>
     </div>
   );

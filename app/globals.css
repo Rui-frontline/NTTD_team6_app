@@ -164,6 +164,218 @@
 }
 
 /*
+  仕事モードのプレミアムテーマ。
+  認証後の AppShell にだけ変数を上書きし、恋愛モードと認証画面には影響させない。
+*/
+:root[data-mode="work"] .work-app-shell {
+  --background: #f8f5ef;
+  --surface: #fffdfc;
+  --foreground: #16283d;
+  --muted: #687482;
+  --line: rgba(20, 30, 50, 0.09);
+
+  --accent: #0c2340;
+  --accent-strong: #081c30;
+  --accent-soft: #eef1f6;
+
+  --bubble-other-bg: #f4f1eb;
+  --badge-bg: #b99a63;
+  --badge-fg: #ffffff;
+
+  --sidebar-bg: #0c2340;
+  --sidebar-border: rgba(201, 169, 110, 0.22);
+  --sidebar-fg: #fffdf8;
+  --sidebar-muted: #bcc5cf;
+  --sidebar-hover-bg: rgba(255, 255, 255, 0.055);
+  --sidebar-active-bg: rgba(255, 255, 255, 0.085);
+  --sidebar-active-fg: #ffffff;
+  --sidebar-active-border: rgba(214, 183, 122, 0.4);
+  --logo-ring-a: #d6b77a;
+  --logo-ring-b: #fff8ea;
+
+  --header-bg: rgba(251, 249, 245, 0.9);
+  --header-border: rgba(20, 30, 50, 0.08);
+
+  --tab-shell-bg: rgba(255, 253, 252, 0.82);
+  --tab-shell-border: #ded9d0;
+  --tab-idle-fg: #66717f;
+  --tab-active-bg: linear-gradient(135deg, #102a43, #081c30);
+  --tab-active-fg: #ffffff;
+  --tab-radius: 0.75rem;
+
+  --action-gradient: linear-gradient(135deg, #102a43, #081c30);
+  --action-shadow: 0 10px 25px rgba(12, 35, 64, 0.2);
+  --card-shadow: 0 12px 40px rgba(15, 30, 50, 0.08);
+  --soft-shadow: 0 4px 14px rgba(20, 30, 50, 0.07);
+
+  --work-gold: #c9a96e;
+  --work-focus: #806126;
+  --work-gold-soft: rgba(201, 169, 110, 0.16);
+  --work-input-bg: #fbfaf7;
+  --work-serif: "Yu Mincho", "Hiragino Mincho ProN", "Noto Serif JP",
+    Georgia, serif;
+
+  background: var(--background);
+  color: var(--foreground);
+}
+
+:root[data-mode="work"] .work-app-shell::before,
+:root[data-mode="work"] .work-app-shell::after {
+  position: fixed;
+  z-index: 0;
+  border-radius: 999px;
+  content: "";
+  pointer-events: none;
+  filter: blur(8px);
+}
+
+:root[data-mode="work"] .work-app-shell::before {
+  top: -15rem;
+  right: -8rem;
+  width: 40rem;
+  height: 36rem;
+  background: radial-gradient(
+    ellipse,
+    rgba(120, 130, 255, 0.075),
+    rgba(180, 160, 255, 0.035) 49%,
+    transparent 72%
+  );
+}
+
+:root[data-mode="work"] .work-app-shell::after {
+  right: 5%;
+  bottom: -19rem;
+  width: 44rem;
+  height: 37rem;
+  background: radial-gradient(
+    ellipse,
+    rgba(115, 145, 180, 0.06),
+    rgba(180, 160, 255, 0.035) 52%,
+    transparent 74%
+  );
+}
+
+:root[data-mode="work"] .work-header {
+  backdrop-filter: blur(18px);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.55);
+}
+
+:root[data-mode="work"] .work-sidebar {
+  background-image: linear-gradient(180deg, #102a43 0%, #081c30 100%);
+  box-shadow: 10px 0 34px rgba(12, 35, 64, 0.08);
+}
+
+:root[data-mode="work"] .work-mode-switch {
+  backdrop-filter: blur(14px);
+}
+
+:root[data-mode="work"] .work-brand-name,
+:root[data-mode="work"]
+  .work-app-shell
+  h1.text-2xl.font-extrabold.tracking-tight {
+  font-family: var(--work-serif);
+}
+
+:root[data-mode="work"]
+  .work-app-shell
+  h1.text-2xl.font-extrabold.tracking-tight {
+  color: var(--accent);
+  font-size: clamp(1.75rem, 2vw, 2rem);
+  font-weight: 600;
+  line-height: 1.25;
+  letter-spacing: 0.02em;
+}
+
+:root[data-mode="work"]
+  .work-app-shell
+  h1.text-2xl.font-extrabold.tracking-tight::before {
+  display: block;
+  width: 2.5rem;
+  height: 1px;
+  margin-bottom: 0.75rem;
+  background: var(--work-gold);
+  content: "";
+}
+
+:root[data-mode="work"]
+  .work-app-shell
+  h1.text-2xl.font-extrabold.tracking-tight
+  + p {
+  margin-top: 0.5rem;
+  line-height: 1.7;
+}
+
+:root[data-mode="work"] .work-app-shell input,
+:root[data-mode="work"] .work-app-shell select,
+:root[data-mode="work"] .work-app-shell textarea {
+  background-color: var(--work-input-bg);
+}
+
+:root[data-mode="work"] .work-app-shell button:focus-visible,
+:root[data-mode="work"] .work-app-shell a:focus-visible,
+:root[data-mode="work"] .work-app-shell input:focus-visible,
+:root[data-mode="work"] .work-app-shell select:focus-visible,
+:root[data-mode="work"] .work-app-shell textarea:focus-visible {
+  outline: 2px solid var(--work-focus);
+  outline-offset: 3px;
+}
+
+:root[data-mode="work"] .work-app-shell ::selection {
+  background: var(--work-gold-soft);
+  color: var(--accent-strong);
+}
+
+/* 仕事モードの各画面から使える、面積と役割を限定した共通表現。 */
+:root[data-mode="work"] .work-app-shell .premium-card {
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  background: var(--surface);
+  box-shadow: var(--card-shadow);
+}
+
+:root[data-mode="work"] .work-app-shell .premium-control {
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--surface);
+  box-shadow: var(--soft-shadow);
+}
+
+:root[data-mode="work"] .work-app-shell .premium-primary {
+  border-radius: 14px;
+  background: var(--action-gradient);
+  box-shadow: var(--action-shadow);
+  transition: transform 180ms ease, box-shadow 180ms ease, opacity 180ms ease;
+}
+
+:root[data-mode="work"] .work-app-shell .premium-primary:hover:not(:disabled) {
+  transform: translateY(-2px);
+}
+
+:root[data-mode="work"] .work-app-shell .premium-outline {
+  border: 1px solid var(--accent);
+  border-radius: 14px;
+  background: var(--surface);
+  color: var(--accent);
+  transition: background-color 180ms ease, color 180ms ease,
+    transform 180ms ease;
+}
+
+:root[data-mode="work"] .work-app-shell .premium-outline:hover:not(:disabled) {
+  background: var(--accent);
+  color: #ffffff;
+}
+
+@media (max-width: 760px) {
+  :root[data-mode="work"] .work-app-shell::before {
+    right: -25rem;
+  }
+
+  :root[data-mode="work"] .work-app-shell::after {
+    right: -27rem;
+  }
+}
+
+/*
   ダークモードには追従しない。
   デザイン案がクリーム／淡いピンクのライト前提で作られており、
   OS の設定で本文だけ暗くなると配色がちぐはぐになるため。
