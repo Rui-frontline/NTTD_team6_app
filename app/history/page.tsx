@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { PageHeading } from "@/components/PageHeading";
+import { ProfileDetailModal } from "@/components/profile/ProfileDetailModal";
 import { useSession } from "@/lib/session";
 import {
   getReactionHistory,
@@ -22,6 +23,11 @@ export default function HistoryPage() {
   const { currentUser, mode } = useSession();
   const isWork = mode === "work";
   const [reactions, setReactions] = useState<ReactionWithUser[]>([]);
+  /**
+   * プロフィールを開いている相手。null なら開いていない。
+   * いいね一覧とブロック中一覧で同じ state を使い回す。
+   */
+  const [profileUser, setProfileUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
   // 履歴を取得
@@ -217,8 +223,25 @@ export default function HistoryPage() {
                 </span>
               </div>
 
-              {/* アイコンと名前 */}
-              <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+              {/*
+                アイコンと名前だけをボタンにする。行全体を押せるようにすると、
+                右の取り消しボタンまで巻き込んでしまう。
+              */}
+              <button
+                type="button"
+                onClick={() => setProfileUser(reaction.user)}
+                title={`${reaction.user.name}さんのプロフィールを見る`}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "12px",
+                  padding: 0,
+                  background: "none",
+                  border: "none",
+                  cursor: "pointer",
+                  textAlign: "left",
+                }}
+              >
                 <img
                   className={isWork ? styles.workAvatar : undefined}
                   src={reaction.user.avatarUrl}
@@ -246,7 +269,7 @@ export default function HistoryPage() {
                       : `${reaction.user.department} / ${reaction.user.jobTitle}`}
                   </p>
                 </div>
-              </div>
+              </button>
 
               {/* 取り消しボタン */}
               <button
@@ -329,8 +352,22 @@ export default function HistoryPage() {
                     </span>
                   </div>
 
-                  {/* アイコンと名前 */}
-                  <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                  {/* 解除ボタンを巻き込まないよう、ここも名前だけをボタンにする */}
+                  <button
+                    type="button"
+                    onClick={() => setProfileUser(item.user)}
+                    title={`${item.user.name}さんのプロフィールを見る`}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "12px",
+                      padding: 0,
+                      background: "none",
+                      border: "none",
+                      cursor: "pointer",
+                      textAlign: "left",
+                    }}
+                  >
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
                       src={item.user.avatarUrl}
@@ -352,7 +389,7 @@ export default function HistoryPage() {
                           : item.user.jobTitle}
                       </p>
                     </div>
-                  </div>
+                  </button>
 
                   {/* ブロック解除ボタン */}
                   <button
@@ -469,6 +506,19 @@ export default function HistoryPage() {
             </div>
           </div>
         </div>
+      ) : null}
+
+      {/*
+        相手のプロフィール。ブロック解除の確認と同じ層（z-index 50）に出るので、
+        両方が同時に開かないようにしている。確認を出しているあいだは
+        プロフィールを出さない。
+      */}
+      {profileUser && !unblockTarget ? (
+        <ProfileDetailModal
+          user={profileUser}
+          mode={mode}
+          onClose={() => setProfileUser(null)}
+        />
       ) : null}
     </div>
   );

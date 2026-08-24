@@ -5,6 +5,7 @@ import { fileToMessageImage, isImageBody } from "@/lib/image";
 import { blockUser, getMessages, sendMessage } from "@/lib/repository";
 import { useSession } from "@/lib/session";
 import { usePolling } from "@/lib/usePolling";
+import { ProfileDetailModal } from "@/components/profile/ProfileDetailModal";
 import type { MatchSummary, Message, Mode } from "@/lib/types";
 
 /**
@@ -50,6 +51,8 @@ export function TalkPanel({
   );
   const [blocking, setBlocking] = useState(false);
   const [blockError, setBlockError] = useState<string | null>(null);
+  /** 相手のプロフィールを開いているか。ヘッダーの名前から開く */
+  const [showProfile, setShowProfile] = useState(false);
 
   // 相手が変わったり、パネルが閉じたりしたら確認を取り消す。
   // 出しっぱなしにすると、次に開いた別の相手にそのまま適用されかねない。
@@ -104,28 +107,45 @@ export function TalkPanel({
                 : "flex items-center gap-3 border-b border-line px-4 py-3"
             }
           >
-            {/* ダミー画像なので next/image ではなく img を使う */}
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={summary.partner.avatarUrl}
-              alt=""
-              width={32}
-              height={32}
-              className={
+            {/*
+              アイコンと名前だけをボタンにして、プロフィールを開く。
+              ヘッダー全体を押せるようにすると、右のブロックボタンまで
+              巻き込んでしまう。
+            */}
+            <button
+              type="button"
+              onClick={() => setShowProfile(true)}
+              title={`${summary.partner.name}さんのプロフィールを見る`}
+              className={[
+                "flex min-w-0 flex-1 items-center gap-3 rounded-lg text-left transition-colors",
                 isWork
-                  ? "h-9 w-9 shrink-0 rounded-full border border-[rgba(201,169,110,0.32)] bg-[#EEF1F6] object-cover p-0.5"
-                  : "h-8 w-8 shrink-0 rounded-full bg-accent-soft"
-              }
-            />
-            <span
-              className={
-                isWork
-                  ? "min-w-0 flex-1 truncate text-base font-semibold text-[#0C2340]"
-                  : "min-w-0 flex-1 truncate text-sm font-bold"
-              }
+                  ? "px-1 py-0.5 hover:bg-[rgba(12,35,64,0.04)]"
+                  : "px-1 py-0.5 hover:bg-background",
+              ].join(" ")}
             >
-              {summary.partner.name}
-            </span>
+              {/* ダミー画像なので next/image ではなく img を使う */}
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={summary.partner.avatarUrl}
+                alt=""
+                width={32}
+                height={32}
+                className={
+                  isWork
+                    ? "h-9 w-9 shrink-0 rounded-full border border-[rgba(201,169,110,0.32)] bg-[#EEF1F6] object-cover p-0.5"
+                    : "h-8 w-8 shrink-0 rounded-full bg-accent-soft"
+                }
+              />
+              <span
+                className={
+                  isWork
+                    ? "min-w-0 flex-1 truncate text-base font-semibold text-[#0C2340]"
+                    : "min-w-0 flex-1 truncate text-sm font-bold"
+                }
+              >
+                {summary.partner.name}
+              </span>
+            </button>
 
             {/*
               ブロックは恋愛モードだけ。仕事モードでは相手が同僚なので、
@@ -231,6 +251,18 @@ export function TalkPanel({
                 </div>
               </div>
             </div>
+          ) : null}
+
+          {/*
+            プロフィールは fixed で画面全体に出す。パネルの中に閉じ込めると
+            スライドインの枠に収まってしまい、内容が読みにくい。
+          */}
+          {showProfile ? (
+            <ProfileDetailModal
+              user={summary.partner}
+              mode={mode}
+              onClose={() => setShowProfile(false)}
+            />
           ) : null}
         </>
       ) : null}
