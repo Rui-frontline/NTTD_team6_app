@@ -62,6 +62,12 @@ export default function AiTalkPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [turnCount, setTurnCount] = useState(0);
   const [showEvaluation, setShowEvaluation] = useState(false);
+  const [evaluation, setEvaluation] = useState<{
+    overall_score: number;
+    scores: { [key: string]: number };
+    good_points: string[];
+    improvements: string[];
+  } | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // 自動スクロール
@@ -75,6 +81,7 @@ export default function AiTalkPage() {
     setMessages([]);
     setTurnCount(0);
     setShowEvaluation(false);
+    setEvaluation(null);
   }, [mode]);
 
   if (!currentUser) {
@@ -100,44 +107,49 @@ export default function AiTalkPage() {
     setTurnCount(newTurnCount);
 
     try {
-      // TODO: ここにClaude API呼び出しを実装
-      // 以下はダミーの応答です。実際のAPI呼び出しに置き換えてください。
+      const response = await fetch("/api/ai-talk", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          situation: selectedSituation,
+          messages: [...messages, userMessage].map((m) => ({
+            role: m.role,
+            content: m.content,
+          })),
+        }),
+      });
 
-      // const response = await fetch("/api/ai-talk", {
-      //   method: "POST",
-      //   headers: { "Content-Type": "application/json" },
-      //   body: JSON.stringify({
-      //     mode,
-      //     situation: selectedSituation,
-      //     messages: [...messages, userMessage].map(m => ({
-      //       role: m.role,
-      //       content: m.content,
-      //     })),
-      //   }),
-      // });
+      if (!response.ok) {
+        throw new Error("API request failed");
+      }
 
-      // const data = await response.json();
-      // const aiMessage: Message = {
-      //   role: "assistant",
-      //   content: data.content,
-      //   timestamp: new Date(),
-      // };
-
-      // ダミーの応答（実装時に削除してください）
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+      const data = await response.json();
       const aiMessage: Message = {
         role: "assistant",
-        content:
-          mode === "romance"
-            ? "こんにちは！楽しくお話ししましょう。（※これはダミーの応答です。Claude APIを実装してください）"
-            : "お疲れ様です。ビジネスについてお話しましょう。（※これはダミーの応答です。Claude APIを実装してください）",
+        content: data.content,
         timestamp: new Date(),
       };
 
       setMessages((prev) => [...prev, aiMessage]);
 
-      // 10ターンに達したら評価画面を表示
+      // 10ターンに達したら評価を取得
       if (newTurnCount >= 10) {
+        const evalResponse = await fetch("/api/ai-talk/evaluate", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            messages: [...messages, userMessage, aiMessage].map((m) => ({
+              role: m.role,
+              content: m.content,
+            })),
+          }),
+        });
+
+        if (evalResponse.ok) {
+          const evalData = await evalResponse.json();
+          setEvaluation(evalData);
+        }
+
         setShowEvaluation(true);
       }
     } catch (error) {
@@ -289,65 +301,70 @@ export default function AiTalkPage() {
               </h2>
               <div className="mb-4 text-center">
                 <div className="text-5xl font-bold text-[var(--primary)]">
-                  85点
+                  {evaluation?.overall_score ?? "..."}点
                 </div>
-                <p className="mt-2 text-sm text-[var(--fg-muted)]">
-                  ※Claude APIを実装すると実際の評価が表示されます
-                </p>
+                {!evaluation && (
+                  <p className="mt-2 text-sm text-[var(--fg-muted)]">
+                    評価を取得中...
+                  </p>
+                )}
               </div>
             </div>
 
             {/* スコア詳細 */}
-            <div className="rounded-xl border border-[var(--card-border)] bg-[var(--card-bg)] p-6">
-              <h2 className="mb-4 text-xl font-bold text-[var(--fg)]">
-                スコア詳細
-              </h2>
-              <div className="space-y-3">
-                {[
-                  { label: "質問力", score: 90 },
-                  { label: "共感力", score: 85 },
-                  { label: "会話の広げ方", score: 80 },
-                ].map((item) => (
-                  <div key={item.label}>
-                    <div className="mb-1 flex justify-between text-sm">
-                      <span className="text-[var(--fg)]">{item.label}</span>
-                      <span className="font-bold text-[var(--fg)]">
-                        {item.score}点
-                      </span>
+            {evaluation && (
+              <div className="rounded-xl border border-[var(--card-border)] bg-[var(--card-bg)] p-6">
+                <h2 className="mb-4 text-xl font-bold text-[var(--fg)]">
+                  スコア詳細
+                </h2>
+                <div className="space-y-3">
+                  {Object.entries(evaluation.scores).map(([label, score]) => (
+                    <div key={label}>
+                      <div className="mb-1 flex justify-between text-sm">
+                        <span className="text-[var(--fg)]">{label}</span>
+                        <span className="font-bold text-[var(--fg)]">
+                          {score}点
+                        </span>
+                      </div>
+                      <div className="h-2 overflow-hidden rounded-full bg-[var(--bg)]">
+                        <div
+                          className="h-full bg-[var(--primary)]"
+                          style={{ width: `${score}%` }}
+                        />
+                      </div>
                     </div>
-                    <div className="h-2 overflow-hidden rounded-full bg-[var(--bg)]">
-                      <div
-                        className="h-full bg-[var(--primary)]"
-                        style={{ width: `${item.score}%` }}
-                      />
-                    </div>
-                  </div>
-                ))}
+                  ))}
+                </div>
               </div>
-            </div>
+            )}
 
             {/* 良かった点 */}
-            <div className="rounded-xl border border-[var(--card-border)] bg-[var(--card-bg)] p-6">
-              <h2 className="mb-4 text-xl font-bold text-[var(--fg)]">
-                良かった点
-              </h2>
-              <ul className="space-y-2 text-sm text-[var(--fg)]">
-                <li>• 相手の話をよく聞いて質問していました</li>
-                <li>• 自然な会話の流れを作れていました</li>
-                <li>• 共感を示す表現が適切でした</li>
-              </ul>
-            </div>
+            {evaluation && evaluation.good_points.length > 0 && (
+              <div className="rounded-xl border border-[var(--card-border)] bg-[var(--card-bg)] p-6">
+                <h2 className="mb-4 text-xl font-bold text-[var(--fg)]">
+                  良かった点
+                </h2>
+                <ul className="space-y-2 text-sm text-[var(--fg)]">
+                  {evaluation.good_points.map((point, index) => (
+                    <li key={index}>• {point}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
 
             {/* 改善点 */}
-            <div className="rounded-xl border border-[var(--card-border)] bg-[var(--card-bg)] p-6">
-              <h2 className="mb-4 text-xl font-bold text-[var(--fg)]">
-                改善できる点
-              </h2>
-              <ul className="space-y-2 text-sm text-[var(--fg)]">
-                <li>• より具体的な質問をすると会話が深まります</li>
-                <li>• 自己開示を増やすと親密度が上がります</li>
-              </ul>
-            </div>
+            {evaluation && evaluation.improvements.length > 0 && (
+              <div className="rounded-xl border border-[var(--card-border)] bg-[var(--card-bg)] p-6">
+                <h2 className="mb-4 text-xl font-bold text-[var(--fg)]">
+                  改善できる点
+                </h2>
+                <ul className="space-y-2 text-sm text-[var(--fg)]">
+                  {evaluation.improvements.map((point, index) => (
+                    <li key={index}>• {point}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
 
             {/* アクションボタン */}
             <div className="flex gap-4">
@@ -356,8 +373,9 @@ export default function AiTalkPage() {
                   setMessages([]);
                   setTurnCount(0);
                   setShowEvaluation(false);
+                  setEvaluation(null);
                 }}
-                className="flex-1 rounded-xl bg-[var(--primary)] py-3 font-bold text-white transition-opacity hover:opacity-90"
+                className="flex-1 rounded-xl bg-black py-3 font-bold text-white transition-opacity hover:opacity-80"
               >
                 もう一度練習する
               </button>
@@ -367,6 +385,7 @@ export default function AiTalkPage() {
                   setMessages([]);
                   setTurnCount(0);
                   setShowEvaluation(false);
+                  setEvaluation(null);
                 }}
                 className="flex-1 rounded-xl border border-[var(--card-border)] bg-[var(--card-bg)] py-3 font-bold text-[var(--fg)] transition-colors hover:bg-[var(--bg)]"
               >
@@ -404,6 +423,7 @@ export default function AiTalkPage() {
               setMessages([]);
               setTurnCount(0);
               setShowEvaluation(false);
+              setEvaluation(null);
             }}
             className="rounded-lg border border-[var(--card-border)] bg-[var(--card-bg)] px-3 py-1.5 text-xs font-bold text-[var(--fg)] transition-colors hover:bg-[var(--bg)]"
           >
