@@ -623,6 +623,73 @@ async function getBlockedUserIds(
   );
 }
 
+/** ブロックした相手と、ブロックした日時。履歴画面の一覧に使う */
+export type BlockedUser = {
+  user: User;
+  /** ブロックした日時（ISO文字列） */
+  createdAt: string;
+};
+
+/**
+ * 自分がブロックした相手の一覧。新しい順。
+ *
+ * 相手の情報は1回の問い合わせでまとめて取る（1人ずつ getUser を呼ばない）。
+ */
+export async function getBlockedUsers(
+  userId: string,
+  mode: Mode,
+): Promise<BlockedUser[]> {
+  const { data, error } = await supabase
+    .from("blocks")
+    .select("blocked_id, created_at")
+    .eq("blocker_id", userId)
+    .eq("mode", mode)
+    .order("created_at", { ascending: false });
+  if (error) throw error;
+
+  const rows = (data ?? []) as { blocked_id: string; created_at: string }[];
+  if (rows.length === 0) return [];
+
+  const { data: userRows, error: userError } = await supabase
+    .from("users")
+    .select(USER_SELECT)
+    .in(
+      "id",
+      rows.map((r) => r.blocked_id),
+    );
+  if (userError) throw userError;
+
+  const users = new Map(
+    (userRows as UserRow[]).map((row) => [row.id, toUser(row)]),
+  );
+
+  // 退会などで相手が消えている行は、出しようがないので落とす
+  return rows
+    .map((row) => {
+      const user = users.get(row.blocked_id);
+      return user ? { user, createdAt: row.created_at } : null;
+    })
+    .filter((b): b is BlockedUser => b !== null);
+}
+
+/**
+ * ブロックを解除する。
+ * 解除すると、その相手はまた探す画面に出てくるようになる。
+ */
+export async function unblockUser(
+  blockerId: string,
+  blockedId: string,
+  mode: Mode,
+): Promise<void> {
+  const { error } = await supabase
+    .from("blocks")
+    .delete()
+    .eq("blocker_id", blockerId)
+    .eq("blocked_id", blockedId)
+    .eq("mode", mode);
+  if (error) throw error;
+}
+
 /** トーク画面のマッチ一覧。相手・最新メッセージ・未読件数をまとめて返す */
 export async function getMatches(
   userId: string,
