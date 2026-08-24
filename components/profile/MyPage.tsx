@@ -1,11 +1,19 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useSession } from "@/lib/session";
-import { updateProfile, updateUser } from "@/lib/repository";
+import {
+  claimProfileMilestones,
+  getClaimedMilestones,
+  updateProfile,
+  updateUser,
+} from "@/lib/repository";
+import type { ClaimedMilestones } from "@/lib/repository";
 import { fileToAvatarImage } from "@/lib/image";
+import { profileCompletion } from "@/lib/profile-completion";
 import { PageHeading } from "@/components/PageHeading";
 import { PointBalance } from "@/components/PointBalance";
+import { ProfileCompletion } from "./ProfileCompletion";
 import type { Mode, Profile, User } from "@/lib/types";
 import { MODE_LABEL, TAG_OPTIONS } from "@/lib/types";
 import type { ProfileField } from "@/lib/profile-fields";
@@ -28,6 +36,7 @@ import {
   NumberSelect,
   Select,
   TextInput,
+  WORK_INPUT_CLASS,
 } from "./fields";
 import { TagPicker } from "./TagPicker";
 
@@ -56,10 +65,33 @@ export function MyPage() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
+  /** 保存時に受け取れたポイント。0 なら何も出さない */
+  const [awarded, setAwarded] = useState(0);
 
   // 隠しファイル入力を「写真を変更」ボタンから開くための参照
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
+
+  // 受け取り済みの充実度の段。バーの目盛りに印を付けるのに使う。
+  //
+  // effect の中で同期的に setState すると React 19 の set-state-in-effect に
+  // 触れるので、更新は .then() の中だけで行う。
+  // 取得に失敗しても getClaimedMilestones が空を返すので、画面は印なしで動く。
+  const [claimed, setClaimed] = useState<ClaimedMilestones>({
+    work: [],
+    romance: [],
+  });
+  const userId = currentUser?.id ?? null;
+  useEffect(() => {
+    if (!userId) return;
+    let alive = true;
+    getClaimedMilestones(userId).then((next) => {
+      if (alive) setClaimed(next);
+    });
+    return () => {
+      alive = false;
+    };
+  }, [userId]);
 
   // 下書きにcurrentUserを取り込むのは「表示するユーザーが変わったとき」だけにする。
   //
@@ -95,6 +127,13 @@ export function MyPage() {
 
   const candidates = TAG_OPTIONS[mode];
   const modeProfile = draft[mode];
+  const isWork = mode === "work";
+  const inputClassName = isWork ? WORK_INPUT_CLASS : INPUT_CLASS;
+
+  // バーの2層。ポイントの判定に使うのは保存済みのほうだけで、
+  // 下書きのほうは「保存すればここまで伸びる」を見せるためにしか使わない。
+  const savedCompletion = profileCompletion(currentUser ?? draft, mode);
+  const draftCompletion = profileCompletion(draft, mode);
 
   // 経路を持っていない古いデータは、いちばん下の名前から逆引きして復元する。
   // 選択肢に無い部署（ダミーデータなど）は空のままになり、選び直してもらう。
@@ -143,6 +182,7 @@ export function MyPage() {
         field={field}
         profile={modeProfile}
         onChange={updateModeProfile}
+        controlClassName={inputClassName}
       />
     );
   };
@@ -185,6 +225,7 @@ export function MyPage() {
     setDraft(currentUser);
     setError(null);
     setSaved(false);
+    setAwarded(0);
   };
 
   const handleSave = async () => {
@@ -242,6 +283,7 @@ export function MyPage() {
 
     setSaving(true);
     setError(null);
+    setAwarded(0);
 
     // updateUser成功後にupdateProfileが失敗した場合、ここに戻す値。
     // enabledModesも含むので、「参加ONだけ通って古いプロフィールのまま
@@ -285,15 +327,58 @@ export function MyPage() {
         throw profileError;
       }
 
-      await refreshUser(); // DBから読み直してローカルのcurrentUserも最新化
+      /*
+        充実度の段に届いていたらポイントを受け取る。
+
+        数えるのは「DBに送ったのと同じ内容」。下書きから数えると、
+        保存していない入力でポイントが付いてしまう。trim した3項目だけ
+        差し替えたものを渡す（updateUser に渡した値と揃える）。
+
+        二度目が付かないことは DB 側の主キーが持っているので、
+        画面は届いているかどうかだけを見て毎回呼んでよい。
+      */
+      const savedUser: User = {
+        ...draft,
+        name,
+        department,
+        departmentPath,
+        jobTitle,
+        university: draft.university.trim(),
+      };
+      const percent = profileCompletion(savedUser, mode).percent;
+
+      let claimResult = { claimed: [] as number[], awarded: 0 };
+      try {
+        claimResult = await claimProfileMilestones(mode, percent);
+      } catch (claimError) {
+        // 受け取りに失敗しても保存は成功している。ここで例外を投げると
+        // 「保存できたのにエラー表示」になるので、記録するだけにする。
+        // 段の判定はDB側なので、次に保存したときに取りこぼしを回収できる。
+        console.error("ポイントの受け取りに失敗しました", claimError);
+      }
+      if (claimResult.claimed.length > 0) {
+        setClaimed((prev) => ({
+          ...prev,
+          [mode]: [...prev[mode], ...claimResult.claimed].sort((a, b) => a - b),
+        }));
+      }
+      setAwarded(claimResult.awarded);
+
+      // 残高と保存内容をまとめて読み直す。
+      // ポイントを受け取ったあとに呼ぶので、サイドバーの残高も一度で揃う。
+      await refreshUser();
       // 前後の空白を落とした値で保存したので、入力欄の表示も揃えておく
       setDraft((prev) =>
         prev ? { ...prev, name, department, departmentPath, jobTitle } : prev,
       );
 
       // 保存できたことを一時的に知らせる。3秒で自動的に消す。
+      // ポイントの獲得も同じ枠に出すので、一緒に片付ける。
       setSaved(true);
-      window.setTimeout(() => setSaved(false), 3000);
+      window.setTimeout(() => {
+        setSaved(false);
+        setAwarded(0);
+      }, 3000);
     } catch (e) {
       setError("保存に失敗しました。もう一度お試しください。");
       console.error(e);
@@ -323,9 +408,21 @@ export function MyPage() {
         */}
         <div className="grid items-start gap-6 lg:grid-cols-[19rem_minmax(0,1fr)]">
           {/* ── 左：写真とポイント ───────────────────────── */}
-          <aside className="rounded-2xl border border-[var(--line)] bg-[var(--surface)] p-6 shadow-[var(--soft-shadow)] lg:sticky lg:top-6">
+          <aside
+            className={
+              isWork
+                ? "rounded-[20px] border border-[rgba(20,30,50,0.08)] bg-[#FFFDFC] p-6 shadow-[0_10px_30px_rgba(15,25,40,0.06)] lg:sticky lg:top-6"
+                : "rounded-2xl border border-[var(--line)] bg-[var(--surface)] p-6 shadow-[var(--soft-shadow)] lg:sticky lg:top-6"
+            }
+          >
             <div className="flex flex-col items-center text-center">
-              <div className="h-32 w-32 overflow-hidden rounded-full bg-[var(--accent)]">
+              <div
+                className={
+                  isWork
+                    ? "h-32 w-32 overflow-hidden rounded-full border-[3px] border-[rgba(201,169,110,0.55)] bg-[#0C2340] p-1 shadow-[0_6px_18px_rgba(12,35,64,0.12)]"
+                    : "h-32 w-32 overflow-hidden rounded-full bg-[var(--accent)]"
+                }
+              >
                 {draft.avatarUrl ? (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img
@@ -341,7 +438,15 @@ export function MyPage() {
                 )}
               </div>
 
-              <p className="mt-4 text-xl font-bold">{draft.name || "名前未設定"}</p>
+              <p
+                className={
+                  isWork
+                    ? "mt-4 text-xl font-semibold tracking-wide text-[#0C2340]"
+                    : "mt-4 text-xl font-bold"
+                }
+              >
+                {draft.name || "名前未設定"}
+              </p>
               <p className="mt-1 text-sm text-[var(--muted)]">
                 {draft.department || "会社・部署未設定"}
               </p>
@@ -357,7 +462,11 @@ export function MyPage() {
                 type="button"
                 onClick={() => fileInputRef.current?.click()}
                 disabled={uploadingAvatar}
-                className="mt-4 inline-flex items-center gap-2 rounded-full border border-[var(--line)] px-4 py-2 text-sm text-[var(--foreground)] transition-colors hover:border-[var(--accent)] hover:text-[var(--accent-strong)] disabled:opacity-60"
+                className={
+                  isWork
+                    ? "mt-4 inline-flex items-center gap-2 rounded-[14px] border border-[#DED9D0] bg-[#FFFDFC] px-4 py-2 text-sm text-[#0C2340] transition-colors hover:border-[#0C2340] hover:bg-[#F8F5EF] disabled:opacity-60"
+                    : "mt-4 inline-flex items-center gap-2 rounded-full border border-[var(--line)] px-4 py-2 text-sm text-[var(--foreground)] transition-colors hover:border-[var(--accent)] hover:text-[var(--accent-strong)] disabled:opacity-60"
+                }
               >
                 <CameraIcon />
                 {uploadingAvatar ? "アップロード中..." : "写真を変更"}
@@ -369,9 +478,20 @@ export function MyPage() {
 
             <hr className="my-6 border-[var(--line)]" />
 
+            {/* 充実度はモードごとに別々に数える。目盛りの印もモードごと */}
+            <ProfileCompletion
+              saved={savedCompletion}
+              draft={draftCompletion}
+              claimed={claimed[mode]}
+            />
+
+            <hr className="my-6 border-[var(--line)]" />
+
             <div className="flex items-center justify-between">
               <span className="text-sm font-medium">保有ポイント</span>
-              <PointBalance className="text-[var(--accent)]" />
+              <PointBalance
+                className={isWork ? "text-[#806126]" : "text-[var(--accent)]"}
+              />
             </div>
 
             <hr className="my-6 border-[var(--line)]" />
@@ -386,6 +506,7 @@ export function MyPage() {
               <div className="flex items-center justify-between gap-3">
                 <span className="text-sm font-medium">このモードに参加する</span>
                 <Switch
+                  isWork={isWork}
                   checked={isParticipating}
                   onChange={toggleParticipate}
                 />
@@ -397,7 +518,13 @@ export function MyPage() {
           </aside>
 
           {/* ── 右：プロフィールの記入 ───────────────────── */}
-          <div className="divide-y divide-[var(--line)] overflow-hidden rounded-2xl border border-[var(--line)] bg-[var(--surface)] shadow-[var(--soft-shadow)]">
+          <div
+            className={
+              isWork
+                ? "divide-y divide-[#EAE6DF] overflow-hidden rounded-[20px] border border-[rgba(20,30,50,0.08)] bg-[#FFFDFC] shadow-[0_10px_30px_rgba(15,25,40,0.06)]"
+                : "divide-y divide-[var(--line)] overflow-hidden rounded-2xl border border-[var(--line)] bg-[var(--surface)] shadow-[var(--soft-shadow)]"
+            }
+          >
             <Section
               number="01"
               title="基本情報"
@@ -411,7 +538,7 @@ export function MyPage() {
                     type="text"
                     value={draft.name}
                     onChange={(e) => updateCommon("name", e.target.value)}
-                    className={INPUT_CLASS}
+                    className={inputClassName}
                   />
                 </Field>
 
@@ -424,7 +551,7 @@ export function MyPage() {
                   <select
                     value={AGE_OPTIONS.includes(draft.age) ? draft.age : ""}
                     onChange={(e) => updateCommon("age", Number(e.target.value))}
-                    className={INPUT_CLASS}
+                    className={inputClassName}
                   >
                     {/* 登録前のデータなどで範囲外の値が入っていたとき用 */}
                     {AGE_OPTIONS.includes(draft.age) ? null : (
@@ -445,6 +572,7 @@ export function MyPage() {
                     value={jobTitleInOptions ? draft.jobTitle : UNSET}
                     options={JOB_TITLE_OPTIONS}
                     onChange={(v) => updateCommon("jobTitle", v)}
+                    className={inputClassName}
                   />
                   {/* 選択肢に無い値が登録済みのときは、黙って消さずに知らせる */}
                   {!jobTitleInOptions && draft.jobTitle ? (
@@ -463,11 +591,13 @@ export function MyPage() {
                         value={draft[field.key]}
                         options={field.options}
                         onChange={(v) => updateCommon(field.key, v)}
+                        className={inputClassName}
                       />
                     ) : (
                       <TextInput
                         value={draft[field.key]}
                         onChange={(v) => updateCommon(field.key, v)}
+                        className={inputClassName}
                       />
                     )}
                   </Field>
@@ -478,6 +608,7 @@ export function MyPage() {
                   <DepartmentPicker
                     parts={departmentParts}
                     fallback={draft.department}
+                    controlClassName={inputClassName}
                     onChange={(parts) => {
                       // 表示と絞り込みで使うのはいちばん下の名前だけ。
                       // 経路は選び直すときの復元にだけ使うので、別に持つ。
@@ -498,6 +629,7 @@ export function MyPage() {
                     節の見出しは共通と出ているので、ここだけ印を付けて断る。
                   */}
                   <ToggleRow
+                    isWork={isWork}
                     className="mt-3"
                     title="会社・部署を表示する"
                     description="OFFにするとプロフィールから部署を隠します"
@@ -521,7 +653,7 @@ export function MyPage() {
                   value={modeProfile.bio}
                   onChange={(e) => updateModeProfile({ bio: e.target.value })}
                   rows={4}
-                  className={INPUT_CLASS + " resize-none"}
+                  className={inputClassName + " resize-none"}
                 />
               </Field>
             </Section>
@@ -534,6 +666,7 @@ export function MyPage() {
               mode={mode}
             >
               <TagPicker
+                mode={mode}
                 candidates={candidates}
                 selected={modeProfile.tags}
                 onChange={(tags) => updateModeProfile({ tags })}
@@ -599,6 +732,7 @@ export function MyPage() {
                       field={field}
                       profile={modeProfile}
                       onChange={updateModeProfile}
+                      controlClassName={inputClassName}
                     />
                   ))}
                 </div>
@@ -612,8 +746,23 @@ export function MyPage() {
                 </p>
               )}
               {saved && !error && (
-                <p className="mb-4 rounded-lg border border-[var(--accent)] bg-[var(--accent-soft)] px-4 py-3 text-sm text-[var(--accent-strong)]">
+                <p
+                  className={
+                    isWork
+                      ? "mb-4 rounded-[14px] border border-[rgba(201,169,110,0.38)] bg-[rgba(201,169,110,0.1)] px-4 py-3 text-sm text-[#0C2340]"
+                      : "mb-4 rounded-lg border border-[var(--accent)] bg-[var(--accent-soft)] px-4 py-3 text-sm text-[var(--accent-strong)]"
+                  }
+                >
                   保存しました
+                  {/*
+                    残高はここでは増えない。届いたぶんは受け取り箱に入り、
+                    ポイント画面で受け取ったときに増える。
+                  */}
+                  {awarded > 0 ? (
+                    <span className="ml-2 font-bold">
+                      ＋{awarded}ポイントを受け取り箱に届けました
+                    </span>
+                  ) : null}
                 </p>
               )}
 
@@ -637,7 +786,11 @@ export function MyPage() {
                   type="button"
                   onClick={handleCancel}
                   disabled={uploadingAvatar}
-                  className="rounded-lg border border-[var(--line)] px-6 py-2.5 text-sm font-medium text-[var(--foreground)] transition-colors hover:bg-[var(--accent-soft)] disabled:cursor-not-allowed disabled:opacity-60"
+                  className={
+                    isWork
+                      ? "rounded-[14px] border border-[#DED9D0] bg-[#FFFDFC] px-6 py-2.5 text-sm font-medium text-[#0C2340] transition-colors hover:bg-[#F4F1EB] disabled:cursor-not-allowed disabled:opacity-60"
+                      : "rounded-lg border border-[var(--line)] px-6 py-2.5 text-sm font-medium text-[var(--foreground)] transition-colors hover:bg-[var(--accent-soft)] disabled:cursor-not-allowed disabled:opacity-60"
+                  }
                 >
                   キャンセル
                 </button>
@@ -645,7 +798,11 @@ export function MyPage() {
                   type="button"
                   onClick={handleSave}
                   disabled={uploadingAvatar}
-                  className="rounded-lg bg-[var(--accent)] px-6 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-[var(--accent-strong)] disabled:cursor-not-allowed disabled:opacity-60"
+                  className={
+                    isWork
+                      ? "rounded-[14px] bg-[#0C2340] px-6 py-2.5 text-sm font-semibold text-white shadow-[0_8px_20px_rgba(12,35,64,0.18)] transition-[transform,box-shadow,background-color,opacity] hover:-translate-y-0.5 hover:bg-[#081C30] hover:shadow-[0_10px_24px_rgba(12,35,64,0.22)] disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:translate-y-0"
+                      : "rounded-lg bg-[var(--accent)] px-6 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-[var(--accent-strong)] disabled:cursor-not-allowed disabled:opacity-60"
+                  }
                 >
                   {saving ? "保存中..." : "変更を保存"}
                 </button>
@@ -688,14 +845,19 @@ function ScopeBadge({
   className?: string;
 }) {
   const shared = scope === "shared";
+  const isWork = mode === "work";
   return (
     <span
       className={[
         "inline-flex shrink-0 items-center gap-1.5 rounded-full border px-2.5 py-1",
         "text-[11px] font-medium leading-none",
-        shared
-          ? "border-[var(--line)] text-[var(--muted)]"
-          : "border-[var(--line)] bg-[var(--accent-soft)] text-[var(--accent-strong)]",
+        isWork
+          ? shared
+            ? "border-[#DED9D0] bg-[#FBFAF7] text-[var(--muted)]"
+            : "border-[#DCE3EC] bg-[#EEF1F6] text-[#31415A]"
+          : shared
+            ? "border-[var(--line)] text-[var(--muted)]"
+            : "border-[var(--line)] bg-[var(--accent-soft)] text-[var(--accent-strong)]",
         className,
       ].join(" ")}
     >
@@ -704,7 +866,13 @@ function ScopeBadge({
         aria-hidden
         className={[
           "h-1.5 w-1.5 rounded-full",
-          shared ? "bg-[var(--muted)]" : "bg-[var(--accent)]",
+          isWork
+            ? shared
+              ? "bg-[var(--muted)]"
+              : "bg-[#B99A63]"
+            : shared
+              ? "bg-[var(--muted)]"
+              : "bg-[var(--accent)]",
         ].join(" ")}
       />
       {shared ? "仕事・恋愛で共通" : `${MODE_LABEL[mode]}モードのみ`}
@@ -728,14 +896,30 @@ function Section({
   mode: Mode;
   children: React.ReactNode;
 }) {
+  const isWork = mode === "work";
+
   return (
-    <section className="p-6">
+    <section className={isWork ? "p-6 sm:p-7" : "p-6"}>
       <div className="mb-4 flex flex-wrap items-center gap-x-3 gap-y-2">
-        <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[var(--accent)] text-xs font-bold text-white">
+        <span
+          className={
+            isWork
+              ? "flex h-8 min-w-10 shrink-0 items-center justify-center rounded-[10px] bg-[#102A43] px-2 text-xs font-bold tracking-wide text-white shadow-[0_3px_10px_rgba(12,35,64,0.12)]"
+              : "flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[var(--accent)] text-xs font-bold text-white"
+          }
+        >
           {number}
         </span>
         <div>
-          <h2 className="text-base font-bold leading-tight">{title}</h2>
+          <h2
+            className={
+              isWork
+                ? "text-base font-semibold leading-tight tracking-wide text-[#0C2340]"
+                : "text-base font-bold leading-tight"
+            }
+          >
+            {title}
+          </h2>
           <p className="text-xs text-[var(--muted)]">{description}</p>
         </div>
         <ScopeBadge scope={scope} mode={mode} className="ml-auto" />
@@ -753,10 +937,12 @@ function ModeField({
   field,
   profile,
   onChange,
+  controlClassName = INPUT_CLASS,
 }: {
   field: ProfileField;
   profile: Profile;
   onChange: (patch: Partial<Profile>) => void;
+  controlClassName?: string;
 }) {
   return (
     <Field label={field.label}>
@@ -765,6 +951,7 @@ function ModeField({
           value={profile[field.key]}
           options={field.options}
           onChange={(v) => onChange({ [field.key]: v })}
+          className={controlClassName}
         />
       ) : field.kind === "number" ? (
         <NumberSelect
@@ -773,18 +960,20 @@ function ModeField({
           max={field.max}
           unit={field.unit}
           onChange={(v) => onChange({ [field.key]: v })}
+          className={controlClassName}
         />
       ) : field.multiline ? (
         <textarea
           value={profile[field.key]}
           onChange={(e) => onChange({ [field.key]: e.target.value })}
           rows={3}
-          className={INPUT_CLASS + " resize-none"}
+          className={controlClassName + " resize-none"}
         />
       ) : (
         <TextInput
           value={profile[field.key]}
           onChange={(v) => onChange({ [field.key]: v })}
+          className={controlClassName}
         />
       )}
     </Field>
@@ -808,6 +997,7 @@ function Field({
 
 /** 説明つきのスイッチ1行 */
 function ToggleRow({
+  isWork = false,
   title,
   description,
   checked,
@@ -815,6 +1005,7 @@ function ToggleRow({
   badge,
   className = "",
 }: {
+  isWork?: boolean;
   title: string;
   description: string;
   checked: boolean;
@@ -826,7 +1017,9 @@ function ToggleRow({
   return (
     <div
       className={[
-        "flex items-center justify-between gap-4 rounded-lg border border-[var(--line)] px-4 py-3",
+        isWork
+          ? "flex items-center justify-between gap-4 rounded-[14px] border border-[#DED9D0] bg-[#FBFAF7] px-4 py-3"
+          : "flex items-center justify-between gap-4 rounded-lg border border-[var(--line)] px-4 py-3",
         className,
       ].join(" ")}
     >
@@ -837,15 +1030,17 @@ function ToggleRow({
         </div>
         <p className="mt-0.5 text-xs text-[var(--muted)]">{description}</p>
       </div>
-      <Switch checked={checked} onChange={onChange} />
+      <Switch isWork={isWork} checked={checked} onChange={onChange} />
     </div>
   );
 }
 
 function Switch({
+  isWork = false,
   checked,
   onChange,
 }: {
+  isWork?: boolean;
   checked: boolean;
   onChange: (v: boolean) => void;
 }) {
@@ -859,7 +1054,13 @@ function Switch({
       className={[
         "relative h-6 w-11 shrink-0 rounded-full p-0 transition-colors",
         "disabled:opacity-50",
-        checked ? "bg-[var(--accent)]" : "bg-[var(--line)]",
+        isWork
+          ? checked
+            ? "bg-[#0C2340]"
+            : "bg-[#DED9D0]"
+          : checked
+            ? "bg-[var(--accent)]"
+            : "bg-[var(--line)]",
       ].join(" ")}
     >
       {/*

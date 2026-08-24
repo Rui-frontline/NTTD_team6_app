@@ -14,17 +14,39 @@ import { useSession } from "@/lib/session";
  */
 export function Sidebar() {
   const [open, setOpen] = useState(true);
+  const [mobileOpen, setMobileOpen] = useState(false);
   const pathname = usePathname();
+  const { mode } = useSession();
 
-  return (
-    <aside
-      className={[
-        "sticky top-0 flex h-screen shrink-0 flex-col border-r transition-[width] duration-200",
-        "bg-[var(--sidebar-bg)] border-[var(--sidebar-border)] text-[var(--sidebar-fg)]",
-        open ? "w-40" : "w-16",
-      ].join(" ")}
-    >
-      <nav className="flex flex-col gap-1 p-3">
+  if (mode === "romance") {
+    const romanceWidth = open ? "w-40" : "w-16";
+    return (
+      <>
+        {/*
+          仕事モードと同じ「場所取り＋ fixed」の作り。
+          見た目（幅・ロゴの位置・畳み方）は変えていない。
+
+          もとは sticky と h-screen だったが、面の高さが画面ぶんしか無く、
+          本文がそれより長い画面では下端に塗り残しができる。仕事モードで
+          クリーム色の帯として見つかったのと同じ構造で、恋愛モードは
+          面がほぼ白、地も淡いピンクなので見えにくかっただけ。
+        */}
+        <div
+          aria-hidden
+          className={[
+            "shrink-0 transition-[width] duration-200",
+            romanceWidth,
+          ].join(" ")}
+        />
+
+        <aside
+          className={[
+            "fixed inset-y-0 left-0 flex flex-col border-r transition-[width] duration-200",
+            "bg-[var(--sidebar-bg)] border-[var(--sidebar-border)] text-[var(--sidebar-fg)]",
+            romanceWidth,
+          ].join(" ")}
+        >
+        <nav className="flex flex-col gap-1 p-3">
         {/* ナビの一番上。押すと畳んでアイコンだけになる */}
         <button
           type="button"
@@ -57,31 +79,222 @@ export function Sidebar() {
             </Link>
           );
         })}
+        </nav>
+
+        {/* 画面の下部。上から アカウント → 保有ポイント → アプリ名 */}
+        <div className="mt-auto mb-5 flex flex-col gap-2 px-3">
+          <AccountCard open={open} />
+
+          <Link
+            href="/discover"
+            className="flex items-center gap-2 rounded-xl p-2 transition-colors hover:bg-[var(--sidebar-hover-bg)]"
+            title="MeetLink 社内コネクト"
+          >
+            <LogoMark />
+            {open ? (
+              <span className="min-w-0">
+                <span className="block truncate text-sm font-extrabold tracking-tight">
+                  MeetLink
+                </span>
+                <span className="block truncate text-[11px] text-[var(--sidebar-muted)]">
+                  社内コネクト
+                </span>
+              </span>
+            ) : null}
+          </Link>
+        </div>
+        </aside>
+      </>
+    );
+  }
+
+  // 幅の指定は「場所取り」と「実体」の両方で使うので、ここで作って共有する
+  const widthClass = [
+    mobileOpen ? "w-60" : "w-16",
+    open ? "sm:w-60" : "sm:w-16",
+  ].join(" ");
+
+  return (
+    <>
+      {/*
+        場所取り。実体は下の fixed な aside なので、本文が下に潜り込まないよう
+        同じ幅の空き箱を flex の並びに置いておく。
+      */}
+      <div
+        aria-hidden
+        className={["shrink-0 transition-[width] duration-200", widthClass].join(
+          " ",
+        )}
+      />
+
+      {/*
+        紺色の面は fixed で画面の上下いっぱいに貼る。
+
+        はじめは sticky と h-dvh でやっていたが、面の高さが画面ぶんしか無く、
+        本文がそれより長い画面（探す）では左下にクリーム色が 48px 残っていた。
+        次に高さ指定を外して flex の伸長に任せたが、それでも伸びなかった
+        （親は 1041px あるのに aside は 993px のまま。原因は特定できていない）。
+
+        fixed なら親の高さにもスクロール量にも左右されず、常に画面を覆う。
+        z-index は付けない。本文側が z-10 なので、モーダルは今までどおり
+        サイドバーの上に出る。
+
+        メニュー内にスクロール領域は作らない（overflow-y-clip）。
+      */}
+      <aside
+        className={[
+          "work-sidebar fixed inset-y-0 left-0 flex flex-col overflow-y-clip border-r transition-[width] duration-200",
+          "bg-[var(--sidebar-bg)] border-[var(--sidebar-border)] text-[var(--sidebar-fg)]",
+          widthClass,
+        ].join(" ")}
+      >
+      <div className="flex min-h-24 items-center border-b border-[var(--sidebar-active-border)] px-3 sm:hidden">
+        {mobileOpen ? (
+          <>
+            <WorkBrand />
+            <SidebarToggle
+              open={mobileOpen}
+              onClick={() => setMobileOpen(false)}
+            />
+          </>
+        ) : (
+          <SidebarToggle
+            open={mobileOpen}
+            onClick={() => setMobileOpen(true)}
+            className="mx-auto"
+          />
+        )}
+      </div>
+
+      <div
+        className={[
+          "hidden min-h-24 items-center border-b border-[var(--sidebar-active-border)] sm:flex",
+          open ? "sm:px-4" : "sm:px-2",
+        ].join(" ")}
+      >
+        {open ? (
+          <>
+            <WorkBrand />
+            <SidebarToggle open={open} onClick={() => setOpen(false)} />
+          </>
+        ) : (
+          <SidebarToggle
+            open={open}
+            onClick={() => setOpen(true)}
+            className="mx-auto"
+          />
+        )}
+      </div>
+
+      <nav
+        className={[
+          "flex flex-col gap-1.5",
+          mobileOpen ? "p-3" : "p-2",
+          open ? "sm:p-4" : "sm:p-2",
+        ].join(" ")}
+      >
+        {mobileOpen ? (
+          <span className="mb-1 px-3 text-[9px] font-semibold tracking-[0.22em] text-[var(--sidebar-muted)] sm:hidden">
+            MENU
+          </span>
+        ) : null}
+        {open ? (
+          <span className="mb-1 hidden px-3 text-[9px] font-semibold tracking-[0.22em] text-[var(--sidebar-muted)] sm:block">
+            MENU
+          </span>
+        ) : null}
+
+        {NAV.map((item) => {
+          const active = pathname.startsWith(item.href);
+          const Icon = item.icon;
+          return (
+            <Link
+              key={item.href}
+              href={item.href}
+              title={item.label}
+              aria-current={active ? "page" : undefined}
+              className={[
+                "flex min-h-11 items-center gap-3 rounded-[14px] border px-3 py-2.5 text-sm font-semibold tracking-wide transition-colors",
+                mobileOpen ? "" : "justify-center",
+                open ? "sm:justify-start" : "sm:justify-center",
+                active
+                  ? "border-[var(--sidebar-active-border)] bg-[var(--sidebar-active-bg)] text-[var(--sidebar-active-fg)]"
+                  : "border-transparent text-[var(--sidebar-muted)] hover:bg-[var(--sidebar-hover-bg)] hover:text-[var(--sidebar-fg)]",
+              ].join(" ")}
+            >
+              <Icon />
+              {mobileOpen ? (
+                <span className="truncate sm:hidden">{item.label}</span>
+              ) : null}
+              {open ? (
+                <span className="hidden truncate sm:block">{item.label}</span>
+              ) : null}
+            </Link>
+          );
+        })}
       </nav>
 
-      {/* 画面の下部。上から アカウント → 保有ポイント → アプリ名 */}
-      <div className="mt-auto mb-5 flex flex-col gap-2 px-3">
-        <AccountCard open={open} />
-
-        <Link
-          href="/discover"
-          className="flex items-center gap-2 rounded-xl p-2 transition-colors hover:bg-[var(--sidebar-hover-bg)]"
-          title="MeetLink 社内コネクト"
-        >
-          <LogoMark />
-          {open ? (
-            <span className="min-w-0">
-              <span className="block truncate text-sm font-extrabold tracking-tight">
-                MeetLink
-              </span>
-              <span className="block truncate text-[11px] text-[var(--sidebar-muted)]">
-                社内コネクト
-              </span>
-            </span>
-          ) : null}
-        </Link>
+      <div
+        className={[
+          "mt-auto mb-5",
+          mobileOpen ? "px-3" : "px-2",
+          open ? "sm:px-4" : "sm:px-2",
+        ].join(" ")}
+      >
+        <div className="sm:hidden">
+          <AccountCard open={mobileOpen} />
+        </div>
+        <div className="hidden sm:block">
+          <AccountCard open={open} />
+        </div>
       </div>
-    </aside>
+      </aside>
+    </>
+  );
+}
+
+function WorkBrand() {
+  return (
+    <Link
+      href="/discover"
+      className="flex min-w-0 flex-1 items-center gap-3 rounded-xl py-2"
+      title="MeetLink 社内コネクト"
+    >
+      <LogoMark prominent />
+      <span className="min-w-0">
+        <span className="work-brand-name block truncate text-lg font-semibold tracking-[0.035em] text-[var(--sidebar-fg)]">
+          MeetLink
+        </span>
+        <span className="block truncate text-[10px] font-medium tracking-[0.12em] text-[var(--sidebar-muted)]">
+          社内コネクト
+        </span>
+      </span>
+    </Link>
+  );
+}
+
+function SidebarToggle({
+  open,
+  onClick,
+  className = "",
+}: {
+  open: boolean;
+  onClick: () => void;
+  className?: string;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-label={open ? "サイドバーを畳む" : "サイドバーを開く"}
+      aria-expanded={open}
+      className={[
+        "flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-[var(--sidebar-muted)] transition-colors hover:bg-[var(--sidebar-hover-bg)] hover:text-[var(--sidebar-fg)]",
+        className,
+      ].join(" ")}
+    >
+      <MenuIcon />
+    </button>
   );
 }
 
@@ -91,7 +304,7 @@ export function Sidebar() {
  * 常に分かるようにしている。
  */
 function AccountCard({ open }: { open: boolean }) {
-  const { currentUser } = useSession();
+  const { currentUser, mode } = useSession();
 
   if (!currentUser) return null;
 
@@ -111,7 +324,11 @@ function AccountCard({ open }: { open: boolean }) {
         title={label}
         width={32}
         height={32}
-        className="mx-auto h-8 w-8 rounded-full bg-[var(--sidebar-hover-bg)] object-cover"
+        className={
+          mode === "romance"
+            ? "mx-auto h-8 w-8 rounded-full bg-[var(--sidebar-hover-bg)] object-cover"
+            : "mx-auto h-9 w-9 rounded-full border border-[var(--logo-ring-a)] bg-[var(--sidebar-hover-bg)] object-cover p-0.5"
+        }
       />
     );
   }
@@ -119,7 +336,11 @@ function AccountCard({ open }: { open: boolean }) {
   return (
     <div
       title={label}
-      className="rounded-xl border border-[var(--sidebar-active-border)] bg-[var(--sidebar-active-bg)] p-2"
+      className={
+        mode === "romance"
+          ? "rounded-xl border border-[var(--sidebar-active-border)] bg-[var(--sidebar-active-bg)] p-2"
+          : "rounded-[14px] border border-[var(--sidebar-active-border)] bg-[rgba(255,255,255,0.045)] p-2.5"
+      }
     >
       <div className="flex items-center gap-2">
         {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -128,7 +349,11 @@ function AccountCard({ open }: { open: boolean }) {
           alt=""
           width={32}
           height={32}
-          className="h-8 w-8 shrink-0 rounded-full bg-[var(--sidebar-hover-bg)] object-cover"
+          className={
+            mode === "romance"
+              ? "h-8 w-8 shrink-0 rounded-full bg-[var(--sidebar-hover-bg)] object-cover"
+              : "h-9 w-9 shrink-0 rounded-full border border-[var(--logo-ring-a)] bg-[var(--sidebar-hover-bg)] object-cover p-0.5"
+          }
         />
         <span className="min-w-0">
           <span className="block truncate text-xs font-bold text-[var(--sidebar-active-fg)]">
@@ -150,12 +375,12 @@ function AccountCard({ open }: { open: boolean }) {
  * 二重リングのロゴマーク。
  * 仕事モードは2つとも金色、恋愛モードは青とピンクになる（globals.css で切り替え）。
  */
-function LogoMark() {
+function LogoMark({ prominent = false }: { prominent?: boolean }) {
   return (
     <svg
       viewBox="0 0 40 24"
       aria-hidden
-      className="h-5 w-8 shrink-0"
+      className={prominent ? "h-7 w-10 shrink-0" : "h-5 w-8 shrink-0"}
       fill="none"
       strokeWidth={2.5}
     >
@@ -222,6 +447,17 @@ function BoardIcon() {
   );
 }
 
+/** 重ねたコイン。ポイントの残高を思わせる形にしている */
+function PointIcon() {
+  return (
+    <svg {...iconProps()}>
+      <ellipse cx="12" cy="7" rx="7" ry="3" />
+      <path d="M5 7v5c0 1.7 3.1 3 7 3s7-1.3 7-3V7" />
+      <path d="M5 12v5c0 1.7 3.1 3 7 3s7-1.3 7-3v-5" />
+    </svg>
+  );
+}
+
 function PersonIcon() {
   return (
     <svg {...iconProps()}>
@@ -248,5 +484,6 @@ const NAV = [
   { href: "/board", label: "募集", icon: BoardIcon },
   { href: "/history", label: "履歴", icon: HistoryIcon },
   { href: "/ai-talk", label: "AI対話", icon: AiIcon },
+  { href: "/points", label: "ポイント", icon: PointIcon },
   { href: "/me", label: "マイページ", icon: PersonIcon },
 ];
