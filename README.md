@@ -1,437 +1,195 @@
-# 社内マッチングアプリ 仕様書
+# MeetLink（社内マッチングアプリ）
 
-> ハッカソン / 仕様書 v0.2（確定版）
+同じ会社の中で、**仕事の相談相手**と**プライベートの相手**を、1つのアプリで**別々に**探せるサービスです。
 
-同じ会社の中で、**仕事の相談相手**と**プライベートの相手**を、1つのアプリで**別々に**探せるサービス。
-2つのモードを完全に分離することで、**「社内で出会いを探している」ことが誰にも知られない**設計にします。
+2つのモードを分離していて、**恋愛モードは相互オプトイン**（自分がONにしていない限り、誰も表示されず、誰にも表示されない）。「社内で出会いを探している」ことが伝わらない作りにしています。
 
 | | |
 |---|---|
-| フロント | Next.js / TypeScript |
-| データベース | Supabase |
-| 認証 | メール＋パスワード |
+| フロント | Next.js 16（App Router / Turbopack）・React 19・TypeScript |
+| スタイル | Tailwind CSS v4（CSS-first。`tailwind.config` は無い） |
+| データ | Supabase（PostgreSQL / Auth / Storage） |
+| AI | Claude API（`@anthropic-ai/sdk`） |
 | インフラ | Vercel |
 
-> **この文書の位置づけ**
->
-> **これが実装の基準です。** 迷ったらここを見てください。
-> 仕様を変えたいときは、勝手に実装せず **Slack で相談 → この文書を更新 → PR** の順で進めます。
-
-### 目次
-
-1. [技術構成](#1-技術構成)
-2. [画面構成](#2-画面構成)
-3. [ログイン・新規登録](#3-ログイン新規登録)
-4. [探す画面](#4-探す画面)
-5. [トーク画面](#5-トーク画面)
-6. [マイページ](#6-マイページ)
-7. [モードの安全設計](#7-モードの安全設計)
-8. [データの扱い](#8-データの扱い)
-9. [スコープ外](#9-スコープ外)
-10. [担当とブランチ](#10-担当とブランチ)
-11. [デモの導線](#11-デモの導線)
+> 以前このファイルは仕様書でしたが、実装が進んだので**現状の説明**に置き換えました。
+> 仕様の議論は Slack、実装の意図は各ファイルのコメントとコミットメッセージにあります。
 
 ---
 
-## 1. 技術構成
+## 動かす
 
-| 層 | 採用 |
-|---|---|
-| フロント | React / Next.js（App Router） |
-| 言語 | TypeScript |
-| スタイル | Tailwind CSS |
-| データベース | Supabase（PostgreSQL） |
-| 認証 | Supabase Auth（メール＋パスワード） |
-| インフラ | Vercel |
+```bash
+npm install
+npm run dev        # http://localhost:3000
+```
 
 ### 環境変数
 
-`.env.local` に以下2つが必要です。**値はリーダーから受け取ってください。**
+`.env.local` に3つ必要です。
 
 ```
 NEXT_PUBLIC_SUPABASE_URL=...
 NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=...
+ANTHROPIC_API_KEY=...
 ```
 
-> **重要**
->
-> **このファイルは絶対にコミットしないでください**（`.gitignore` 済み）。APIキーが流出します。
+- `NEXT_PUBLIC_` が付く2つは**ブラウザに配られます**。Supabase の Publishable key は公開前提なので問題ありません。**Secret key は絶対に置かないでください**
+- `ANTHROPIC_API_KEY` は**サーバー側だけ**で使います。**`NEXT_PUBLIC_` を付けないでください。** 付けるとバンドルに焼き込まれ、誰でも取り出して従量課金を回せます
 
----
+Vercel では **project レベル**に設定します（従量課金のキーを他プロジェクトに配る必要がないため）。
 
-## 2. 画面構成
+### Supabase の SQL
 
-```
-┌────────────────────────────────────────────────┐
-│ ヘッダー                                        │
-│   ロゴ        [ 仕事 | 恋愛 ]      アイコン      │
-│               ↑ モード切替タブ                   │
-├──────┬─────────────────────────────────────────┤
-│ サイド│                                         │
-│ バー  │  メインコンテンツ                        │
-│      │                                         │
-│ 探す  │                                         │
-│ トーク│                                         │
-│ マイ  │                                         │
-└──────┴─────────────────────────────────────────┘
-```
+**`supabase/` の `.sql` を SQL Editor で実行しないと、対応する機能が動きません。** どれも何度実行しても壊れません（`if not exists` / `create or replace`）。
 
-| 画面 | パス | 担当ブランチ |
+| ファイル | 作るもの | 流さないと |
 |---|---|---|
-| ログイン | `/login` | `feat/auth` |
-| 新規登録 | `/signup` | `feat/auth` |
-| 探す | `/discover` | `feat/discover` |
-| トーク | `/talk` | `feat/chat` |
-| マイページ | `/me` | `feat/profile` |
+| `profile_fields.sql` | プロフィールの追加項目（`profiles` の列） | マイページの項目が保存できない |
+| `avatar_images.sql` | アイコンの Storage バケット | 写真を変更できない |
+| `message_images.sql` | トークの写真の Storage バケット | 写真を送れない |
+| `blocks.sql` | `blocks` テーブル | ブロックできない |
+| `match_reads.sql` | 既読位置（`match_reads` / `mark_match_read`） | 未読バッジが常に全件未読 |
+| `boards.sql` | 募集掲示板 | 募集画面が動かない |
+| `points.sql` | 残高（`users.points`）と履歴（`point_events`） | ポイントが動かない |
+| `point_rewards.sql` | 受け取り箱・デイリーミッション・アイテム交換 | ポイント画面が動かない |
+| `profile_milestones.sql` | プロフィール充実度の達成ポイント | 50/80/100% のポイントが届かない |
+| `reviews.sql` | 口コミ（`reviews` / `submit_review` / `get_user_rating`） | 星が出ず、評価も求められない |
 
-- **ホーム画面は作りません。** ログイン後は `/discover` に直行
-- **未ログインでどの画面を開いても `/login` にリダイレクト**
-
-### サイドバー
-
-- 項目は **「探す」「トーク」「マイページ」の3つ**
-- **初期状態は開いた状態。** ハンバーガーボタンで畳める
-- 畳むとアイコンだけが残る
-
-### モード切替タブ
-
-- **ヘッダー中央に常時表示**
-- 切り替えると、**表示される人・プロフィールの内容・画面の配色**が変わる
-- **全画面がこのモードに連動します**（トーク一覧も含む）
+`fix_profile_values.sql` と `points_manual.sql` と `cleanup_message_images.sql` は**手順書**です。必要なときだけ実行します。
 
 ---
 
-## 3. ログイン・新規登録（`feat/auth`）
+## 画面と、それを動かしているファイル
 
-### 新規登録（`/signup`）
+サイドバーの並び順です。
 
-入力項目：**メールアドレス / パスワード / 名前 / 部署 / 年齢**
-
-```
-supabase.auth.signUp()
-  ↓ 成功したら
-users に1行、profiles に2行（work / romance）を作成
-  ↓
-/me へ遷移（プロフィールを埋めてもらう）
-```
-
-- **メール確認は不要**（設定でOFFにしてあります）。登録した瞬間にログイン状態になります
-- ログイン画面には「会社のメールアドレスを持つ人だけが利用できます」という**文言だけ置きます**（ドメイン検証は今回は実装しません）
-
-### ログイン（`/login`）
-
-メールアドレスとパスワードを入力 → `supabase.auth.signInWithPassword()` → `/discover` へ。
-
-### ログアウト
-
-ヘッダーのアイコンから。`supabase.auth.signOut()` → `/login` へ。
-
----
-
-## 4. 探す画面（`feat/discover`）
-
-```
-┌──────────────────┬──────────────────────────┐
-│ [フィルター]       │  詳細プロフィール          │
-│ ─────────────    │                          │
-│ ┌────┐ ┌────┐   │   ◯ 大きいアイコン         │
-│ │カード│ │カード│   │   名前                    │
-│ └────┘ └────┘   │   部署 / 職種              │
-│ ┌────┐ ┌────┐   │   自己紹介文（全文）        │
-│ │カード│ │カード│   │   タグ（全部）             │
-│ └────┘ └────┘   │                          │
-│                  │  [ 見送る ] [ いいね ]     │
-└──────────────────┴──────────────────────────┘
-```
-
-**カードをクリックすると右ペインに詳細が出ます。ページ遷移はしません。**
-
-### カードに出す情報
-
-| | 仕事 | 恋愛 |
+| 画面 | URL | 実装 |
 |---|---|---|
-| アイコン・名前 | ○ | ○ |
-| 部署 | ○ | **設定で隠せる** |
-| 職種 | ○ | ○ |
-| タグ | ○ | ○ |
-| 自己紹介文 | 冒頭のみ | 冒頭のみ |
-| 年齢 | — | ○ |
+| 探す | `/discover` | [app/discover/page.tsx](app/discover/page.tsx) |
+| トーク | `/talk` | [components/TalkScreen.tsx](components/TalkScreen.tsx) → [TalkPanel.tsx](components/TalkPanel.tsx) / [MatchList.tsx](components/MatchList.tsx) |
+| 募集 | `/board` | [app/board/page.tsx](app/board/page.tsx) |
+| 履歴 | `/history` | [app/history/page.tsx](app/history/page.tsx) |
+| AI対話 | `/ai-talk` | [app/ai-talk/page.tsx](app/ai-talk/page.tsx) ＋ [app/api/ai-talk/](app/api/ai-talk/) |
+| ポイント | `/points` | [app/points/page.tsx](app/points/page.tsx) ＋ [components/points/](components/points/) |
+| マイページ | `/me` | [components/profile/MyPage.tsx](components/profile/MyPage.tsx) |
+| ログイン / 登録 | `/login` `/signup` | [LoginForm.tsx](components/LoginForm.tsx) / [SignUpForm.tsx](components/SignUpForm.tsx) |
 
-### 一覧に出す人の条件
-
-- **そのモードに参加している人だけ**（`enabled_modes` に含まれる）
-- 自分は除く
-- **恋愛モードは、自分もONにしていないと誰も表示されません**（相互オプトイン）
-
-### 見送るの挙動 — モードで違うので注意
-
-| モード | 挙動 | 実装 |
-|---|---|---|
-| **恋愛** | **二度と一覧に出てこない** | `reactions` に `type='pass'` で**保存する** |
-| **仕事** | **その場では消えるが、リロードすると戻る** | **保存しない。** 画面の状態だけで管理 |
-
-- **取り消しボタンはなし**
-- 見送ったことは**相手に一切通知されない**
-
-### マッチ成立の判定
-
-いいねを押したら、**相手から自分への同じモードの `like` が既にあるか**を確認します。あれば `matches` に1行作って成立を画面に出します。**なければ何も起きず、相手には何も伝わりません。**
-
-### フィルター
-
-| モード | 絞り込める項目 |
-|---|---|
-| **仕事** | 部署 / 職種 / タグ |
-| **恋愛** | 年齢（範囲）/ タグ |
-
-複数選択できます。
+全画面の外枠は [components/AppShell.tsx](components/AppShell.tsx)（サイドバー＋ヘッダー）です。
 
 ---
 
-## 5. トーク画面（`feat/chat`）
+## 機能ごとの実装場所
 
-```
-┌──────────────┬─────────────────────┐
-│ マッチ一覧     │  トーク（スライドイン）│
-│              │                     │
-│ ◯ 田中さん    │   相手の名前          │
-│   おつかれ… 10:23                   │
-│ ◯ 佐藤さん    │   吹き出し            │
-│   ありがとう 昨日                     │
-│              │  [入力欄]  [送信]     │
-└──────────────┴─────────────────────┘
-```
+### 探す・いいね・マッチ
 
-### マッチ一覧
+[app/discover/page.tsx](app/discover/page.tsx) がカードを1枚ずつ出します。
 
-- **ヘッダーで選んでいるモードのマッチだけを表示**（画面内に別のタブは作りません）
-- 1件ごとに表示するもの
-  - アイコン / 名前
-  - **最新メッセージ**（1行、長ければ省略）
-  - **最新メッセージの時刻**（今日 `10:23` / 昨日 `昨日` / それ以前 `8/9`）
+- 表示する人の絞り込みは `getUsers()`（[lib/repository.ts](lib/repository.ts)）。**そのモードに参加している人だけ／自分といいね済みを除く／恋愛モードは相互オプトイン**
+- いいねで相互になったら `likeUser()` が `matches` に行を作り、その場でマッチのモーダルが出る
+- **押したときの演出**は同じファイル。♥/★が3つ舞う `likeBurst`、画面下のトースト `reactionFeedback`、マッチ成立の `matchCelebration`。CSS は [app/discover/discover.module.css](app/discover/discover.module.css)
+- 演出は**書き込みが成功してから**出します。通信が失敗したときに「いいねを押しました」だけ残らないようにするためです
+- 通信待ちの間にモードを切り替えたら、`reactionModeVersionRef` で**その結果を捨てます**
 
 ### トーク
 
-- **一覧の項目をタップすると、右からスライドインして表示**
-- 一覧は左に残ったまま
-- 吹き出し形式（自分は右、相手は左）
-- 閉じるボタンでスライドアウト
+[components/TalkScreen.tsx](components/TalkScreen.tsx) が左の一覧、[TalkPanel.tsx](components/TalkPanel.tsx) が右のパネルです。
 
-### メッセージ
+- 一覧は5秒ごと、開いている会話は3秒ごとに取り直します（[lib/usePolling.ts](lib/usePolling.ts)）
+- **既読は「画面に出せたぶん」だけ**進めます。取得に失敗したメッセージは既読にしません
+- 既読位置は `mark_match_read()` が `greatest()` で比べるので、**書き込みが前後しても巻き戻りません**
+- **狭い画面ではパネルを一覧に重ねます**（横に並べると一覧が幅を使い切って右側が0pxになるため）
+- ブロックは**恋愛モードだけ**。仕事モードでは業務の連絡経路を個人の判断で断てないようにしています
 
-- 送信すると `messages` に保存 → **リロードしても消えません**
-- **相手からの返信は発生しません**（自動返信はしない）
+### プロフィール
 
----
+- 入力は [components/profile/MyPage.tsx](components/profile/MyPage.tsx)。**項目の定義は [lib/profile-fields.ts](lib/profile-fields.ts) の1箇所**で、ここに1行足せば入力欄・詳細表示・充実度の分母がすべて増えます
+- 相手のプロフィールは [components/profile/ProfileDetailModal.tsx](components/profile/ProfileDetailModal.tsx)。**トーク・履歴の名前を押すと開きます**
+- **探す画面にはもう1つ別実装のモーダルがあります**（`app/discover/page.tsx` 内）。共通部品への差し替えは未着手です
+- 充実度の計算は [lib/profile-completion.ts](lib/profile-completion.ts)。**モードごとに数えます**（仕事13項目 / 恋愛22項目）
 
-## 6. マイページ（`feat/profile`）
+### 口コミ（星5評価）
 
-**仕事用と恋愛用の2つのプロフィールを持ちます。** 画面内のタブで切り替えて編集します。
+- **5往復すると評価を求めるモーダル**が出ます（[components/reviews/ReviewPrompt.tsx](components/reviews/ReviewPrompt.tsx)）
+- 「往復」は `least(自分の通数, 相手の通数)`。合計で数えると片方の連投だけで達してしまうためです
+- **しきい値は2箇所にあります。** [lib/reviews.ts](lib/reviews.ts) の `REVIEW_RALLY_THRESHOLD` と [supabase/reviews.sql](supabase/reviews.sql) の `c_threshold`。**片方だけ変えると、画面には出るのに送信が弾かれます**
+- 平均は [components/reviews/UserRating.tsx](components/reviews/UserRating.tsx) が自前で取得して出します。プロフィール詳細のモーダル2つから使われます
+- **RLS は「自分が付けたぶんだけ読める」。** 誰が何点付けたかは行として引けず、平均だけを `get_user_rating()` 経由で出します
 
-| 項目 | 共通 / モード別 |
-|---|---|
-| 名前 | **共通** |
-| アイコン | **共通** |
-| 年齢 | **共通** |
-| 部署 | 値は共通。**モードごとに表示/非表示を選べる** |
-| 職種 | **共通** |
-| 自己紹介文 | **モード別** |
-| タグ | **モード別** |
-| このモードに参加する | モード別 |
+### ポイント
 
-### タグ
+- ルール（デイリーミッション・交換アイテム・履歴の上限）は [lib/points.ts](lib/points.ts)
+- 画面は [app/points/page.tsx](app/points/page.tsx) と [components/points/](components/points/)（残高・受け取り箱・履歴・ミッション・アイテム）
+- **プロフィールを 50% / 80% / 100% 埋めると 50 / 80 / 100pt** が受け取り箱に届きます（[supabase/profile_milestones.sql](supabase/profile_milestones.sql)）。一度きりです
+- 加算は必ず `award_points()` を通します。**残高と履歴を1トランザクションで書く**ためで、画面から直接 `users.points` は触りません
 
-- **候補から選ぶ方式**（自由入力ではありません）。フィルターで使うためです
-- **1モードにつき最大5個**
+### AI対話
 
-**仕事モードの候補**
-```
-フロントエンド / バックエンド / インフラ / データ分析 / AI・機械学習 /
-セキュリティ / PM / デザイン / 営業 / マーケティング /
-経理・財務 / 人事 / 法務 / 新規事業 / 業務改善
-```
+- 画面は [app/ai-talk/page.tsx](app/ai-talk/page.tsx)
+- **Claude を呼ぶのはサーバー側だけ**です。[app/api/ai-talk/route.ts](app/api/ai-talk/route.ts)（会話）と [evaluate/route.ts](app/api/ai-talk/evaluate/route.ts)（10ターン後の評価）
+- **シチュエーションごとの役作り**は `route.ts` の `SITUATION_PROMPTS`。会話履歴は毎回まるごと送り直します（API 側に記憶は無いため）
+- **どちらのルートも認証が必要**です（[lib/api-auth.ts](lib/api-auth.ts)）。公開URLなので、これが無いと第三者に `ANTHROPIC_API_KEY` を使われます
 
-**恋愛モードの候補**
-```
-映画 / 音楽 / 読書 / カフェ巡り / 料理 / お酒 / サウナ / 筋トレ /
-ランニング / 登山 / キャンプ / 旅行 / 写真 / ゲーム / アニメ・漫画 /
-スポーツ観戦 / 猫 / 犬 / ボードゲーム / 美術館
-```
+### 募集掲示板
 
-### 「このモードに参加する」
-
-OFF にすると、**そのモードの一覧に自分が出なくなります。**
+[app/board/page.tsx](app/board/page.tsx)。モードごとに募集を立て、参加者とグループチャットができます。
 
 ---
 
-## 7. モードの安全設計
+## 決まりごと
 
-> **仕様の核**
->
-> **この3つは絶対に崩さないでください。** このアプリの主張そのものです。
+### DBを触るのは `lib/repository.ts` だけ
 
-| # | 仕様 | 理由 |
-|---|---|---|
-| 1 | **相互オプトイン** | 恋愛モードをONにしていない人は、他人の恋愛プロフィールを見られないし、自分も表示されない。**「見るだけ」ができない** |
-| 2 | **片思いは不可視** | いいねは相互一致するまで相手に通知されない。**断られることも断ることも発生しない** |
-| 3 | **見送りも不可視** | 見送ったことは相手に一切伝わらない |
+**画面から `supabase` を直接呼ばないでください。** 取得処理が必要になったら Slack で一声かけてから、ここに足します。
 
-> **実装上の注意**
->
-> **モードのON/OFF状態そのものを、他人から見えるようにしないでください。**
-> 「あの人が恋愛モードをONにした」が分かる時点で、この設計は崩れます。
+[lib/types.ts](lib/types.ts) も全員が参照するので、変更前に相談してください。
 
----
+### モードの切り替え
 
-## 8. データの扱い
+[lib/session.tsx](lib/session.tsx) が `<html data-mode>` を書き換え、[app/globals.css](app/globals.css) の CSS 変数が丸ごと入れ替わります。
 
-### 原則：画面から直接 Supabase を呼ばない
+**色は必ず CSS 変数で書いてください。**
 
-**必ず `lib/repository.ts` を経由してください。**
-
-```ts
-// ✗ やらない
-const { data } = await supabase.from('users').select('*');
-
-// ◯ こうする
-const users = await getUsers(mode);
+```
+--surface  --background  --foreground  --muted  --line
+--accent  --accent-strong  --accent-soft  --bubble-other-bg
 ```
 
-呼び出しが散らばると、仕様変更のときに全画面を直すことになります。
+**存在しない変数名を使うと `border-color` が `currentColor` になり、文字と同じ濃さの線が出ます。** 実際に AI対話ページで起きました。
 
-> **衝突しやすいファイル**
->
-> **`lib/types.ts` と `lib/repository.ts` は原則触らないでください。**
-> 触る必要が出たら、必ず Slack で呼びかけてから作業します。
+### React 19 の注意
 
-### 型定義（`lib/types.ts`）
+`react-hooks/set-state-in-effect` が有効です。**effect の中で同期的に `setState` しないでください。** 値の変化に合わせて state を直したいときは、描画中に直前の値と比べて調整します（[app/discover/page.tsx](app/discover/page.tsx) の `renderedMode` が例）。
 
-```ts
-export type Mode = "work" | "romance";
+### 確認
 
-// モードごとに変わる部分
-export type Profile = {
-  bio: string;
-  tags: string[];
-  showDepartment: boolean;
-};
-
-export type User = {
-  id: string;            // uuid
-  name: string;          // 共通
-  avatarUrl: string;     // 共通
-  department: string;    // 共通（表示可否はモードごと）
-  jobTitle: string;      // 共通
-  age: number;           // 共通
-  enabledModes: Mode[];
-  work: Profile;
-  romance: Profile;
-};
-
-export type Reaction = {
-  fromUserId: string;
-  toUserId: string;
-  mode: Mode;
-  type: "like" | "pass";
-  createdAt: string;
-};
-
-export type Match = {
-  id: string;
-  userIds: [string, string];
-  mode: Mode;
-  createdAt: string;
-};
-
-export type Message = {
-  id: string;
-  matchId: string;
-  senderId: string;
-  body: string;
-  createdAt: string;
-};
+```bash
+npx tsc --noEmit
+npm run lint       # 14 problems（7 errors, 7 warnings）が現状のベースライン
+npm run build
 ```
 
-### テーブル構成（参考）
-
-| テーブル | 中身 |
-|---|---|
-| `users` | 名前・アイコン・部署・**職種**・年齢・参加モード |
-| `profiles` | モードごとの自己紹介・タグ・部署の表示可否（1ユーザー最大2行） |
-| `reactions` | いいね・見送り |
-| `matches` | 相互いいねで成立したマッチ |
-| `messages` | トークのメッセージ |
+**lint はベースラインから増えていないことを確認してください。** 既存の指摘は `lib/session.tsx` と `lib/repository.ts` などに残っています。
 
 ---
 
-## 9. スコープ外
+## ディレクトリ
 
-| やらないこと | 代わりに |
-|---|---|
-| 趣味グループ | **削除** |
-| 匿名掲示板 | **削除** |
-| メールドメインによる社内限定 | 文言のみ表示 |
-| メール確認 | 無効 |
-| パスワード再設定 | なし |
-| ソーシャルログイン | なし |
-| 画像アップロード | ダミー画像URL固定 |
-| 相手からの返信 | 自分の送信のみ表示 |
-| 通知（メール・プッシュ） | 画面内のバッジのみ |
-| 見送りの取り消し | なし |
-| ブロック機能 | なし（見送るで代替） |
-| リアルタイム更新 | リロードで反映 |
-| スマホ対応の作り込み | **PC投影を優先。** 崩れない程度で十分 |
-
-> **判断に迷ったら**
->
-> **スコープ外を聞かれたら「今回は対象外です」と即答してください。** 迷って作り始めるのが一番危険です。
+```
+app/            画面（App Router）と API ルート
+components/     画面をまたいで使う部品
+  points/       ポイント画面の部品
+  profile/      プロフィール関連
+  reviews/      口コミ（星）
+lib/            型・データ取得・ルール
+supabase/       DBのスキーマとRPC（SQL Editor で実行する）
+pictures/       デザイン案
+```
 
 ---
 
-## 10. 担当とブランチ
+## いま残っていること
 
-| ブランチ | 範囲 |
-|---|---|
-| `feat/auth` | ログイン・新規登録・ログアウト・未ログイン時のリダイレクト |
-| `feat/discover` | 探す画面（一覧・詳細ペイン・いいね・見送る・フィルター・マッチ判定） |
-| `feat/chat` | トーク画面（マッチ一覧・スライドインするトーク・メッセージ送信） |
-| `feat/profile` | マイページ（モード別プロフィール編集・タグ選択） |
-| `feat/dummy-data` | ダミーデータ30人分（**Supabase の Table Editor から入力**） |
-
-`feat/groups` と `feat/board` は**使いません**（機能を削除したため）。
-
-### 作業のルール
-
-Git の運用の要点だけ掲載します。
-
-- 作業開始時に `git switch main` → `git pull` → `git switch feat/xxx` → `git merge main`
-- PRを出したら **Slack で報告**
-- **承認は開発系リーダーのみ。** 自分で自分のPRを承認しない
-- マージしたら **Slack で報告**、全員が取り込む
-- `main` に直接 push しない
-
----
-
-## 11. デモの導線
-
-> **最優先**
->
-> **この流れが動くことが最優先です。** ここから作ってください。
-
-| # | 操作 | 見せたいこと |
-|---|---|---|
-| 1 | ログイン | 社内限定であること |
-| 2 | 仕事モードで一覧を見る | 部署・職種・タグで人を探せる |
-| 3 | **恋愛モードに切り替える** | **配色と表示される人が丸ごと変わる。ここが山場** |
-| 4 | カードをクリック | 右に詳細が出る |
-| 5 | いいねを押す | 相手には通知されないことを口頭で説明 |
-| 6 | **マッチ成立** | 両想いになって初めてつながる |
-| 7 | トークを開いて1通送る | 体験として完結する |
-
-> **当日の保険**
->
-> **この7ステップは事前に画面録画しておきます。** 会場のWi-Fiやデプロイの不調でライブデモが落ちた瞬間に、評価が消えます。録画があれば「では録画でご覧ください」で復帰できます。
-
----
-
-v0.2（確定版）— 仕様を変えたいときは、勝手に実装せず Slack で相談してください。決定事項が口頭だけで流れるのが、一番よくある事故です。
+- **探す画面のプロフィール詳細モーダル**を共通部品（`ProfileDetailModal`）に寄せる。同じUIが2つある状態
+- **サイドバーの仕事版と恋愛版**が別実装のまま
+- 口コミの付け直し・取り消し、自分の評価を自分で見る画面
