@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { ModeSwitch } from "@/components/ModeSwitch";
+import { PageHeading } from "@/components/PageHeading";
 import { useSession } from "@/lib/session";
 import { supabase } from "@/lib/supabase";
 
@@ -270,19 +270,19 @@ export default function AiTalkPage() {
   // 恋愛モードがOFFの場合の表示
   if (mode === "romance" && !currentUser.enabledModes.includes("romance")) {
     return (
-      <div className="flex h-full w-full flex-col -mx-6 -my-8">
-        <header className="flex h-16 shrink-0 items-center justify-between border-b border-[var(--card-border)] bg-[var(--card-bg)] px-6">
-          <h1 className="text-lg font-bold text-[var(--fg)]">AI対話練習</h1>
-          <ModeSwitch />
-        </header>
+      <div className="mx-auto w-full max-w-5xl text-[var(--foreground)]">
+        <PageHeading
+          title="AI対話練習"
+          description="AIと会話の練習ができます。"
+        />
         <div
           style={{
-            flex: 1,
             display: "flex",
             flexDirection: "column",
             alignItems: "center",
             justifyContent: "center",
             gap: "20px",
+            paddingTop: "40px",
           }}
         >
           <p style={{ fontSize: "20px", color: "#374151", margin: 0 }}>
@@ -315,41 +315,24 @@ export default function AiTalkPage() {
   // シチュエーション選択画面
   if (!selectedSituation) {
     return (
-      <div
-        // 余白は両モード共通。仕事モード用に別の値を当てていたが、それは
-        // PR #44 の AppShell の余白に合わせたもので、巻き戻した今は引きすぎて
-        // 中身が左へずれ、サイドバーに潜り込む
-        className="flex h-full w-full flex-col -mx-6 -my-8"
-      >
-        <header className="flex h-16 shrink-0 items-center justify-between border-b border-[var(--card-border)] bg-[var(--card-bg)] px-6">
-          <div>
-            <h1 className="text-lg font-bold text-[var(--fg)]">{getTitle()}</h1>
-            <p className="text-sm text-[var(--fg-muted)]">{getDescription()}</p>
-          </div>
-          <ModeSwitch />
-        </header>
-        <div className="flex-1 overflow-y-auto bg-[var(--bg)] p-6">
-          <div className="mx-auto max-w-4xl">
-            <h2 className="mb-6 text-xl font-bold text-[var(--fg)]">
-              シチュエーションを選択してください
-            </h2>
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-              {getSituations().map((situation) => (
-                <button
-                  key={situation.id}
-                  onClick={() => setSelectedSituation(situation.id)}
-                  className="rounded-xl border border-[var(--card-border)] bg-[var(--card-bg)] p-6 text-left transition-all hover:border-[var(--primary)] hover:shadow-lg"
-                >
-                  <h3 className="mb-2 text-lg font-bold text-[var(--fg)]">
-                    {situation.label}
-                  </h3>
-                  <p className="text-sm text-[var(--fg-muted)]">
-                    {situation.description}
-                  </p>
-                </button>
-              ))}
-            </div>
-          </div>
+      <div className="mx-auto w-full max-w-5xl text-[var(--foreground)]">
+        <PageHeading title={getTitle()} description={getDescription()} />
+        <h2 className="mb-4 text-sm font-bold text-[var(--muted)]">
+          シチュエーションを選択してください
+        </h2>
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          {getSituations().map((situation) => (
+            <button
+              key={situation.id}
+              onClick={() => setSelectedSituation(situation.id)}
+              className="rounded-xl border border-[var(--line)] bg-[var(--surface)] p-6 text-left transition-all hover:border-[var(--accent)] hover:shadow-[var(--soft-shadow)]"
+            >
+              <h3 className="mb-2 text-lg font-bold">{situation.label}</h3>
+              <p className="text-sm text-[var(--muted)]">
+                {situation.description}
+              </p>
+            </button>
+          ))}
         </div>
       </div>
     );
@@ -358,30 +341,25 @@ export default function AiTalkPage() {
   // 評価画面
   if (showEvaluation) {
     return (
-      <div
-        // 余白は両モード共通。仕事モード用に別の値を当てていたが、それは
-        // PR #44 の AppShell の余白に合わせたもので、巻き戻した今は引きすぎて
-        // 中身が左へずれ、サイドバーに潜り込む
-        className="flex h-full w-full flex-col -mx-6 -my-8"
-      >
-        <header className="flex h-16 shrink-0 items-center justify-between border-b border-[var(--card-border)] bg-[var(--card-bg)] px-6">
-          <h1 className="text-lg font-bold text-[var(--fg)]">会話練習完了！</h1>
-          <ModeSwitch />
-        </header>
-        <div className="flex-1 overflow-y-auto bg-[var(--bg)] p-6">
-          {noticeBanner}
-          <div className="mx-auto max-w-3xl space-y-6">
+      <div className="mx-auto w-full max-w-3xl text-[var(--foreground)]">
+        <PageHeading
+          title="会話練習完了！"
+          description="今回の会話の評価です。"
+        />
+        {noticeBanner}
+        <div>
+          <div className="space-y-6">
             {/* 総合評価 */}
-            <div className="rounded-xl border border-[var(--card-border)] bg-[var(--card-bg)] p-6">
-              <h2 className="mb-4 text-xl font-bold text-[var(--fg)]">
+            <div className="rounded-xl border border-[var(--line)] bg-[var(--surface)] p-6">
+              <h2 className="mb-4 text-xl font-bold text-[var(--foreground)]">
                 総合評価
               </h2>
               <div className="mb-4 text-center">
-                <div className="text-5xl font-bold text-[var(--primary)]">
+                <div className="text-5xl font-bold text-[var(--accent)]">
                   {evaluation?.overall_score ?? "..."}点
                 </div>
                 {!evaluation && (
-                  <p className="mt-2 text-sm text-[var(--fg-muted)]">
+                  <p className="mt-2 text-sm text-[var(--muted)]">
                     評価を取得中...
                   </p>
                 )}
@@ -390,22 +368,22 @@ export default function AiTalkPage() {
 
             {/* スコア詳細 */}
             {evaluation && (
-              <div className="rounded-xl border border-[var(--card-border)] bg-[var(--card-bg)] p-6">
-                <h2 className="mb-4 text-xl font-bold text-[var(--fg)]">
+              <div className="rounded-xl border border-[var(--line)] bg-[var(--surface)] p-6">
+                <h2 className="mb-4 text-xl font-bold text-[var(--foreground)]">
                   スコア詳細
                 </h2>
                 <div className="space-y-3">
                   {Object.entries(evaluation.scores).map(([label, score]) => (
                     <div key={label}>
                       <div className="mb-1 flex justify-between text-sm">
-                        <span className="text-[var(--fg)]">{label}</span>
-                        <span className="font-bold text-[var(--fg)]">
+                        <span className="text-[var(--foreground)]">{label}</span>
+                        <span className="font-bold text-[var(--foreground)]">
                           {score}点
                         </span>
                       </div>
-                      <div className="h-2 overflow-hidden rounded-full bg-[var(--bg)]">
+                      <div className="h-2 overflow-hidden rounded-full bg-[var(--background)]">
                         <div
-                          className="h-full bg-[var(--primary)]"
+                          className="h-full bg-[var(--accent)]"
                           style={{ width: `${score}%` }}
                         />
                       </div>
@@ -417,11 +395,11 @@ export default function AiTalkPage() {
 
             {/* 良かった点 */}
             {evaluation && evaluation.good_points.length > 0 && (
-              <div className="rounded-xl border border-[var(--card-border)] bg-[var(--card-bg)] p-6">
-                <h2 className="mb-4 text-xl font-bold text-[var(--fg)]">
+              <div className="rounded-xl border border-[var(--line)] bg-[var(--surface)] p-6">
+                <h2 className="mb-4 text-xl font-bold text-[var(--foreground)]">
                   良かった点
                 </h2>
-                <ul className="space-y-2 text-sm text-[var(--fg)]">
+                <ul className="space-y-2 text-sm text-[var(--foreground)]">
                   {evaluation.good_points.map((point, index) => (
                     <li key={index}>• {point}</li>
                   ))}
@@ -431,11 +409,11 @@ export default function AiTalkPage() {
 
             {/* 改善点 */}
             {evaluation && evaluation.improvements.length > 0 && (
-              <div className="rounded-xl border border-[var(--card-border)] bg-[var(--card-bg)] p-6">
-                <h2 className="mb-4 text-xl font-bold text-[var(--fg)]">
+              <div className="rounded-xl border border-[var(--line)] bg-[var(--surface)] p-6">
+                <h2 className="mb-4 text-xl font-bold text-[var(--foreground)]">
                   改善できる点
                 </h2>
-                <ul className="space-y-2 text-sm text-[var(--fg)]">
+                <ul className="space-y-2 text-sm text-[var(--foreground)]">
                   {evaluation.improvements.map((point, index) => (
                     <li key={index}>• {point}</li>
                   ))}
@@ -464,7 +442,7 @@ export default function AiTalkPage() {
                   setShowEvaluation(false);
                   setEvaluation(null);
                 }}
-                className="flex-1 rounded-xl border border-[var(--card-border)] bg-[var(--card-bg)] py-3 font-bold text-[var(--fg)] transition-colors hover:bg-[var(--bg)]"
+                className="flex-1 rounded-xl border border-[var(--line)] bg-[var(--surface)] py-3 font-bold text-[var(--foreground)] transition-colors hover:bg-[var(--background)]"
               >
                 シチュエーション変更
               </button>
@@ -476,23 +454,22 @@ export default function AiTalkPage() {
   }
 
   return (
-    <div
-      // 余白は両モード共通。仕事モード用に別の値を当てていたが、それは
-      // PR #44 の AppShell の余白に合わせたもので、巻き戻した今は引きすぎて
-      // 中身が左へずれ、サイドバーに潜り込む
-      className="flex h-full w-full flex-col -mx-6 -my-8"
-    >
-      {/* ヘッダー */}
-      <header className="flex shrink-0 items-center justify-between border-b border-[var(--card-border)] bg-[var(--card-bg)] px-4 py-2">
-        <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-3">
-            <h1 className="text-base font-bold text-[var(--fg)]">{getTitle()}</h1>
-            <span className="shrink-0 rounded-full bg-[var(--bg)] px-3 py-1 text-xs font-bold text-[var(--fg)]">
-              {turnCount}/10
-            </span>
-          </div>
-        </div>
-        <div className="flex items-center gap-2">
+    /*
+      トーク画面（components/TalkScreen.tsx）と同じ組み方に揃える。
+      見出しを外に出し、会話そのものは枠の中に収める。
+    */
+    <div className="flex h-[calc(100dvh-9rem)] flex-col gap-3 text-[var(--foreground)]">
+      <PageHeading title={getTitle()} description={getDescription()} />
+
+      <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-lg border border-[var(--line)] bg-[var(--surface)]">
+        {/*
+          見出しではなく、会話中の操作バー。何ターン目かと、やり直しだけ。
+          モード切替はヘッダーにあるので置かない。
+        */}
+        <div className="flex shrink-0 items-center justify-between border-b border-[var(--line)] px-4 py-2">
+          <span className="rounded-full bg-[var(--background)] px-3 py-1 text-xs font-bold">
+            {turnCount}/10
+          </span>
           <button
             onClick={() => {
               setSelectedSituation(null);
@@ -501,16 +478,14 @@ export default function AiTalkPage() {
               setShowEvaluation(false);
               setEvaluation(null);
             }}
-            className="rounded-lg border border-[var(--card-border)] bg-[var(--card-bg)] px-3 py-1.5 text-xs font-bold text-[var(--fg)] transition-colors hover:bg-[var(--bg)]"
+            className="rounded-lg border border-[var(--line)] px-3 py-1.5 text-xs font-bold transition-colors hover:bg-[var(--background)]"
           >
-            変更
+            シチュエーションを変更
           </button>
-          <ModeSwitch />
         </div>
-      </header>
 
       {/* メッセージエリア */}
-      <div className="flex-1 min-h-0 overflow-y-auto bg-[var(--bg)] px-4 py-2">
+      <div className="flex-1 min-h-0 overflow-y-auto bg-[var(--background)] px-4 py-2">
         <div className="mx-auto max-w-3xl space-y-3">
           {messages.map((message, index) => (
             <div
@@ -523,7 +498,7 @@ export default function AiTalkPage() {
                 className={`max-w-[70%] rounded-2xl px-4 py-2.5 ${
                   message.role === "user"
                     ? "bg-black text-white"
-                    : "bg-[var(--card-bg)] text-[var(--fg)] border border-[var(--card-border)]"
+                    : "bg-[var(--surface)] text-[var(--foreground)] border border-[var(--line)]"
                 }`}
               >
                 <p className="whitespace-pre-wrap break-words">
@@ -533,7 +508,7 @@ export default function AiTalkPage() {
                   className={`mt-1 text-xs ${
                     message.role === "user"
                       ? "text-white/70"
-                      : "text-[var(--fg-muted)]"
+                      : "text-[var(--muted)]"
                   }`}
                 >
                   {message.timestamp.toLocaleTimeString("ja-JP", {
@@ -546,8 +521,8 @@ export default function AiTalkPage() {
           ))}
           {isLoading && (
             <div className="flex justify-start">
-              <div className="max-w-[70%] rounded-2xl border border-[var(--card-border)] bg-[var(--card-bg)] px-4 py-2.5">
-                <p className="text-[var(--fg-muted)]">入力中...</p>
+              <div className="max-w-[70%] rounded-2xl border border-[var(--line)] bg-[var(--surface)] px-4 py-2.5">
+                <p className="text-[var(--muted)]">入力中...</p>
               </div>
             </div>
           )}
@@ -556,7 +531,7 @@ export default function AiTalkPage() {
       </div>
 
       {/* 入力エリア */}
-      <div className="shrink-0 border-t border-[var(--card-border)] bg-[var(--card-bg)] px-4 py-2">
+      <div className="shrink-0 border-t border-[var(--line)] bg-[var(--surface)] px-4 py-2">
         {noticeBanner}
         <div className="mx-auto max-w-3xl">
           <div className="flex gap-2">
@@ -567,7 +542,7 @@ export default function AiTalkPage() {
               placeholder="メッセージを入力... (Enter: 送信 / Shift+Enter: 改行)"
               disabled={isLoading}
               rows={1}
-              className="flex-1 resize-none rounded-xl border border-[var(--card-border)] bg-[var(--bg)] px-3 py-2 text-[var(--fg)] placeholder-[var(--fg-muted)] focus:outline-none focus:ring-2 focus:ring-black disabled:opacity-50"
+              className="flex-1 resize-none rounded-xl border border-[var(--line)] bg-[var(--background)] px-3 py-2 text-[var(--foreground)] placeholder-[var(--muted)] focus:outline-none focus:ring-2 focus:ring-black disabled:opacity-50"
               style={{ minHeight: "40px", maxHeight: "80px" }}
             />
             <button
@@ -579,6 +554,7 @@ export default function AiTalkPage() {
             </button>
           </div>
         </div>
+      </div>
       </div>
     </div>
   );
