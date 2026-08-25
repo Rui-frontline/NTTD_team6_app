@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { PageHeading } from "@/components/PageHeading";
 import { useSession } from "@/lib/session";
@@ -63,6 +63,22 @@ export default function DiscoverPage() {
   const heartBurstTimer = useRef<number | null>(null);
 
   /*
+    いま画面に出ているモードの世代。
+
+    likeUser / passUser の応答を待っている間にモードを切り替えると、
+    古いモードで始めた操作が新しいモードの state を書き換えてしまう。
+    取得し直した一覧の先頭が飛ばされ、マッチしたときには前のモードの相手が
+    新しいモードのモーダルに出る。
+
+    操作を始めた時点の世代を控えておき、応答が返った時点でずれていたら
+    何もせずに終える。
+  */
+  const reactionModeVersionRef = useRef(0);
+  useLayoutEffect(() => {
+    reactionModeVersionRef.current += 1;
+  }, [mode]);
+
+  /*
     モードを切り替えたら、出している演出をその場で消す。
 
     残したままだと、恋愛モードで飛ばした♥が切り替えた瞬間に★へ化ける
@@ -115,7 +131,16 @@ export default function DiscoverPage() {
     何も起きなかった。両モードで出すようにしている（見た目だけ変える）。
     マッチ成立の演出（showMatchFeedback）は恋愛モードのままにしてある。
   */
-  const showReactionFeedback = (reaction: "like" | "pass") => {
+  const showReactionFeedback = (
+    reaction: "like" | "pass",
+    reactionModeVersion: number,
+  ): boolean => {
+    // 操作を始めたときからモードが変わっていたら、演出を出さない。
+    // 戻り値で呼び出し側にも「この先へ進むな」と伝える
+    if (reactionModeVersion !== reactionModeVersionRef.current) {
+      return false;
+    }
+
     if (reaction === "like") {
       const buttonRect = likeButtonRef.current?.getBoundingClientRect();
       setHeartBurst((previous) => ({
@@ -155,6 +180,8 @@ export default function DiscoverPage() {
       setReactionFeedback(null);
       reactionFeedbackTimer.current = null;
     }, FEEDBACK_MS);
+
+    return true;
   };
 
   const showMatchFeedback = () => {
@@ -185,10 +212,11 @@ export default function DiscoverPage() {
   // いいねボタンの処理
   const handleLike = async (targetUser: User) => {
     if (!currentUser) return;
+    const reactionModeVersion = reactionModeVersionRef.current;
 
     // テストモード：DBに保存せず次に進むだけ
     if (testMode) {
-      showReactionFeedback("like");
+      if (!showReactionFeedback("like", reactionModeVersion)) return;
       goToNextUser();
       return;
     }
@@ -199,7 +227,11 @@ export default function DiscoverPage() {
       // 演出は書き込みが成功してから出す。await より前に出すと、
       // 通信や権限のエラーで失敗したときに「いいねを押しました」の
       // トーストとハートが最大3秒残り、その上に失敗アラートが出る。
-      showReactionFeedback("like");
+      //
+      // 待っている間にモードが変わっていたら、ここで打ち切る。
+      // 演出も、マッチのモーダルも、次の人への送りも、すべて古いモードの
+      // 操作に対するものなので、新しい画面に持ち込まない。
+      if (!showReactionFeedback("like", reactionModeVersion)) return;
 
       // マッチ成立の確認
       if (match) {
@@ -213,6 +245,8 @@ export default function DiscoverPage() {
       // 次のユーザーに進む
       goToNextUser();
     } catch (error) {
+      // 失敗の通知も、もう別の画面を見ているなら出さない
+      if (reactionModeVersion !== reactionModeVersionRef.current) return;
       console.error("いいね送信エラー:", error);
       alert("いいねの送信に失敗しました");
     }
@@ -221,10 +255,11 @@ export default function DiscoverPage() {
   // 見送るボタンの処理
   const handlePass = async (targetUser: User) => {
     if (!currentUser) return;
+    const reactionModeVersion = reactionModeVersionRef.current;
 
     // テストモード：DBに保存せず次に進むだけ
     if (testMode) {
-      showReactionFeedback("pass");
+      if (!showReactionFeedback("pass", reactionModeVersion)) return;
       goToNextUser();
       return;
     }
@@ -236,12 +271,14 @@ export default function DiscoverPage() {
       }
       // 仕事モードの場合は保存しない（リロードで戻る）
 
-      // handleLike と同じ理由で、演出は書き込みが成功してから出す
-      showReactionFeedback("pass");
+      // handleLike と同じ理由で、演出は書き込みが成功してから出す。
+      // モードが変わっていたら打ち切るのも同じ
+      if (!showReactionFeedback("pass", reactionModeVersion)) return;
 
       // 次のユーザーに進む
       goToNextUser();
     } catch (error) {
+      if (reactionModeVersion !== reactionModeVersionRef.current) return;
       console.error("見送りエラー:", error);
       alert("見送りに失敗しました");
     }
