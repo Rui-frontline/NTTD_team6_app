@@ -1,5 +1,6 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { NextRequest, NextResponse } from "next/server";
+import { verifyRequest } from "@/lib/api-auth";
 
 const anthropic = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY,
@@ -26,6 +27,12 @@ const EVALUATION_PROMPT = `あなたは会話スキルの評価者です。提�
 
 export async function POST(request: NextRequest) {
   try {
+    // 評価も Claude を呼ぶので、対話側と同じく送り主を確かめる
+    const auth = await verifyRequest(request);
+    if (!auth.ok) {
+      return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+    }
+
     const body = await request.json();
     const { messages } = body;
 

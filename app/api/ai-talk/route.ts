@@ -1,5 +1,6 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { NextRequest, NextResponse } from "next/server";
+import { verifyRequest } from "@/lib/api-auth";
 
 const anthropic = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY,
@@ -20,6 +21,13 @@ const SITUATION_PROMPTS: Record<string, string> = {
 
 export async function POST(request: NextRequest) {
   try {
+    // Claude を呼ぶ前に送り主を確かめる。ここを通さないと、URLを知っている
+    // だけの第三者に ANTHROPIC_API_KEY を使わせることになる
+    const auth = await verifyRequest(request);
+    if (!auth.ok) {
+      return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+    }
+
     const body = await request.json();
     const { situation, messages } = body;
 

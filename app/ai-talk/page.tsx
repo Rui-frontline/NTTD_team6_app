@@ -4,6 +4,22 @@ import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { ModeSwitch } from "@/components/ModeSwitch";
 import { useSession } from "@/lib/session";
+import { supabase } from "@/lib/supabase";
+
+/**
+ * ログイン中のアクセストークン。
+ *
+ * 送信のたびに取り直す。画面を開いた時点のものを使い回すと、長く開いたまま
+ * にした場合に期限切れのトークンを送ってしまう。getSession() は期限が近ければ
+ * 更新してから返す。
+ */
+async function accessToken(): Promise<string | null> {
+  const { data } = await supabase.auth.getSession();
+  return data.session?.access_token ?? null;
+}
+
+/** 画面に出す不具合の種類。原因ごとに文面と対処を変えるために区別する */
+type Notice = "session" | "failed";
 
 type Message = {
   role: "user" | "assistant";
@@ -68,6 +84,7 @@ export default function AiTalkPage() {
     good_points: string[];
     improvements: string[];
   } | null>(null);
+  const [notice, setNotice] = useState<Notice | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // 自動スクロール
@@ -82,6 +99,7 @@ export default function AiTalkPage() {
     setTurnCount(0);
     setShowEvaluation(false);
     setEvaluation(null);
+    setNotice(null);
   }, [mode]);
 
   if (!currentUser) {
@@ -91,6 +109,15 @@ export default function AiTalkPage() {
 
   const handleSend = async () => {
     if (!input.trim() || isLoading) return;
+
+    // 身分証を先に用意する。画面の状態を変える前に確かめるので、期限切れの
+    // ときに「自分の発言だけ増えて返事が来ない」状態にならない
+    const token = await accessToken();
+    if (!token) {
+      setNotice("session");
+      return;
+    }
+    setNotice(null);
 
     const userMessage: Message = {
       role: "user",
@@ -109,7 +136,10 @@ export default function AiTalkPage() {
     try {
       const response = await fetch("/api/ai-talk", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
         body: JSON.stringify({
           situation: selectedSituation,
           messages: [...messages, userMessage].map((m) => ({
@@ -118,6 +148,13 @@ export default function AiTalkPage() {
           })),
         }),
       });
+
+      // 401 だけは他の失敗と切り分ける。再読み込みで直る不具合なのか、
+      // 手の打ちようがない障害なのかが画面から分かるようにするため
+      if (response.status === 401) {
+        setNotice("session");
+        return;
+      }
 
       if (!response.ok) {
         throw new Error("API request failed");
@@ -136,7 +173,10 @@ export default function AiTalkPage() {
       if (newTurnCount >= 10) {
         const evalResponse = await fetch("/api/ai-talk/evaluate", {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
           body: JSON.stringify({
             messages: [...messages, userMessage, aiMessage].map((m) => ({
               role: m.role,
@@ -148,13 +188,17 @@ export default function AiTalkPage() {
         if (evalResponse.ok) {
           const evalData = await evalResponse.json();
           setEvaluation(evalData);
+        } else {
+          // 評価が取れないと点数が「...」のまま止まる。理由を出さないと
+          // 待てば出るのか壊れているのかが分からない
+          setNotice(evalResponse.status === 401 ? "session" : "failed");
         }
 
         setShowEvaluation(true);
       }
     } catch (error) {
       console.error("AI応答エラー:", error);
-      alert("メッセージの送信に失敗しました");
+      setNotice("failed");
     } finally {
       setIsLoading(false);
     }
@@ -188,6 +232,40 @@ export default function AiTalkPage() {
     const situation = getSituations().find((s) => s.id === selectedSituation);
     return situation?.description || "";
   };
+
+  /*
+    不具合を画面に出す帯。会話画面と評価画面の両方に置く。
+
+    ここを黙って握りつぶすと、止まったときに「ログインし直せば直る」のか
+    「Claude 側の障害で打つ手が無い」のかが区別できない。デモ中に原因を
+    調べる時間は無いので、対処まで画面に書いておく。
+  */
+  const noticeBanner = notice ? (
+    <div className="mx-auto mb-3 flex max-w-3xl items-center justify-between gap-3 rounded-xl border border-amber-300 bg-amber-50 px-4 py-2.5">
+      <p className="min-w-0 text-sm text-amber-900">
+        {notice === "session"
+          ? "ログインの有効期限が切れました。ページを再読み込みしてください。"
+          : "AIの応答に失敗しました。時間をおいて、もう一度送信してください。"}
+      </p>
+      {notice === "session" ? (
+        <button
+          type="button"
+          onClick={() => window.location.reload()}
+          className="shrink-0 rounded-lg bg-amber-900 px-3 py-1.5 text-xs font-bold text-white transition-opacity hover:opacity-80"
+        >
+          再読み込み
+        </button>
+      ) : (
+        <button
+          type="button"
+          onClick={() => setNotice(null)}
+          className="shrink-0 rounded-lg border border-amber-300 px-3 py-1.5 text-xs font-bold text-amber-900 transition-colors hover:bg-amber-100"
+        >
+          閉じる
+        </button>
+      )}
+    </div>
+  ) : null;
 
   // 恋愛モードがOFFの場合の表示
   if (mode === "romance" && !currentUser.enabledModes.includes("romance")) {
@@ -293,6 +371,7 @@ export default function AiTalkPage() {
           <ModeSwitch />
         </header>
         <div className="flex-1 overflow-y-auto bg-[var(--bg)] p-6">
+          {noticeBanner}
           <div className="mx-auto max-w-3xl space-y-6">
             {/* 総合評価 */}
             <div className="rounded-xl border border-[var(--card-border)] bg-[var(--card-bg)] p-6">
@@ -481,6 +560,7 @@ export default function AiTalkPage() {
 
       {/* 入力エリア */}
       <div className="shrink-0 border-t border-[var(--card-border)] bg-[var(--card-bg)] px-4 py-2">
+        {noticeBanner}
         <div className="mx-auto max-w-3xl">
           <div className="flex gap-2">
             <textarea
