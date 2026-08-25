@@ -6,6 +6,7 @@ import type { Mode, Profile, User } from "@/lib/types";
 import { MODE_LABEL } from "@/lib/types";
 import { PROFILE_FIELDS, USER_FIELDS } from "@/lib/profile-fields";
 import type { ProfileField } from "@/lib/profile-fields";
+import { UserRating } from "@/components/reviews/UserRating";
 
 /**
  * 相手のプロフィールを見るモーダル。
@@ -130,7 +131,14 @@ export function ProfileDetailModal({
             </div>
 
             <div className="min-w-0 flex-1">
-              <h2 className="text-2xl font-bold">{user.name}</h2>
+              {/*
+                名前と口コミの平均。評価が0件なら UserRating 側が何も出さないので、
+                ここは名前だけが並ぶ形になる
+              */}
+              <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+                <h2 className="text-2xl font-bold">{user.name}</h2>
+                <UserRating userId={user.id} mode={mode} />
+              </div>
               <p className="mt-1 text-sm text-[var(--muted)]">
                 {showDepartment ? `${user.department} / ` : ""}
                 {user.jobTitle}

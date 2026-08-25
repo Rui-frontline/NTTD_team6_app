@@ -8,6 +8,7 @@ import { getUsers, likeUser, passUser } from "@/lib/repository";
 import type { Mode, User } from "@/lib/types";
 import type { DiscoverFilter } from "@/lib/repository";
 import { TAG_OPTIONS } from "@/lib/types";
+import { UserRating } from "@/components/reviews/UserRating";
 import styles from "./discover.module.css";
 
 type ReactionFeedback = {
@@ -1021,15 +1022,28 @@ export default function DiscoverPage() {
                 className={isWork ? styles.workDetailContent : undefined}
                 style={{ flex: 1, display: "flex", flexDirection: "column", gap: "24px" }}
               >
-                {/* 名前 */}
-                <h1 style={{
-                  margin: 0,
-                  fontSize: "32px",
-                  fontWeight: "bold",
-                  color: "var(--foreground)",
+                {/* 名前と口コミの平均。評価が0件なら星は出ない */}
+                <div style={{
+                  display: "flex",
+                  flexWrap: "wrap",
+                  alignItems: "center",
+                  columnGap: "14px",
+                  rowGap: "4px",
                 }}>
-                  {currentUser_displayed.name}
-                </h1>
+                  <h1 style={{
+                    margin: 0,
+                    fontSize: "32px",
+                    fontWeight: "bold",
+                    color: "var(--foreground)",
+                  }}>
+                    {currentUser_displayed.name}
+                  </h1>
+                  <UserRating
+                    userId={currentUser_displayed.id}
+                    mode={mode}
+                    size={18}
+                  />
+                </div>
 
                 {/* 基本情報 */}
                 <div>
