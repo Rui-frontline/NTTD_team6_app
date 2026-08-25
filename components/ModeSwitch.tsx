@@ -15,43 +15,11 @@ import { useSession } from "@/lib/session";
 export function ModeSwitch() {
   const { mode, setMode } = useSession();
 
-  if (mode === "romance") {
-    return (
-      <div
-        role="tablist"
-        aria-label="モードの切り替え"
-        className="flex items-center gap-1 rounded-full border border-[var(--tab-shell-border)] bg-[var(--tab-shell-bg)] p-1 [box-shadow:var(--soft-shadow)]"
-      >
-        {MODES.map((m) => {
-          const active = m === mode;
-          return (
-            <button
-              key={m}
-              type="button"
-              role="tab"
-              aria-selected={active}
-              onClick={() => setMode(m)}
-              className={[
-                "flex items-center gap-2 rounded-[var(--tab-radius)] px-5 py-1.5 text-sm font-bold transition-all",
-                active
-                  ? "[background:var(--tab-active-bg)] text-[var(--tab-active-fg)] [box-shadow:var(--soft-shadow)]"
-                  : "text-[var(--tab-idle-fg)]",
-              ].join(" ")}
-            >
-              {m === "romance" ? <HeartIcon /> : <WorkIcon />}
-              {MODE_LABEL[m]}モード
-            </button>
-          );
-        })}
-      </div>
-    );
-  }
-
   return (
     <div
       role="tablist"
       aria-label="モードの切り替え"
-      className="work-mode-switch flex max-w-full items-center gap-1 rounded-2xl border border-[var(--tab-shell-border)] bg-[var(--tab-shell-bg)] p-1.5 [box-shadow:var(--soft-shadow)]"
+      className="flex items-center gap-1 rounded-full border border-[var(--tab-shell-border)] bg-[var(--tab-shell-bg)] p-1 [box-shadow:var(--soft-shadow)]"
     >
       {MODES.map((m) => {
         const active = m === mode;
@@ -63,18 +31,14 @@ export function ModeSwitch() {
             aria-selected={active}
             onClick={() => setMode(m)}
             className={[
-              "flex min-h-10 min-w-0 items-center justify-center gap-2 whitespace-nowrap rounded-[var(--tab-radius)] px-2.5 py-1.5 text-xs font-semibold tracking-wide transition-all sm:px-3 sm:text-sm lg:min-w-36 lg:px-5",
+              "flex items-center gap-2 rounded-[var(--tab-radius)] px-5 py-1.5 text-sm font-bold transition-all",
               active
                 ? "[background:var(--tab-active-bg)] text-[var(--tab-active-fg)] [box-shadow:var(--soft-shadow)]"
                 : "text-[var(--tab-idle-fg)]",
-              active && m === "work" ? "[&>svg]:text-[var(--work-gold)]" : "",
             ].join(" ")}
           >
             {m === "romance" ? <HeartIcon /> : <WorkIcon />}
-            <span>
-              {MODE_LABEL[m]}
-              <span className="hidden md:inline">モード</span>
-            </span>
+            {MODE_LABEL[m]}モード
           </button>
         );
       })}

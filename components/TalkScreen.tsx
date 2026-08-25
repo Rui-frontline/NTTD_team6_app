@@ -201,48 +201,32 @@ export function TalkScreen({
     return <p className="text-sm text-muted">読み込み中…</p>;
   }
 
-  const isWork = mode === "work";
-
   return (
-    <div
-      className={
-        isWork
-          ? "mx-auto flex h-[calc(100dvh-9rem)] w-full max-w-6xl flex-col gap-3"
-          : "flex h-[calc(100dvh-9rem)] flex-col gap-3"
-      }
-    >
+    <div className="flex h-[calc(100dvh-9rem)] flex-col gap-3">
       <PageHeading
         title="トーク"
         description="マッチした人との会話を確認できます。"
       />
 
       {error ? (
-        <p
-          className={
-            isWork
-              ? "rounded-[14px] border border-[rgba(20,30,50,0.08)] bg-[#EEF1F6] px-4 py-3 text-sm text-[#0C2340]"
-              : "rounded-lg bg-accent-soft px-3 py-2 text-sm text-accent"
-          }
-        >
+        <p className="rounded-lg bg-accent-soft px-3 py-2 text-sm text-accent">
           {error}
         </p>
       ) : null}
 
-      {/* overflow-hidden が、画面外に逃がしたパネルのはみ出しを隠している */}
-      <div
-        className={
-          isWork
-            ? "relative flex flex-1 overflow-hidden rounded-[20px] border border-[rgba(20,30,50,0.08)] bg-[#FFFDFC] shadow-[0_10px_30px_rgba(15,25,40,0.06)]"
-            : "flex flex-1 overflow-hidden rounded-lg border border-line bg-surface"
-        }
-      >
-        <div
-          className={
-            isWork
-              ? "w-full shrink-0 overflow-y-auto bg-[rgba(255,253,252,0.78)] md:w-72 md:border-r md:border-[#EAE6DF]"
-              : "w-72 shrink-0 overflow-y-auto border-r border-line"
-          }
-        >
+      {/*
+        overflow-hidden が、画面外に逃がしたパネルのはみ出しを隠している。
+
+        relative は、狭い画面でパネルを absolute で重ねるときの基準。
+        md 未満では一覧が幅いっぱいを占めるので、横に並べる場所が無い。
+      */}
+      <div className="relative flex flex-1 overflow-hidden rounded-lg border border-line bg-surface">
+        {/*
+          狭い画面では一覧を幅いっぱいにする。w-72 shrink-0 のままだと、
+          サイドバーと余白を引いた残りが18remを下回ったとき、一覧が幅を
+          使い切って右側が0pxまで潰れ、トークが開けなくなる。
+        */}
+        <div className="w-full shrink-0 overflow-y-auto md:w-72 md:border-r md:border-line">
           {loading ? (
             <p className="px-4 py-3 text-sm text-muted">読み込み中…</p>
           ) : matches.length === 0 ? (
@@ -251,7 +235,6 @@ export function TalkScreen({
             </p>
           ) : (
             <MatchList
-              mode={mode}
               matches={matches}
               selectedMatchId={selected?.match.id ?? null}
               onSelect={(summary) => {
@@ -262,19 +245,26 @@ export function TalkScreen({
           )}
         </div>
 
-        {/* パネルは absolute で置くので、その基準になる relative をここに付ける */}
+        {/*
+          md 未満では一覧の上に重ねて出す。md 以上は今までどおり横に並べる。
+
+          この箱に背景を付けない。閉じている間も一覧の全面を覆っているので、
+          背景を持たせると一覧が見えなくなる（pointer-events-none はクリックを
+          通すだけで、見た目は隠したままになる）。開いているときの背景は
+          TalkPanel の section が自前で持っている。
+
+          閉じている間を pointer-events-none にするのは、透明でも箱としては
+          覆っているため。これが無いと一覧の項目を押せない。
+          md 以上は重ならないので戻す。
+        */}
         <div
-          className={
-            isWork
-              ? [
-                  "absolute inset-0 z-10 min-w-0 bg-[#FFFDFC] md:pointer-events-auto md:relative md:z-auto md:flex-1",
-                  open ? "pointer-events-auto" : "pointer-events-none",
-                ].join(" ")
-              : "relative flex-1"
-          }
+          className={[
+            "absolute inset-0 z-10 min-w-0",
+            "md:pointer-events-auto md:relative md:z-auto md:flex-1",
+            open ? "pointer-events-auto" : "pointer-events-none",
+          ].join(" ")}
         >
           <TalkPanel
-            mode={mode}
             open={open}
             summary={selected}
             onClose={() => setOpen(false)}

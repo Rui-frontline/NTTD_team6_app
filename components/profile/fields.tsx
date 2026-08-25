@@ -17,25 +17,19 @@ import { UNSET, UNSET_LABEL, numberOptions } from "@/lib/profile-fields";
 export const INPUT_CLASS =
   "w-full rounded-md border border-[var(--line)] bg-[var(--surface)] px-3 py-2 text-sm text-[var(--foreground)] focus:border-[var(--accent)] focus:outline-none focus:ring-1 focus:ring-[var(--accent)]";
 
-/** 仕事モードのマイページだけで使う、アイボリー基調の入力欄 */
-export const WORK_INPUT_CLASS =
-  "w-full rounded-[14px] border border-[#DED9D0] bg-[#FBFAF7] px-4 py-2.5 text-sm text-[var(--foreground)] transition-[border-color,box-shadow] focus:border-[#0C2340] focus:outline-none focus:ring-0 focus:shadow-[0_0_0_3px_rgba(12,35,64,0.05)]";
-
 export function TextInput({
   value,
   onChange,
-  className = INPUT_CLASS,
 }: {
   value: string;
   onChange: (value: string) => void;
-  className?: string;
 }) {
   return (
     <input
       type="text"
       value={value}
       onChange={(e) => onChange(e.target.value)}
-      className={className}
+      className={INPUT_CLASS}
     />
   );
 }
@@ -45,18 +39,16 @@ export function Select({
   value,
   options,
   onChange,
-  className = INPUT_CLASS,
 }: {
   value: string;
   options: readonly string[];
   onChange: (value: string) => void;
-  className?: string;
 }) {
   return (
     <select
       value={value}
       onChange={(e) => onChange(e.target.value)}
-      className={className}
+      className={INPUT_CLASS}
     >
       <option value={UNSET}>{UNSET_LABEL}</option>
       {options.map((option) => (
@@ -80,14 +72,12 @@ export function NumberSelect({
   max,
   unit,
   onChange,
-  className = INPUT_CLASS,
 }: {
   value: number | null;
   min: number;
   max: number;
   unit: string;
   onChange: (value: number | null) => void;
-  className?: string;
 }) {
   return (
     <select
@@ -95,7 +85,7 @@ export function NumberSelect({
       onChange={(e) =>
         onChange(e.target.value === UNSET ? null : Number(e.target.value))
       }
-      className={className}
+      className={INPUT_CLASS}
     >
       <option value={UNSET}>{UNSET_LABEL}</option>
       {numberOptions(min, max).map((n) => (
@@ -119,13 +109,11 @@ export function DepartmentPicker({
   parts,
   fallback = "",
   onChange,
-  controlClassName = INPUT_CLASS,
 }: {
   parts: string[];
   /** 選択肢に無い部署が登録されている場合に、元の値を知らせるために使う */
   fallback?: string;
   onChange: (parts: string[]) => void;
-  controlClassName?: string;
 }) {
   const levels = departmentLevels(parts);
   const complete = isDepartmentComplete(parts);
@@ -147,7 +135,7 @@ export function DepartmentPicker({
             if (e.target.value) next[depth] = e.target.value;
             onChange(next);
           }}
-          className={controlClassName}
+          className={INPUT_CLASS}
         >
           <option value={UNSET}>{level.label}を選択</option>
           {level.options.map((node) => (
