@@ -296,43 +296,41 @@ export default function DiscoverPage() {
     <>
       {/* 見出しはコンテナの外に置く。中に入れるとコンテナの上下 padding のぶん
           下がってしまい、トーク・マイページと縦位置が揃わないため */}
-      <PageHeading
-        title="あなたにおすすめ"
-        description="あなたにおすすめの人を紹介します。"
-      />
+      {/* フィルターは見出しの行に並べる。カードの領域に absolute で置くと、
+          画面幅によってカードと重なってしまう */}
+      <div className="flex items-start justify-between gap-4">
+        <PageHeading
+          title="あなたにおすすめ"
+          description="あなたにおすすめの人を紹介します。"
+        />
+        <button
+          onClick={() => setShowFilter(true)}
+          style={{
+            flexShrink: 0,
+            padding: "10px 20px",
+            backgroundColor: "var(--surface)",
+            color: "var(--foreground)",
+            border: "1px solid var(--line)",
+            borderRadius: "20px",
+            cursor: "pointer",
+            fontSize: "14px",
+            fontWeight: "500",
+            boxShadow: "var(--soft-shadow)",
+          }}
+        >
+          フィルター
+        </button>
+      </div>
 
     {/* 背景色は指定しない。モードで切り替わる地の色（globals.css の
         --background）をそのまま使い、他の画面と揃えるため */}
-    {/* paddingTop は 60px から詰めている。右上の操作ボタンは absolute で
-        top: 20px に置かれているため、画面幅によってはカードと重なるが、
-        重なるのはテストモードなど開発用のボタンなので許容している */}
+    {/* position: relative は、演出（♥/★）を押した位置に出すための基準 */}
     <div style={{
       display: "flex",
       flexDirection: "column",
       padding: "20px 0 60px",
       position: "relative",
     }}>
-      {/* フィルターボタン（右上） */}
-      <button
-        onClick={() => setShowFilter(true)}
-        style={{
-          position: "absolute",
-          top: "20px",
-          right: "20px",
-          padding: "10px 20px",
-          backgroundColor: "var(--surface)",
-          color: "var(--foreground)",
-          border: "1px solid var(--line)",
-          borderRadius: "20px",
-          cursor: "pointer",
-          fontSize: "14px",
-          fontWeight: "500",
-          boxShadow: "var(--soft-shadow)",
-        }}
-      >
-        フィルター
-      </button>
-
       {currentUser_displayed ? (
         <div style={{
           display: "flex",
