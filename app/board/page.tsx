@@ -17,11 +17,9 @@ import {
   getUser,
 } from "@/lib/repository";
 import type { Board, BoardMessage, User } from "@/lib/types";
-import styles from "./board.module.css";
 
 export default function BoardPage() {
   const { currentUser, mode } = useSession();
-  const isWork = mode === "work";
   const router = useRouter();
   const [boards, setBoards] = useState<Board[]>([]);
   const [loading, setLoading] = useState(true);
@@ -50,10 +48,7 @@ export default function BoardPage() {
   }
 
   return (
-    <div
-      className={isWork ? styles.workPage : undefined}
-      style={{ padding: "24px 32px" }}
-    >
+    <div style={{ padding: "24px 32px" }}>
       <PageHeading
         title="募集"
         description={
@@ -65,7 +60,6 @@ export default function BoardPage() {
 
       {/* ヘッダー */}
       <div
-        className={isWork ? styles.workToolbar : undefined}
         style={{
           display: "flex",
           justifyContent: "space-between",
@@ -77,11 +71,6 @@ export default function BoardPage() {
         {/* フィルター */}
         <div style={{ display: "flex", gap: "12px" }}>
           <button
-            className={
-              isWork
-                ? [styles.workSegmentButton, showOnlyActive ? styles.workSegmentActive : ""].join(" ")
-                : undefined
-            }
             onClick={() => setShowOnlyActive(true)}
             style={{
               padding: "8px 16px",
@@ -97,11 +86,6 @@ export default function BoardPage() {
             募集中のみ
           </button>
           <button
-            className={
-              isWork
-                ? [styles.workSegmentButton, !showOnlyActive ? styles.workSegmentActive : ""].join(" ")
-                : undefined
-            }
             onClick={() => setShowOnlyActive(false)}
             style={{
               padding: "8px 16px",
@@ -120,7 +104,6 @@ export default function BoardPage() {
 
         {/* 新規投稿ボタン */}
         <button
-          className={isWork ? styles.workPrimaryButton : undefined}
           onClick={() => setShowCreateModal(true)}
           style={{
             padding: "12px 24px",
@@ -141,7 +124,6 @@ export default function BoardPage() {
       {/* 一覧表示 */}
       {loading ? (
         <div
-          className={isWork ? styles.workLoadingState : undefined}
           style={{
             textAlign: "center",
             marginTop: "80px",
@@ -153,7 +135,6 @@ export default function BoardPage() {
         </div>
       ) : filteredBoards.length === 0 ? (
         <div
-          className={isWork ? styles.workEmptyState : undefined}
           style={{
             textAlign: "center",
             marginTop: "80px",
@@ -173,7 +154,6 @@ export default function BoardPage() {
                 恋愛モードを利用するには、マイページで機能をONにしてください
               </p>
               <button
-                className={isWork ? styles.workPrimaryButton : undefined}
                 onClick={() => router.push("/me")}
                 style={{
                   padding: "12px 32px",
@@ -198,7 +178,6 @@ export default function BoardPage() {
         </div>
       ) : (
         <div
-          className={isWork ? styles.workGrid : undefined}
           style={{
             display: "grid",
             gridTemplateColumns: "repeat(auto-fill, minmax(350px, 1fr))",
@@ -211,7 +190,6 @@ export default function BoardPage() {
               board={board}
               onClick={() => setSelectedBoard(board)}
               currentUserId={currentUser.id}
-              isWork={isWork}
             />
           ))}
         </div>
@@ -235,7 +213,6 @@ export default function BoardPage() {
         <BoardDetailModal
           board={selectedBoard}
           currentUser={currentUser}
-          isWork={isWork}
           onClose={() => setSelectedBoard(null)}
           onUpdated={(updatedBoard) => {
             setBoards((prev) =>
@@ -259,12 +236,10 @@ function BoardCard({
   board,
   onClick,
   currentUserId,
-  isWork,
 }: {
   board: Board;
   onClick: () => void;
   currentUserId: string;
-  isWork: boolean;
 }) {
   const [participantCount, setParticipantCount] = useState(0);
   const [posterName, setPosterName] = useState("");
@@ -283,7 +258,6 @@ function BoardCard({
 
   return (
     <div
-      className={isWork ? styles.workBoardCard : undefined}
       onClick={onClick}
       style={{
         backgroundColor: "#FFFFFF",
@@ -297,12 +271,10 @@ function BoardCard({
         gap: "16px",
       }}
       onMouseEnter={(e) => {
-        if (isWork) return;
         e.currentTarget.style.transform = "translateY(-4px)";
         e.currentTarget.style.boxShadow = "0 8px 24px rgba(0, 0, 0, 0.15)";
       }}
       onMouseLeave={(e) => {
-        if (isWork) return;
         e.currentTarget.style.transform = "translateY(0)";
         e.currentTarget.style.boxShadow = "0 2px 8px rgba(0, 0, 0, 0.1)";
       }}
@@ -310,13 +282,6 @@ function BoardCard({
       {/* ステータスバッジ */}
       <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
         <span
-          className={
-            isWork
-              ? board.status === "募集中"
-                ? styles.workStatusActive
-                : styles.workStatusIdle
-              : undefined
-          }
           style={{
             padding: "4px 12px",
             borderRadius: "12px",
@@ -331,7 +296,6 @@ function BoardCard({
         </span>
         {isOwner && (
           <span
-            className={isWork ? styles.workOwnerBadge : undefined}
             style={{
               padding: "4px 12px",
               borderRadius: "12px",
@@ -414,7 +378,6 @@ function CreateBoardModal({
   onClose: () => void;
   onCreated: (board: Board) => void;
 }) {
-  const isWork = mode === "work";
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [maxParticipants, setMaxParticipants] = useState<number | null>(null);
@@ -448,7 +411,6 @@ function CreateBoardModal({
 
   return (
     <div
-      className={isWork ? styles.workModalOverlay : undefined}
       style={{
         position: "fixed",
         top: 0,
@@ -464,7 +426,6 @@ function CreateBoardModal({
       onClick={onClose}
     >
       <div
-        className={isWork ? styles.workModalCard : undefined}
         onClick={(e) => e.stopPropagation()}
         style={{
           backgroundColor: "#FFFFFF",
@@ -595,7 +556,6 @@ function CreateBoardModal({
           {/* ボタン */}
           <div style={{ display: "flex", gap: "12px", justifyContent: "flex-end" }}>
             <button
-              className={isWork ? styles.workSecondaryButton : undefined}
               onClick={onClose}
               style={{
                 padding: "12px 24px",
@@ -611,7 +571,6 @@ function CreateBoardModal({
               キャンセル
             </button>
             <button
-              className={isWork ? styles.workPrimaryButton : undefined}
               onClick={handleSubmit}
               disabled={submitting}
               style={{
@@ -640,14 +599,12 @@ function CreateBoardModal({
 function BoardDetailModal({
   board,
   currentUser,
-  isWork,
   onClose,
   onUpdated,
   onDeleted,
 }: {
   board: Board;
   currentUser: User;
-  isWork: boolean;
   onClose: () => void;
   onUpdated: (board: Board) => void;
   onDeleted: () => void;
@@ -755,7 +712,6 @@ function BoardDetailModal({
 
   return (
     <div
-      className={isWork ? styles.workModalOverlay : undefined}
       style={{
         position: "fixed",
         top: 0,
@@ -771,7 +727,6 @@ function BoardDetailModal({
       onClick={onClose}
     >
       <div
-        className={isWork ? styles.workDetailModal : undefined}
         onClick={(e) => e.stopPropagation()}
         style={{
           backgroundColor: "#FFFFFF",
@@ -798,13 +753,6 @@ function BoardDetailModal({
           <div style={{ flex: 1 }}>
             <div style={{ display: "flex", gap: "8px", marginBottom: "12px" }}>
               <span
-                className={
-                  isWork
-                    ? board.status === "募集中"
-                      ? styles.workStatusActive
-                      : styles.workStatusIdle
-                    : undefined
-                }
                 style={{
                   padding: "4px 12px",
                   borderRadius: "12px",
@@ -865,7 +813,6 @@ function BoardDetailModal({
             {participants.map((p) => (
               <div
                 key={p.id}
-                className={isWork ? styles.workParticipant : undefined}
                 style={{
                   display: "flex",
                   alignItems: "center",
@@ -932,7 +879,6 @@ function BoardDetailModal({
               </p>
               {board.status === "募集中" && (
                 <button
-                  className={isWork ? styles.workPrimaryButton : undefined}
                   onClick={handleJoin}
                   style={{
                     padding: "12px 32px",
@@ -1013,13 +959,6 @@ function BoardDetailModal({
                             </span>
                           </div>
                           <div
-                            className={
-                              isWork
-                                ? isMine
-                                  ? styles.workMineMessage
-                                  : styles.workOtherMessage
-                                : undefined
-                            }
                             style={{
                               padding: "10px 14px",
                               backgroundColor: isMine ? "#EEF2FF" : "#F3F4F6",
@@ -1062,7 +1001,6 @@ function BoardDetailModal({
                   }}
                 />
                 <button
-                  className={isWork ? styles.workPrimaryButton : undefined}
                   onClick={handleSendMessage}
                   disabled={!newMessage.trim()}
                   style={{

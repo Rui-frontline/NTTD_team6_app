@@ -1,146 +1,39 @@
 "use client";
 
-import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { PageHeading } from "@/components/PageHeading";
 import { useSession } from "@/lib/session";
 import { getUsers, likeUser, passUser } from "@/lib/repository";
-import type { Mode, User } from "@/lib/types";
+import type { User } from "@/lib/types";
 import type { DiscoverFilter } from "@/lib/repository";
 import { TAG_OPTIONS } from "@/lib/types";
 import styles from "./discover.module.css";
 
 type ReactionFeedback = {
   id: number;
-  mode: Mode;
   reaction: "like" | "pass";
   message: "いいねを押しました" | "見送るを押しました";
 };
 
-type LikeBurst = {
+type HeartBurst = {
   id: number;
-  mode: Mode;
   x: number;
   y: number;
 };
 
 /**
- * いいね演出が終わるまでの時間。
- * discover.module.css の float-heart / float-work-star (1.25s) と、
- * いちばん遅い記号の animation-delay (200ms) の合計。片方だけ変えるとズレる。
+ * ハート演出が終わるまでの時間。
+ * discover.module.css の float-heart (1.25s) と、いちばん遅いハートの
+ * animation-delay (200ms) の合計。片方だけ変えるとズレる。
  */
-const LIKE_BURST_MS = 1450;
+const HEART_BURST_MS = 1450;
 
 /** トーストとマッチ演出の表示時間。toast-life / match-backdrop-life と対。 */
 const FEEDBACK_MS = 3000;
 
-type WorkProfileIcon =
-  | "department"
-  | "role"
-  | "achievement"
-  | "talk"
-  | "consult"
-  | "certificate"
-  | "interest";
-
-function WorkProfileRow({
-  icon,
-  label,
-  value,
-}: {
-  icon: WorkProfileIcon;
-  label: string;
-  value: string;
-}) {
-  if (!value.trim()) return null;
-
-  return (
-    <div className={styles.workDetailRow}>
-      <span className={styles.workDetailIcon} aria-hidden>
-        <WorkProfileGlyph icon={icon} />
-      </span>
-      <span className={styles.workDetailCopy}>
-        <span>{label}</span>
-        <strong>{value}</strong>
-      </span>
-    </div>
-  );
-}
-
-function WorkProfileGlyph({ icon }: { icon: WorkProfileIcon }) {
-  const common = {
-    viewBox: "0 0 24 24",
-    fill: "none",
-    stroke: "currentColor",
-    strokeWidth: 1.6,
-    strokeLinecap: "round" as const,
-    strokeLinejoin: "round" as const,
-    className: styles.workDetailGlyph,
-  };
-
-  if (icon === "department") {
-    return (
-      <svg {...common}>
-        <rect x="5" y="3" width="14" height="18" rx="2" />
-        <path d="M9 7h2M13 7h2M9 11h2M13 11h2M10 21v-5h4v5" />
-      </svg>
-    );
-  }
-
-  if (icon === "role") {
-    return (
-      <svg {...common}>
-        <rect x="3" y="7" width="18" height="12" rx="2" />
-        <path d="M8 7V5h8v2M3 12h18M10 12v2h4v-2" />
-      </svg>
-    );
-  }
-
-  if (icon === "achievement") {
-    return (
-      <svg {...common}>
-        <path d="m12 3 2.7 5.5 6.1.9-4.4 4.3 1 6.1-5.4-2.9-5.4 2.9 1-6.1-4.4-4.3 6.1-.9L12 3Z" />
-      </svg>
-    );
-  }
-
-  if (icon === "talk") {
-    return (
-      <svg {...common}>
-        <path d="M20 11.5c0 4-3.6 7.2-8 7.2-1 0-2-.2-2.9-.5L4 20l1.6-3.8A6.8 6.8 0 0 1 4 11.5c0-4 3.6-7.2 8-7.2s8 3.2 8 7.2Z" />
-      </svg>
-    );
-  }
-
-  if (icon === "consult") {
-    return (
-      <svg {...common}>
-        <path d="M12 19h.01M9.6 9.2a2.6 2.6 0 1 1 4.3 2c-1.1.8-1.9 1.4-1.9 3" />
-        <circle cx="12" cy="12" r="9" />
-      </svg>
-    );
-  }
-
-  if (icon === "certificate") {
-    return (
-      <svg {...common}>
-        <rect x="5" y="3" width="14" height="14" rx="2" />
-        <path d="M8 7h8M8 11h5M9 17v4l3-2 3 2v-4" />
-      </svg>
-    );
-  }
-
-  return (
-    <svg {...common}>
-      <path d="M12 21c4.7-2.8 7-6.5 7-11V5l-7-2-7 2v5c0 4.5 2.3 8.2 7 11Z" />
-      <path d="M9 12.5 11 15l4-6" />
-    </svg>
-  );
-}
-
 export default function DiscoverPage() {
   const { currentUser, mode } = useSession();
-  const isWork = mode === "work";
   const router = useRouter();
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
@@ -154,35 +47,29 @@ export default function DiscoverPage() {
   const [testMode, setTestMode] = useState(false); // テストモード（初期値OFF、必要時はコードで変更）
   const [reactionFeedback, setReactionFeedback] =
     useState<ReactionFeedback | null>(null);
-  const [likeBurst, setLikeBurst] = useState<LikeBurst | null>(null);
+  const [heartBurst, setHeartBurst] = useState<HeartBurst | null>(null);
   // 真偽値ではなく成立ごとに増える id を持つ。true のまま true を入れても
   // 要素は再マウントされず、2件目のマッチで演出が再生されないため。
-  // key に渡して、成立のたびに作り直させる（likeBurst と同じ作り）。
+  // key に渡して、成立のたびに作り直させる（heartBurst と同じ作り）。
   const [matchCelebrationId, setMatchCelebrationId] = useState<number | null>(
     null,
   );
   const likeButtonRef = useRef<HTMLButtonElement | null>(null);
   const reactionFeedbackTimer = useRef<number | null>(null);
   const matchCelebrationTimer = useRef<number | null>(null);
-  const likeBurstTimer = useRef<number | null>(null);
-  const reactionModeVersionRef = useRef(0);
-
-  // 通信待ち中にモードが変わった場合、古い画面で始めた操作の演出や
-  // currentIndex 更新を、新しいモードへ持ち込まない。
-  useLayoutEffect(() => {
-    reactionModeVersionRef.current += 1;
-  }, [mode]);
+  const heartBurstTimer = useRef<number | null>(null);
 
   /*
-    モードを切り替えると、同じ state でも記号と配色が変わる。state が残って
-    いると、そのとき終わったはずのアニメーションが別モードの見た目で再生
-    されるため、切り替わりを検知してその場で消す。
+    モードを切り替えると、演出は mode === "romance" の条件で外れて再びマウント
+    される。state が残っていると、そのとき終わったはずのアニメーションが
+    最初から再生される（恋愛 → 仕事 → 恋愛でハートが飛ぶ不具合）。
+    切り替わりを検知して、その場で消す。
     effect で setState するとカスケード描画になるため、描画中に整える。
   */
   const [renderedMode, setRenderedMode] = useState(mode);
   if (renderedMode !== mode) {
     setRenderedMode(mode);
-    setLikeBurst(null);
+    setHeartBurst(null);
     setReactionFeedback(null);
     setMatchCelebrationId(null);
   }
@@ -210,25 +97,19 @@ export default function DiscoverPage() {
       if (matchCelebrationTimer.current !== null) {
         window.clearTimeout(matchCelebrationTimer.current);
       }
-      if (likeBurstTimer.current !== null) {
-        window.clearTimeout(likeBurstTimer.current);
+      if (heartBurstTimer.current !== null) {
+        window.clearTimeout(heartBurstTimer.current);
       }
     };
   }, []);
 
-  const showReactionFeedback = (
-    reaction: "like" | "pass",
-    reactionModeVersion: number,
-  ) => {
-    if (reactionModeVersion !== reactionModeVersionRef.current) {
-      return false;
-    }
+  const showReactionFeedback = (reaction: "like" | "pass") => {
+    if (mode !== "romance") return;
 
     if (reaction === "like") {
       const buttonRect = likeButtonRef.current?.getBoundingClientRect();
-      setLikeBurst((previous) => ({
+      setHeartBurst((previous) => ({
         id: (previous?.id ?? 0) + 1,
-        mode,
         x: buttonRect
           ? buttonRect.left + buttonRect.width / 2
           : window.innerWidth / 2,
@@ -239,13 +120,13 @@ export default function DiscoverPage() {
 
       // 飛び終わったら消す。残したままだと、見えないだけの div が DOM に
       // 居座り、モードを切り替えたときに再マウントされて飛び直す。
-      if (likeBurstTimer.current !== null) {
-        window.clearTimeout(likeBurstTimer.current);
+      if (heartBurstTimer.current !== null) {
+        window.clearTimeout(heartBurstTimer.current);
       }
-      likeBurstTimer.current = window.setTimeout(() => {
-        setLikeBurst(null);
-        likeBurstTimer.current = null;
-      }, LIKE_BURST_MS);
+      heartBurstTimer.current = window.setTimeout(() => {
+        setHeartBurst(null);
+        heartBurstTimer.current = null;
+      }, HEART_BURST_MS);
     }
 
     if (reactionFeedbackTimer.current !== null) {
@@ -254,7 +135,6 @@ export default function DiscoverPage() {
 
     setReactionFeedback((previous) => ({
       id: (previous?.id ?? 0) + 1,
-      mode,
       reaction,
       message:
         reaction === "like"
@@ -265,8 +145,6 @@ export default function DiscoverPage() {
       setReactionFeedback(null);
       reactionFeedbackTimer.current = null;
     }, FEEDBACK_MS);
-
-    return true;
   };
 
   const showMatchFeedback = () => {
@@ -297,11 +175,10 @@ export default function DiscoverPage() {
   // いいねボタンの処理
   const handleLike = async (targetUser: User) => {
     if (!currentUser) return;
-    const reactionModeVersion = reactionModeVersionRef.current;
 
     // テストモード：DBに保存せず次に進むだけ
     if (testMode) {
-      if (!showReactionFeedback("like", reactionModeVersion)) return;
+      showReactionFeedback("like");
       goToNextUser();
       return;
     }
@@ -311,8 +188,8 @@ export default function DiscoverPage() {
 
       // 演出は書き込みが成功してから出す。await より前に出すと、
       // 通信や権限のエラーで失敗したときに「いいねを押しました」の
-      // トーストといいね演出が最大3秒残り、その上に失敗アラートが出る。
-      if (!showReactionFeedback("like", reactionModeVersion)) return;
+      // トーストとハートが最大3秒残り、その上に失敗アラートが出る。
+      showReactionFeedback("like");
 
       // マッチ成立の確認
       if (match) {
@@ -326,7 +203,6 @@ export default function DiscoverPage() {
       // 次のユーザーに進む
       goToNextUser();
     } catch (error) {
-      if (reactionModeVersion !== reactionModeVersionRef.current) return;
       console.error("いいね送信エラー:", error);
       alert("いいねの送信に失敗しました");
     }
@@ -335,11 +211,10 @@ export default function DiscoverPage() {
   // 見送るボタンの処理
   const handlePass = async (targetUser: User) => {
     if (!currentUser) return;
-    const reactionModeVersion = reactionModeVersionRef.current;
 
     // テストモード：DBに保存せず次に進むだけ
     if (testMode) {
-      if (!showReactionFeedback("pass", reactionModeVersion)) return;
+      showReactionFeedback("pass");
       goToNextUser();
       return;
     }
@@ -352,12 +227,11 @@ export default function DiscoverPage() {
       // 仕事モードの場合は保存しない（リロードで戻る）
 
       // handleLike と同じ理由で、演出は書き込みが成功してから出す
-      if (!showReactionFeedback("pass", reactionModeVersion)) return;
+      showReactionFeedback("pass");
 
       // 次のユーザーに進む
       goToNextUser();
     } catch (error) {
-      if (reactionModeVersion !== reactionModeVersionRef.current) return;
       console.error("見送りエラー:", error);
       alert("見送りに失敗しました");
     }
@@ -371,23 +245,13 @@ export default function DiscoverPage() {
     return <div>読み込み中...</div>;
   }
 
-  const commonWorkTags = currentUser_displayed
-    ? currentUser_displayed.work.tags.filter((tag) =>
-        currentUser.work.tags.includes(tag),
-      )
-    : [];
-
   return (
     <>
       {/* 見出しはコンテナの外に置く。中に入れるとコンテナの上下 padding のぶん
           下がってしまい、トーク・マイページと縦位置が揃わないため */}
       <PageHeading
-        title={isWork ? "おすすめの社員" : "あなたにおすすめ"}
-        description={
-          isWork
-            ? "社内で新しいつながりを見つけましょう。"
-            : "あなたにおすすめの人を紹介します。"
-        }
+        title="あなたにおすすめ"
+        description="あなたにおすすめの人を紹介します。"
       />
 
     {/* 背景色は指定しない。モードで切り替わる地の色（globals.css の
@@ -395,7 +259,7 @@ export default function DiscoverPage() {
     {/* paddingTop は 60px から詰めている。右上の操作ボタンは absolute で
         top: 20px に置かれているため、画面幅によってはカードと重なるが、
         重なるのはテストモードなど開発用のボタンなので許容している */}
-    <div className={isWork ? styles.workStage : undefined} style={{
+    <div style={{
       display: "flex",
       flexDirection: "column",
       padding: "20px 0 60px",
@@ -403,7 +267,6 @@ export default function DiscoverPage() {
     }}>
       {/* フィルターボタン（右上） */}
       <button
-        className={isWork ? styles.workFilterButton : undefined}
         onClick={() => setShowFilter(true)}
         style={{
           position: "absolute",
@@ -424,22 +287,22 @@ export default function DiscoverPage() {
       </button>
 
       {currentUser_displayed ? (
-        <div className={isWork ? styles.workProfileStack : undefined} style={{
+        <div style={{
           display: "flex",
           flexDirection: "column",
           gap: "20px",
         }}>
           {/* 写真とプロフィール */}
-          <div className={isWork ? styles.workProfileGrid : undefined} style={{
+          <div style={{
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
             gap: "32px",
           }}>
             {/* 左：写真カード */}
-            <div className={isWork ? styles.workPhotoCard : undefined} style={{
+            <div style={{
               width: "300px",
-              height: isWork ? "auto" : "500px",
+              height: "500px",
               backgroundColor: "var(--surface)",
               borderRadius: "28px",
               boxShadow: "var(--card-shadow)",
@@ -450,7 +313,6 @@ export default function DiscoverPage() {
               flexShrink: 0,
             }}>
               <img
-                className={isWork ? styles.workProfilePhoto : undefined}
                 src={currentUser_displayed.avatarUrl}
                 alt={currentUser_displayed.name}
                 style={{
@@ -459,41 +321,24 @@ export default function DiscoverPage() {
                   objectFit: "cover",
                 }}
               />
-              {isWork ? (
-                <div className={styles.workPhotoCaption}>
-                  <h2>{currentUser_displayed.name}</h2>
-                  <p>
-                    {currentUser_displayed.department} / {currentUser_displayed.jobTitle}
-                  </p>
-                  <div className={styles.workPhotoTags}>
-                    {currentUser_displayed.work.tags.map((tag) => (
-                      <span key={tag}>{tag}</span>
-                    ))}
-                  </div>
-                </div>
-              ) : null}
             </div>
 
             {/* 右：プロフィールカード */}
-            <div className={isWork ? styles.workProfileCard : undefined} style={{
+            <div style={{
               width: "600px",
-              height: isWork ? "auto" : "500px",
+              height: "500px",
               backgroundColor: "var(--surface)",
               borderRadius: "28px",
               boxShadow: "var(--card-shadow)",
               padding: "32px",
-              overflowY: isWork ? "visible" : "auto",
+              overflowY: "auto",
               display: "flex",
               flexDirection: "column",
               gap: "20px",
               flexShrink: 0,
             }}>
-              {isWork ? (
-                <h2 className={styles.workProfilePanelTitle}>プロフィール</h2>
-              ) : null}
-
               {/* 名前 */}
-              <h1 className={isWork ? styles.workProfileName : undefined} style={{
+              <h1 style={{
                 margin: 0,
                 fontSize: "28px",
                 fontWeight: "bold",
@@ -503,7 +348,7 @@ export default function DiscoverPage() {
               </h1>
 
               {/* 基本情報 */}
-              <p className={isWork ? styles.workProfileMeta : undefined} style={{
+              <p style={{
                 margin: 0,
                 fontSize: "16px",
                 color: "var(--muted)",
@@ -515,50 +360,7 @@ export default function DiscoverPage() {
               </p>
 
               {/* 区切り線 */}
-              <div
-                className={isWork ? styles.workProfileDivider : undefined}
-                style={{ height: "1px", backgroundColor: "var(--line)" }}
-              />
-
-              {isWork ? (
-                <div className={styles.workDetailsList}>
-                  <WorkProfileRow
-                    icon="department"
-                    label="部署"
-                    value={currentUser_displayed.department}
-                  />
-                  <WorkProfileRow
-                    icon="role"
-                    label="担当業務"
-                    value={currentUser_displayed.jobTitle}
-                  />
-                  <WorkProfileRow
-                    icon="achievement"
-                    label="仕事の実績"
-                    value={currentUser_displayed.work.workAchievements}
-                  />
-                  <WorkProfileRow
-                    icon="talk"
-                    label="お話しできること"
-                    value={currentUser_displayed.work.canTalkAbout}
-                  />
-                  <WorkProfileRow
-                    icon="consult"
-                    label="相談したい内容"
-                    value={currentUser_displayed.work.wantToConsult}
-                  />
-                  <WorkProfileRow
-                    icon="certificate"
-                    label="資格情報"
-                    value={currentUser_displayed.work.certifications}
-                  />
-                  <WorkProfileRow
-                    icon="interest"
-                    label="今後興味のある領域"
-                    value={currentUser_displayed.work.interestedAreas}
-                  />
-                </div>
-              ) : null}
+              <div style={{ height: "1px", backgroundColor: "var(--line)" }} />
 
               {/* 年齢（恋愛モードのみ） */}
               {mode === "romance" && (
@@ -573,20 +375,13 @@ export default function DiscoverPage() {
               )}
 
               {/* タグ */}
-              <div
-                className={
-                  isWork
-                    ? `${styles.workProfileSection} ${styles.workTagSection}`
-                    : undefined
-                }
-              >
+              <div>
                 <p style={{ margin: "0 0 8px 0", fontSize: "14px", fontWeight: "bold", color: "var(--foreground)" }}>
                   タグ
                 </p>
                 <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
                   {(mode === "work" ? currentUser_displayed.work.tags : currentUser_displayed.romance.tags).map((tag) => (
                     <span
-                      className={isWork ? styles.workProfileChip : undefined}
                       key={tag}
                       style={{
                         padding: "6px 16px",
@@ -602,29 +397,11 @@ export default function DiscoverPage() {
                 </div>
               </div>
 
-              {isWork && commonWorkTags.length > 0 ? (
-                <div className={styles.workCommonInterest}>
-                  <span aria-hidden>☆</span>
-                  <p>
-                    {commonWorkTags.join("・")}への関心が共通しています
-                  </p>
-                </div>
-              ) : null}
-
               {/* 区切り線 */}
-              <div
-                className={isWork ? styles.workProfileDivider : undefined}
-                style={{ height: "1px", backgroundColor: "var(--line)" }}
-              />
+              <div style={{ height: "1px", backgroundColor: "var(--line)" }} />
 
               {/* 自己紹介 */}
-              <div
-                className={
-                  isWork
-                    ? `${styles.workProfileSection} ${styles.workBioSection}`
-                    : undefined
-                }
-              >
+              <div>
                 <p style={{ margin: "0 0 12px 0", fontSize: "14px", fontWeight: "bold", color: "var(--foreground)" }}>
                   自己紹介
                 </p>
@@ -643,7 +420,6 @@ export default function DiscoverPage() {
 
               {/* 詳細プロフィールを見るボタン */}
               <button
-                className={isWork ? styles.workDetailButton : undefined}
                 onClick={() => setShowDetailProfile(true)}
                 style={{
                   marginTop: "auto",
@@ -663,13 +439,12 @@ export default function DiscoverPage() {
           </div>
 
           {/* ボタン */}
-          <div className={isWork ? styles.workActionRow : undefined} style={{
+          <div style={{
             display: "flex",
             justifyContent: "center",
             gap: "20px",
           }}>
             <button
-              className={isWork ? styles.workPassButton : undefined}
               onClick={() => handlePass(currentUser_displayed)}
               style={{
                 width: "200px",
@@ -687,7 +462,6 @@ export default function DiscoverPage() {
               ✕ 見送る
             </button>
             <button
-              className={isWork ? styles.workLikeButton : undefined}
               ref={likeButtonRef}
               onClick={() => handleLike(currentUser_displayed)}
               style={{
@@ -708,7 +482,7 @@ export default function DiscoverPage() {
           </div>
         </div>
       ) : (
-        <div className={isWork ? styles.workEmptyState : undefined} style={{
+        <div style={{
           flex: 1,
           display: "flex",
           flexDirection: "column",
@@ -753,7 +527,6 @@ export default function DiscoverPage() {
       {/* フィルターパネル（右からスライドイン） */}
       {showFilter && (
         <div
-          className={isWork ? styles.workOverlay : undefined}
           style={{
             position: "fixed",
             top: 0,
@@ -766,7 +539,6 @@ export default function DiscoverPage() {
           onClick={() => setShowFilter(false)}
         >
           <div
-            className={isWork ? styles.workFilterPanel : undefined}
             style={{
               position: "absolute",
               top: 0,
@@ -784,7 +556,6 @@ export default function DiscoverPage() {
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px" }}>
               <h2 style={{ margin: 0 }}>フィルター</h2>
               <button
-                className={isWork ? styles.workCloseButton : undefined}
                 onClick={() => setShowFilter(false)}
                 style={{
                   padding: "5px 15px",
@@ -922,7 +693,6 @@ export default function DiscoverPage() {
             )}
 
             <button
-              className={isWork ? styles.workClearButton : undefined}
               onClick={() => {
                 setFilter({});
                 setShowFilter(false);
@@ -947,7 +717,6 @@ export default function DiscoverPage() {
       {/* 詳細プロフィールモーダル */}
       {showDetailProfile && currentUser_displayed && (
         <div
-          className={isWork ? styles.workOverlay : undefined}
           style={{
             position: "fixed",
             top: 0,
@@ -963,7 +732,6 @@ export default function DiscoverPage() {
           onClick={() => setShowDetailProfile(false)}
         >
           <div
-            className={isWork ? styles.workDetailModal : undefined}
             style={{
               width: "900px",
               maxHeight: "90vh",
@@ -978,7 +746,6 @@ export default function DiscoverPage() {
             {/* 閉じるボタン */}
             <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: "20px" }}>
               <button
-                className={isWork ? styles.workCloseButton : undefined}
                 onClick={() => setShowDetailProfile(false)}
                 style={{
                   padding: "8px 20px",
@@ -995,15 +762,9 @@ export default function DiscoverPage() {
             </div>
 
             {/* 写真とプロフィールを横並び */}
-            <div
-              className={isWork ? styles.workDetailLayout : undefined}
-              style={{ display: "flex", gap: "32px" }}
-            >
+            <div style={{ display: "flex", gap: "32px" }}>
               {/* 写真 */}
-              <div
-                className={isWork ? styles.workDetailPhoto : undefined}
-                style={{ width: "300px", flexShrink: 0 }}
-              >
+              <div style={{ width: "300px", flexShrink: 0 }}>
                 <img
                   src={currentUser_displayed.avatarUrl}
                   alt={currentUser_displayed.name}
@@ -1017,10 +778,7 @@ export default function DiscoverPage() {
               </div>
 
               {/* 詳細情報 */}
-              <div
-                className={isWork ? styles.workDetailContent : undefined}
-                style={{ flex: 1, display: "flex", flexDirection: "column", gap: "24px" }}
-              >
+              <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: "24px" }}>
                 {/* 名前 */}
                 <h1 style={{
                   margin: 0,
@@ -1063,7 +821,6 @@ export default function DiscoverPage() {
                   <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
                     {(mode === "work" ? currentUser_displayed.work.tags : currentUser_displayed.romance.tags).map((tag) => (
                       <span
-                        className={isWork ? styles.workProfileChip : undefined}
                         key={tag}
                         style={{
                           padding: "8px 20px",
@@ -1109,45 +866,28 @@ export default function DiscoverPage() {
         マッチで3つとも key="1" になり、React が対応付けを誤って要素を作り
         直す（マッチ演出が2回再生されていた原因）。
       */}
-      {likeBurst && likeBurst.mode === mode && (
+      {mode === "romance" && heartBurst && (
         <div
-          key={`like-${likeBurst.id}`}
-          className={styles.likeBurst}
-          style={{ left: likeBurst.x, top: likeBurst.y }}
+          key={`heart-${heartBurst.id}`}
+          className={styles.heartBurst}
+          style={{ left: heartBurst.x, top: heartBurst.y }}
           aria-hidden="true"
         >
-          {isWork ? (
-            <>
-              <span className={styles.floatingWorkStar}>★</span>
-              <span className={styles.floatingWorkStar}>★</span>
-              <span className={styles.floatingWorkStar}>★</span>
-            </>
-          ) : (
-            <>
-              <span className={styles.floatingHeart}>♥</span>
-              <span className={styles.floatingHeart}>♥</span>
-              <span className={styles.floatingHeart}>♥</span>
-            </>
-          )}
+          <span className={styles.floatingHeart}>♥</span>
+          <span className={styles.floatingHeart}>♥</span>
+          <span className={styles.floatingHeart}>♥</span>
         </div>
       )}
 
-      {reactionFeedback && reactionFeedback.mode === mode && (
+      {mode === "romance" && reactionFeedback && (
         <div
           key={`toast-${reactionFeedback.id}`}
-          className={`${styles.reactionToast} ${isWork ? styles.workReactionToast : ""}`}
+          className={styles.reactionToast}
           role="status"
           aria-live="polite"
         >
-          <span
-            className={`${styles.toastIcon} ${isWork ? styles.workToastIcon : ""}`}
-            aria-hidden="true"
-          >
-            {reactionFeedback.reaction === "like"
-              ? isWork
-                ? "★"
-                : "♥"
-              : "✓"}
+          <span className={styles.toastHeart} aria-hidden="true">
+            {reactionFeedback.reaction === "like" ? "♥" : "✓"}
           </span>
           {reactionFeedback.message}
         </div>
@@ -1180,7 +920,6 @@ export default function DiscoverPage() {
       {/* マッチ成立モーダル */}
       {matchedUser && (
         <div
-          className={isWork ? styles.workOverlay : undefined}
           style={{
             position: "fixed",
             top: 0,
@@ -1200,7 +939,6 @@ export default function DiscoverPage() {
           }}
         >
           <div
-            className={isWork ? styles.workMatchModal : undefined}
             style={{
               backgroundColor: "var(--surface)",
               padding: "40px",
@@ -1306,7 +1044,6 @@ export default function DiscoverPage() {
             {/* ボタン */}
             <div style={{ display: "flex", gap: "12px", justifyContent: "center" }}>
               <button
-                className={isWork ? styles.workPassButton : undefined}
                 onClick={() => {
                   setMatchedUser(null);
                   setMatchedMatchId(null);
@@ -1326,7 +1063,6 @@ export default function DiscoverPage() {
                 後で
               </button>
               <button
-                className={isWork ? styles.workLikeButton : undefined}
                 onClick={() => {
                   // 成立した会話を開いた状態でトーク画面へ。
                   // window.location.href だとページ全体が再読み込みされ、
