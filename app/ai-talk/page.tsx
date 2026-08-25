@@ -485,7 +485,9 @@ export default function AiTalkPage() {
         </div>
 
       {/* メッセージエリア */}
-      <div className="flex-1 min-h-0 overflow-y-auto bg-[var(--background)] px-4 py-2">
+      {/* 地の色（--background）はモードで変わり、吹き出しとの差が小さくて
+          読みにくい。ここは白（--surface）で固定する */}
+      <div className="flex-1 min-h-0 overflow-y-auto bg-[var(--surface)] px-4 py-2">
         <div className="mx-auto max-w-3xl space-y-3">
           {messages.map((message, index) => (
             <div
@@ -498,7 +500,7 @@ export default function AiTalkPage() {
                 className={`max-w-[70%] rounded-2xl px-4 py-2.5 ${
                   message.role === "user"
                     ? "bg-black text-white"
-                    : "bg-[var(--surface)] text-[var(--foreground)] border border-[var(--line)]"
+                    : "bg-[var(--bubble-other-bg)] text-[var(--foreground)] border border-[var(--line)]"
                 }`}
               >
                 <p className="whitespace-pre-wrap break-words">
@@ -521,7 +523,7 @@ export default function AiTalkPage() {
           ))}
           {isLoading && (
             <div className="flex justify-start">
-              <div className="max-w-[70%] rounded-2xl border border-[var(--line)] bg-[var(--surface)] px-4 py-2.5">
+              <div className="max-w-[70%] rounded-2xl border border-[var(--line)] bg-[var(--bubble-other-bg)] px-4 py-2.5">
                 <p className="text-[var(--muted)]">入力中...</p>
               </div>
             </div>
