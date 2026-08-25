@@ -2,10 +2,17 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { fileToMessageImage, isImageBody } from "@/lib/image";
-import { blockUser, getMessages, sendMessage } from "@/lib/repository";
+import {
+  blockUser,
+  getMessages,
+  hasReviewedMatch,
+  sendMessage,
+} from "@/lib/repository";
+import { REVIEW_RALLY_THRESHOLD, rallyCount } from "@/lib/reviews";
 import { useSession } from "@/lib/session";
 import { usePolling } from "@/lib/usePolling";
 import { ProfileDetailModal } from "@/components/profile/ProfileDetailModal";
+import { ReviewPrompt } from "@/components/reviews/ReviewPrompt";
 import type { MatchSummary, Message } from "@/lib/types";
 
 /**
@@ -170,6 +177,7 @@ export function TalkPanel({
           <Conversation
             key={summary.match.id}
             matchId={summary.match.id}
+            partnerName={summary.partner.name}
             open={open}
             onSent={onSent}
             onRead={onRead}
@@ -272,11 +280,14 @@ function blockErrorMessage(err: unknown): string {
 /** 1つのマッチぶんの会話。state はすべてこの相手に紐づく */
 function Conversation({
   matchId,
+  partnerName,
   open,
   onSent,
   onRead,
 }: {
   matchId: string;
+  /** 評価モーダルの文面に出す相手の名前 */
+  partnerName: string;
   open: boolean;
   onSent: (created: Message) => void;
   onRead: (matchId: string, readAt: string) => void;
@@ -287,6 +298,14 @@ function Conversation({
   const [input, setInput] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  /**
+   * この会話にもう星をつけたか。null は「まだ調べていない」。
+   * 調べ終わるまで評価モーダルを出さないので、既に評価した相手に
+   * 一瞬だけ出てしまうことがない。
+   */
+  const [reviewed, setReviewed] = useState<boolean | null>(null);
+  /** 「あとで」を押したか。開いている間だけ有効で、開き直すとまた出る */
+  const [skippedReview, setSkippedReview] = useState(false);
   const scrollRef = useRef<HTMLDivElement | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
   // 写真を選ぶための input。見た目はアイコンのボタンなので、本体は隠して click() で開く
@@ -299,6 +318,25 @@ function Conversation({
   useEffect(() => {
     openRef.current = open;
   }, [open]);
+
+  // 評価済みかを1回だけ調べる。この部品は match ごとに key を分けているので、
+  // 相手が変わればマウントし直され、ここも引き直される。
+  useEffect(() => {
+    let alive = true;
+    hasReviewedMatch(matchId)
+      .then((result) => {
+        if (alive) setReviewed(result);
+      })
+      .catch(() => {
+        // supabase/reviews.sql を流していない環境ではここに来る。
+        // 「評価済み」扱いにしてモーダルを出さない。出したところで
+        // 送信も失敗するので、会話の邪魔にしかならない。
+        if (alive) setReviewed(true);
+      });
+    return () => {
+      alive = false;
+    };
+  }, [matchId]);
 
   // usePolling が完了を待てるように Promise を返す
   const load = useCallback(() => {
@@ -403,6 +441,23 @@ function Conversation({
     },
     [busy, currentUser, matchId, send],
   );
+
+  /*
+    評価を求めるかどうか。
+
+    パネルは閉じていても DOM に残るので、open を見ないと、閉じた会話の
+    ぶんまで画面全体を覆うモーダルが出てしまう。
+
+    reviewed が null（調べている最中）の間は出さない。先に出してしまうと、
+    評価済みの相手にも一瞬だけ表示される。
+  */
+  const askReview =
+    open &&
+    loaded &&
+    reviewed === false &&
+    !skippedReview &&
+    currentUser !== null &&
+    rallyCount(messages, currentUser.id) >= REVIEW_RALLY_THRESHOLD;
 
   return (
     <div className="flex flex-1 flex-col overflow-hidden">
@@ -549,6 +604,15 @@ function Conversation({
           </button>
         </div>
       </div>
+
+      {askReview ? (
+        <ReviewPrompt
+          matchId={matchId}
+          partnerName={partnerName}
+          onDone={() => setReviewed(true)}
+          onSkip={() => setSkippedReview(true)}
+        />
+      ) : null}
     </div>
   );
 }

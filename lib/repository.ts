@@ -2,6 +2,8 @@ import { supabase } from "@/lib/supabase";
 import { isDepartmentComplete, splitDepartmentPath } from "@/lib/departments";
 import { JOB_TITLE_OPTIONS } from "@/lib/profile-fields";
 import type { DailyProgress, ItemId } from "@/lib/points";
+import { NO_RATING } from "@/lib/reviews";
+import type { Rating } from "@/lib/reviews";
 import { MODES } from "@/lib/types";
 import type {
   Board,
@@ -868,6 +870,74 @@ export async function sendMessage(
     .single();
   if (error) throw error;
   return toMessage(data);
+}
+
+// ───────────────────────── 口コミ（星5評価） ─────────────────────────
+
+/**
+ * ある人の、あるモードでの平均と件数。
+ *
+ * reviews は「自分が付けたぶんだけ読める」ポリシーなので、他人の評価は
+ * 行としては引けない。平均だけを get_user_rating 経由で受け取る。
+ *
+ * supabase/reviews.sql を実行していない環境では失敗する。呼ぶ側で
+ * 「評価なし」に落とすこと（星が出ないだけで、画面は成立する）。
+ */
+export async function getUserRating(
+  userId: string,
+  mode: Mode,
+): Promise<Rating> {
+  const { data, error } = await supabase.rpc("get_user_rating", {
+    p_user_id: userId,
+    p_mode: mode,
+  });
+  if (error) throw error;
+
+  // returns table なので配列で返る。1件も無いときは (null, 0) が1行入る
+  const row = (data as { average: number | null; total: number }[] | null)?.[0];
+  if (!row) return NO_RATING;
+
+  return {
+    // numeric は文字列で返ることがあるので数値に寄せる
+    average: row.average === null ? null : Number(row.average),
+    total: row.total ?? 0,
+  };
+}
+
+/**
+ * 星をつける。
+ *
+ * 誰に・どのモードで付けるかは渡さない。DB 側がマッチの行から決める。
+ * 往復10回に達しているかの確認も DB 側で行う。画面の判定は表示のための
+ * もので、通信を直接叩けば回避できるため。
+ *
+ * 同じ会話に二度送っても壊れない（DB 側で黙って無視される）。
+ */
+export async function submitReview(
+  matchId: string,
+  rating: number,
+): Promise<void> {
+  const { error } = await supabase.rpc("submit_review", {
+    p_match_id: Number(matchId),
+    p_rating: rating,
+  });
+  if (error) throw error;
+}
+
+/**
+ * その会話に、自分がもう星をつけたか。
+ *
+ * 条件に自分を書いていないのは、RLS が「自分が付けたぶんだけ」に絞るため。
+ * ここで reviewer_id を指定しても結果は変わらない。
+ */
+export async function hasReviewedMatch(matchId: string): Promise<boolean> {
+  const { data, error } = await supabase
+    .from("reviews")
+    .select("id")
+    .eq("match_id", Number(matchId))
+    .maybeSingle();
+  if (error) throw error;
+  return data !== null;
 }
 
 // ───────────────────────── トークに送る写真 ─────────────────────────
