@@ -467,11 +467,23 @@ function PersonIcon() {
   );
 }
 
+function AiIcon() {
+  return (
+    <svg {...iconProps()}>
+      <rect x="4" y="4" width="16" height="16" rx="2" />
+      <circle cx="9" cy="10" r="1" fill="currentColor" />
+      <circle cx="15" cy="10" r="1" fill="currentColor" />
+      <path d="M9 15h6" />
+    </svg>
+  );
+}
+
 const NAV = [
   { href: "/discover", label: "探す", icon: SearchIcon },
   { href: "/talk", label: "トーク", icon: TalkIcon },
   { href: "/board", label: "募集", icon: BoardIcon },
   { href: "/history", label: "履歴", icon: HistoryIcon },
+  { href: "/ai-talk", label: "AI対話", icon: AiIcon },
   { href: "/points", label: "ポイント", icon: PointIcon },
   { href: "/me", label: "マイページ", icon: PersonIcon },
 ];
