@@ -316,11 +316,10 @@ export default function AiTalkPage() {
   if (!selectedSituation) {
     return (
       <div
-        className={`flex h-full w-full flex-col ${
-          mode === "work"
-            ? "-mx-5 -my-7 sm:-mx-8 sm:-my-8 lg:-mx-12 lg:-my-10 xl:-mx-14"
-            : "-mx-6 -my-8"
-        }`}
+        // 余白は両モード共通。仕事モード用に別の値を当てていたが、それは
+        // PR #44 の AppShell の余白に合わせたもので、巻き戻した今は引きすぎて
+        // 中身が左へずれ、サイドバーに潜り込む
+        className="flex h-full w-full flex-col -mx-6 -my-8"
       >
         <header className="flex h-16 shrink-0 items-center justify-between border-b border-[var(--card-border)] bg-[var(--card-bg)] px-6">
           <div>
@@ -360,11 +359,10 @@ export default function AiTalkPage() {
   if (showEvaluation) {
     return (
       <div
-        className={`flex h-full w-full flex-col ${
-          mode === "work"
-            ? "-mx-5 -my-7 sm:-mx-8 sm:-my-8 lg:-mx-12 lg:-my-10 xl:-mx-14"
-            : "-mx-6 -my-8"
-        }`}
+        // 余白は両モード共通。仕事モード用に別の値を当てていたが、それは
+        // PR #44 の AppShell の余白に合わせたもので、巻き戻した今は引きすぎて
+        // 中身が左へずれ、サイドバーに潜り込む
+        className="flex h-full w-full flex-col -mx-6 -my-8"
       >
         <header className="flex h-16 shrink-0 items-center justify-between border-b border-[var(--card-border)] bg-[var(--card-bg)] px-6">
           <h1 className="text-lg font-bold text-[var(--fg)]">会話練習完了！</h1>
@@ -479,11 +477,10 @@ export default function AiTalkPage() {
 
   return (
     <div
-      className={`flex h-full w-full flex-col ${
-        mode === "work"
-          ? "-mx-5 -my-7 sm:-mx-8 sm:-my-8 lg:-mx-12 lg:-my-10 xl:-mx-14"
-          : "-mx-6 -my-8"
-      }`}
+      // 余白は両モード共通。仕事モード用に別の値を当てていたが、それは
+      // PR #44 の AppShell の余白に合わせたもので、巻き戻した今は引きすぎて
+      // 中身が左へずれ、サイドバーに潜り込む
+      className="flex h-full w-full flex-col -mx-6 -my-8"
     >
       {/* ヘッダー */}
       <header className="flex shrink-0 items-center justify-between border-b border-[var(--card-border)] bg-[var(--card-bg)] px-4 py-2">
