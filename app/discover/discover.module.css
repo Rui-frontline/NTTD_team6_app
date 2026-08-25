@@ -64,6 +64,58 @@
   animation-delay: 200ms;
 }
 
+/*
+  仕事モードでいいねを押したときに舞う★。
+
+  ♥のままだと社内の同僚に対する反応としては強すぎるので、仕事モードだけ
+  ★に差し替える。飛び方（.heartBurst の位置決め・3つの時間差）は♥と同じ
+  仕組みで、色と形だけが違う。
+
+  色を CSS 変数ではなく直接書いているのは、仕事モードの配色一式が
+  app/globals.css 側にあり、この演出だけのために持ち込みたくないため。
+*/
+.floatingWorkStar {
+  --star-x: 0px;
+  --star-rotation: 0deg;
+
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  color: #0c2340;
+  font-size: 32px;
+  line-height: 1;
+  opacity: 0;
+  filter: drop-shadow(0 7px 8px rgba(201, 169, 110, 0.42));
+  animation: float-work-star 1.25s cubic-bezier(0.18, 0.72, 0.28, 1) both;
+}
+
+.floatingWorkStar:nth-child(1) {
+  --star-x: -58px;
+  --star-rotation: -18deg;
+
+  color: #132f4c;
+  font-size: 28px;
+  animation-delay: 40ms;
+}
+
+.floatingWorkStar:nth-child(2) {
+  --star-x: 0px;
+  --star-rotation: 6deg;
+
+  color: #0c2340;
+  font-size: 39px;
+  animation-delay: 120ms;
+}
+
+.floatingWorkStar:nth-child(3) {
+  --star-x: 58px;
+  --star-rotation: 19deg;
+
+  color: #102a43;
+  font-size: 30px;
+  animation-delay: 200ms;
+}
+
 .reactionToast {
   position: fixed;
   bottom: 28px;
@@ -317,6 +369,43 @@
   }
 }
 
+/* float-heart と同じ動き。★の見え方に合わせて拡大率だけ控えめにしてある */
+@keyframes float-work-star {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, 8px) scale(0.48) rotate(0deg);
+  }
+
+  18% {
+    opacity: 1;
+  }
+
+  72% {
+    opacity: 0.98;
+  }
+
+  100% {
+    opacity: 0;
+    transform: translate(calc(-50% + var(--star-x)), -118px) scale(1.1)
+      rotate(var(--star-rotation));
+  }
+}
+
+/* 動きを減らす設定のとき、飛ばさずにその場で出して消す */
+@keyframes work-star-reduced {
+  0%,
+  100% {
+    opacity: 0;
+    transform: translate(calc(-50% + var(--star-x)), -14px) scale(0.92);
+  }
+
+  24%,
+  72% {
+    opacity: 1;
+    transform: translate(calc(-50% + var(--star-x)), -14px) scale(1);
+  }
+}
+
 @keyframes toast-life {
   0% {
     opacity: 0;
@@ -427,6 +516,10 @@
 @media (prefers-reduced-motion: reduce) {
   .floatingHeart {
     animation-timing-function: ease-out;
+  }
+
+  .floatingWorkStar {
+    animation: work-star-reduced 600ms ease-out both;
   }
 
   .reactionToast,

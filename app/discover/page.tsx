@@ -34,6 +34,8 @@ const FEEDBACK_MS = 3000;
 
 export default function DiscoverPage() {
   const { currentUser, mode } = useSession();
+  // 演出の見た目だけモードで変える（仕事は★、恋愛は♥）
+  const isWork = mode === "work";
   const router = useRouter();
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
@@ -60,10 +62,12 @@ export default function DiscoverPage() {
   const heartBurstTimer = useRef<number | null>(null);
 
   /*
-    モードを切り替えると、演出は mode === "romance" の条件で外れて再びマウント
-    される。state が残っていると、そのとき終わったはずのアニメーションが
-    最初から再生される（恋愛 → 仕事 → 恋愛でハートが飛ぶ不具合）。
-    切り替わりを検知して、その場で消す。
+    モードを切り替えたら、出している演出をその場で消す。
+
+    残したままだと、恋愛モードで飛ばした♥が切り替えた瞬間に★へ化ける
+    （見た目だけ isWork で分けているため）。マッチ成立の演出は恋愛モード
+    でしか出ないので、こちらは残すと切り替えで再生され直す。
+
     effect で setState するとカスケード描画になるため、描画中に整える。
   */
   const [renderedMode, setRenderedMode] = useState(mode);
@@ -103,9 +107,14 @@ export default function DiscoverPage() {
     };
   }, []);
 
-  const showReactionFeedback = (reaction: "like" | "pass") => {
-    if (mode !== "romance") return;
+  /*
+    いいね／見送りを押したときの反応。
 
+    以前は mode !== "romance" で打ち切っていて、仕事モードでは押しても
+    何も起きなかった。両モードで出すようにしている（見た目だけ変える）。
+    マッチ成立の演出（showMatchFeedback）は恋愛モードのままにしてある。
+  */
+  const showReactionFeedback = (reaction: "like" | "pass") => {
     if (reaction === "like") {
       const buttonRect = likeButtonRef.current?.getBoundingClientRect();
       setHeartBurst((previous) => ({
@@ -866,20 +875,30 @@ export default function DiscoverPage() {
         マッチで3つとも key="1" になり、React が対応付けを誤って要素を作り
         直す（マッチ演出が2回再生されていた原因）。
       */}
-      {mode === "romance" && heartBurst && (
+      {heartBurst && (
         <div
           key={`heart-${heartBurst.id}`}
           className={styles.heartBurst}
           style={{ left: heartBurst.x, top: heartBurst.y }}
           aria-hidden="true"
         >
-          <span className={styles.floatingHeart}>♥</span>
-          <span className={styles.floatingHeart}>♥</span>
-          <span className={styles.floatingHeart}>♥</span>
+          {isWork ? (
+            <>
+              <span className={styles.floatingWorkStar}>★</span>
+              <span className={styles.floatingWorkStar}>★</span>
+              <span className={styles.floatingWorkStar}>★</span>
+            </>
+          ) : (
+            <>
+              <span className={styles.floatingHeart}>♥</span>
+              <span className={styles.floatingHeart}>♥</span>
+              <span className={styles.floatingHeart}>♥</span>
+            </>
+          )}
         </div>
       )}
 
-      {mode === "romance" && reactionFeedback && (
+      {reactionFeedback && (
         <div
           key={`toast-${reactionFeedback.id}`}
           className={styles.reactionToast}
@@ -887,7 +906,7 @@ export default function DiscoverPage() {
           aria-live="polite"
         >
           <span className={styles.toastHeart} aria-hidden="true">
-            {reactionFeedback.reaction === "like" ? "♥" : "✓"}
+            {reactionFeedback.reaction === "like" ? (isWork ? "★" : "♥") : "✓"}
           </span>
           {reactionFeedback.message}
         </div>
