@@ -134,6 +134,7 @@ export function RewardInbox({
 function rewardEmoji(reason: string): string {
   if (reason.startsWith("daily_")) return "🎯";
   if (reason.startsWith("profile_")) return "📝";
+  if (reason === "review_submitted") return "⭐";
   return "🎁";
 }
 

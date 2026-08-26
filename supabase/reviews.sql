@@ -76,11 +76,15 @@ declare
   -- 評価を求めるまでの往復回数。lib/reviews.ts の REVIEW_RALLY_THRESHOLD と揃える
   c_threshold constant int := 5;
 
-  v_me      uuid := auth.uid();
-  v_match   public.matches%rowtype;
-  v_partner uuid;
-  v_mine    int;
-  v_theirs  int;
+  -- 口コミ1件で配るポイント。lib/reviews.ts の REVIEW_REWARD_POINTS と揃える
+  c_reward constant int := 50;
+
+  v_me       uuid := auth.uid();
+  v_match    public.matches%rowtype;
+  v_partner  uuid;
+  v_mine     int;
+  v_theirs   int;
+  v_inserted int;
 begin
   if p_rating < 1 or p_rating > 5 then
     raise exception '星は1〜5で指定してください';
@@ -115,6 +119,24 @@ begin
   insert into public.reviews (match_id, reviewer_id, reviewee_id, mode, rating)
   values (p_match_id, v_me, v_partner, v_match.mode, p_rating)
   on conflict (match_id, reviewer_id) do nothing;
+
+  get diagnostics v_inserted = row_count;
+
+  /*
+    実際に1件記録できたときだけポイントを配る。
+
+    row_count を見ているのは、上が on conflict do nothing だから。
+    二重送信や付け直しでは行が増えないので、そのときは配らない。
+    これを見ずに配ると、同じ会話に何度も送るだけでポイントが増える。
+
+    残高には直接足さず、受け取り箱（point_rewards）に入れる。
+    プロフィール達成やデイリーミッションと同じ扱いにするため。
+    受け取りは claim_point_rewards() が行う。
+  */
+  if v_inserted = 1 then
+    insert into public.point_rewards (user_id, amount, reason, label)
+    values (v_me, c_reward, 'review_submitted', '口コミを投稿しました');
+  end if;
 end;
 $$;
 
