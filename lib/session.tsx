@@ -40,6 +40,15 @@ type SessionValue = {
   signIn: (email: string, password: string) => Promise<void>;
   signUp: (input: SignUpInput) => Promise<void>;
   signOut: () => Promise<void>;
+  /** 再設定のリンクをメールで送る。ログインしていなくても呼べる */
+  requestPasswordReset: (email: string) => Promise<void>;
+  /** ログイン中にパスワードを変える。現在のパスワードの確認つき */
+  changePassword: (
+    currentPassword: string,
+    newPassword: string,
+  ) => Promise<void>;
+  /** メールのリンクから来たときに、新しいパスワードを設定する */
+  completePasswordReset: (newPassword: string) => Promise<void>;
   /** プロフィール更新後に呼ぶと、画面の表示が最新になる */
   refreshUser: () => Promise<void>;
 };
@@ -137,6 +146,68 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
     setAuthUserId(null);
   }, []);
 
+  /**
+   * パスワード再設定のリンクをメールで送る。
+   *
+   * 送り先が登録されていない場合も Supabase はエラーを返さない。
+   * こちらでも成否を出し分けない。出し分けると、入力したメールアドレスが
+   * このアプリに登録されているかどうかを、誰でも試せてしまう。
+   *
+   * redirectTo には「いま開いているサイトの /reset-password」を渡す。
+   * localhost でも Vercel でも、踏んだ環境に帰ってくる。
+   * ただし、この URL は Supabase の Authentication → URL Configuration に
+   * 登録しておく必要がある。未登録だとリンクを踏んでも弾かれる。
+   */
+  const requestPasswordReset = useCallback(async (email: string) => {
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/reset-password`,
+    });
+    if (error) throw new Error(translateAuthError(error.message));
+  }, []);
+
+  /**
+   * ログイン中にパスワードを変える。
+   *
+   * 先に現在のパスワードで signInWithPassword を試す。同じユーザーで
+   * 入り直すだけなので、成功してもログイン状態は変わらない。失敗すれば
+   * 現在のパスワードが違うと分かる。
+   *
+   * これが無いと、ログインしたまま席を離れた端末で、他人がパスワードを
+   * 変えてアカウントを乗っ取れる。
+   */
+  const changePassword = useCallback(
+    async (currentPassword: string, newPassword: string) => {
+      const { data: userData } = await supabase.auth.getUser();
+      const email = userData.user?.email;
+      if (!email) throw new Error("ログインし直してからお試しください。");
+
+      const { error: signInError } = await supabase.auth.signInWithPassword({
+        email,
+        password: currentPassword,
+      });
+      if (signInError) {
+        throw new Error("現在のパスワードが違います。");
+      }
+
+      const { error } = await supabase.auth.updateUser({
+        password: newPassword,
+      });
+      if (error) throw new Error(translateAuthError(error.message));
+    },
+    [],
+  );
+
+  /**
+   * メールのリンクから来たときに、新しいパスワードを設定する。
+   *
+   * リンクを踏んだ時点で supabase-js が URL からセッションを作っているので、
+   * 現在のパスワードは要らない（そもそも忘れているから来ている）。
+   */
+  const completePasswordReset = useCallback(async (newPassword: string) => {
+    const { error } = await supabase.auth.updateUser({ password: newPassword });
+    if (error) throw new Error(translateAuthError(error.message));
+  }, []);
+
   const refreshUser = useCallback(async () => {
     await loadUser(authUserId);
   }, [authUserId, loadUser]);
@@ -151,9 +222,25 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
       signIn,
       signUp,
       signOut,
+      requestPasswordReset,
+      changePassword,
+      completePasswordReset,
       refreshUser,
     }),
-    [currentUser, authUserId, loading, mode, setMode, signIn, signUp, signOut, refreshUser],
+    [
+      currentUser,
+      authUserId,
+      loading,
+      mode,
+      setMode,
+      signIn,
+      signUp,
+      signOut,
+      requestPasswordReset,
+      changePassword,
+      completePasswordReset,
+      refreshUser,
+    ],
   );
 
   return (
