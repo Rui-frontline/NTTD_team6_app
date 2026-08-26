@@ -183,16 +183,40 @@ export default function DiscoverPage() {
   // 現在表示中のユーザー
   const currentUser_displayed = users[currentIndex] || null;
 
+  /*
+    何番目の問い合わせかを覚えておき、最後に投げたものの結果だけを採用する。
+
+    絞り込みパネルは取得中も操作できるので、続けて条件を変えると getUsers が
+    並行して走る。古いほうが後に返ってくると、いま選んでいる条件と中身が
+    食い違ったまま表示される。
+
+    loading を戻すのも最新のときだけ。古い応答で下ろすと、まだ取得中なのに
+    カードが出てしまう。
+
+    components/TalkScreen.tsx の一覧取得と同じやり方。
+  */
+  const usersRequestId = useRef(0);
+
   // ユーザー一覧を取得
   useEffect(() => {
     if (!currentUser) return;
+    const id = ++usersRequestId.current;
 
     setLoading(true);
     setCurrentIndex(0); // モードやフィルター変更時は最初から
     getUsers(mode, currentUser.id, filter)
-      .then((data) => setUsers(data))
-      .catch((error) => console.error("ユーザー取得エラー:", error))
-      .finally(() => setLoading(false));
+      .then((data) => {
+        if (id !== usersRequestId.current) return;
+        setUsers(data);
+      })
+      .catch((error) => {
+        if (id !== usersRequestId.current) return;
+        console.error("ユーザー取得エラー:", error);
+      })
+      .finally(() => {
+        if (id !== usersRequestId.current) return;
+        setLoading(false);
+      });
   }, [currentUser, mode, filter]);
 
   // 自分に届いているスーパーいいね。カードのバッジに使う
