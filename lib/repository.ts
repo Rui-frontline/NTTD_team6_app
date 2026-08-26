@@ -248,24 +248,42 @@ export async function getUsers(
 
   const filtered = users.filter((u) => matchesFilter(u, mode, filter));
 
-  // 相手からのいいねを取得
-  const { data: incomingLikes } = await supabase
+  // 相手からのいいねを取得。
+  // is_super は supabase/super_like.sql を流していない環境には無いので、
+  // 失敗したら「スーパーいいねは0件」として続ける（並び順が変わるだけ）。
+  const { data: incomingLikes, error: likeError } = await supabase
     .from("reactions")
-    .select("from_user_id")
+    .select("from_user_id, is_super")
     .eq("to_user_id", currentUserId)
     .eq("mode", mode)
     .eq("type", "like");
 
-  const likedByIds = new Set(
-    (incomingLikes ?? []).map((r: { from_user_id: string }) => r.from_user_id),
+  if (likeError) {
+    console.warn(
+      "いいねの取得に失敗しました。supabase/super_like.sql を実行してください。",
+      likeError,
+    );
+  }
+
+  const rows = (incomingLikes ?? []) as {
+    from_user_id: string;
+    is_super?: boolean | null;
+  }[];
+
+  const likedByIds = new Set(rows.map((r) => r.from_user_id));
+  const superLikedByIds = new Set(
+    rows.filter((r) => r.is_super === true).map((r) => r.from_user_id),
   );
 
-  // いいねをくれた人と、それ以外に分ける
+  // スーパーいいね → 普通のいいね → それ以外、の3段に分ける
+  const superLikedByYou: User[] = [];
   const likedByYou: User[] = [];
   const others: User[] = [];
 
   for (const user of filtered) {
-    if (likedByIds.has(user.id)) {
+    if (superLikedByIds.has(user.id)) {
+      superLikedByYou.push(user);
+    } else if (likedByIds.has(user.id)) {
       likedByYou.push(user);
     } else {
       others.push(user);
@@ -276,8 +294,11 @@ export async function getUsers(
   const shuffled = (arr: User[]) =>
     arr.sort(() => Math.random() - 0.5);
 
-  // いいねをくれた人を前に、それ以外を後ろに
-  return [...shuffled(likedByYou), ...shuffled(others)];
+  return [
+    ...shuffled(superLikedByYou),
+    ...shuffled(likedByYou),
+    ...shuffled(others),
+  ];
 }
 
 /** すでに反応済みで、一覧に出したくない相手のID */
@@ -445,6 +466,45 @@ export async function likeUser(
   // 同じ相手に二度押した場合は無視する
   if (error && error.code !== "23505") throw error;
 
+  return matchIfMutual(fromUserId, toUserId, mode);
+}
+
+/**
+ * スーパーいいねを送る。
+ *
+ * 普通のいいねと違い、送った時点で相手の探す画面に出る。
+ * 100pt で交換したアイテムを1つ消費する。
+ *
+ * 消費と記録は use_super_like がまとめて行う。画面から2回に分けて呼ぶと、
+ * 片方だけ成功して「アイテムだけ減った」が起きるため。
+ *
+ * supabase/super_like.sql を実行していない環境では失敗する。
+ */
+export async function superLikeUser(
+  fromUserId: string,
+  toUserId: string,
+  mode: Mode,
+): Promise<Match | null> {
+  const { error } = await supabase.rpc("use_super_like", {
+    p_to_user_id: toUserId,
+    p_mode: mode,
+  });
+  if (error) throw error;
+
+  return matchIfMutual(fromUserId, toUserId, mode);
+}
+
+/**
+ * 相手からもいいねが来ていればマッチを作る。無ければ null。
+ *
+ * 普通のいいねとスーパーいいねで共通。スーパーいいねかどうかは
+ * マッチの成立条件に関係しない（どちらも「いいね」であることに変わりはない）。
+ */
+async function matchIfMutual(
+  fromUserId: string,
+  toUserId: string,
+  mode: Mode,
+): Promise<Match | null> {
   const { data: reverse, error: reverseError } = await supabase
     .from("reactions")
     .select("id")
@@ -466,6 +526,34 @@ export async function likeUser(
     .single();
   if (matchError) throw matchError;
   return toMatch(data);
+}
+
+/**
+ * 自分にスーパーいいねを送ってきた人の id。
+ *
+ * カードにバッジを出すために使う。並び順は getUsers が別に見ているが、
+ * あちらは User[] しか返せないので、画面が「誰からか」を知るには
+ * こちらが要る。
+ *
+ * supabase/super_like.sql を実行していない環境では列が無くて失敗する。
+ * バッジが出ないだけで探す画面は成立するので、呼ぶ側で空集合に落とすこと。
+ */
+export async function getIncomingSuperLikeIds(
+  userId: string,
+  mode: Mode,
+): Promise<Set<string>> {
+  const { data, error } = await supabase
+    .from("reactions")
+    .select("from_user_id")
+    .eq("to_user_id", userId)
+    .eq("mode", mode)
+    .eq("type", "like")
+    .eq("is_super", true);
+  if (error) throw error;
+
+  return new Set(
+    (data as { from_user_id: string }[]).map((r) => r.from_user_id),
+  );
 }
 
 /**

@@ -67,7 +67,8 @@ export const ITEMS: Item[] = [
   {
     id: "super_like",
     label: "スーパーいいね",
-    description: "特別ないいね。使い道はこれから決まります。",
+    description:
+      "探す画面で使うと、相手にいいねしたことが伝わります。1回につき1つ消費します。",
     cost: 100,
     emoji: "⭐",
   },

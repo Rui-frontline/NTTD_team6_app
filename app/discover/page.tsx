@@ -4,7 +4,14 @@ import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { PageHeading } from "@/components/PageHeading";
 import { useSession } from "@/lib/session";
-import { getUsers, likeUser, passUser } from "@/lib/repository";
+import {
+  getIncomingSuperLikeIds,
+  getUserItems,
+  getUsers,
+  likeUser,
+  passUser,
+  superLikeUser,
+} from "@/lib/repository";
 import type { User } from "@/lib/types";
 import type { DiscoverFilter } from "@/lib/repository";
 import { TAG_OPTIONS } from "@/lib/types";
@@ -14,7 +21,12 @@ import styles from "./discover.module.css";
 type ReactionFeedback = {
   id: number;
   reaction: "like" | "pass";
-  message: "いいねを押しました" | "見送るを押しました";
+  /** スーパーいいねか。文言と縁の色を変えるために持つ */
+  isSuper: boolean;
+  message:
+    | "いいねを押しました"
+    | "スーパーいいねを送りました"
+    | "見送るを押しました";
 };
 
 type HeartBurst = {
@@ -33,6 +45,36 @@ const HEART_BURST_MS = 1450;
 /** トーストとマッチ演出の表示時間。toast-life / match-backdrop-life と対。 */
 const FEEDBACK_MS = 3000;
 
+/**
+ * スーパーいいねが失敗したときの文言。
+ *
+ * use_super_like は在庫切れなどを raise exception で返してくるので、
+ * その文面をそのまま出す。「失敗しました」だけだと、交換すれば直るのか
+ * どうかが分からない。
+ *
+ * Supabase のエラーは Error のインスタンスではなくただのオブジェクトなので、
+ * instanceof では判定できない。
+ */
+function superLikeErrorMessage(err: unknown): string {
+  const code =
+    typeof err === "object" && err !== null && "code" in err
+      ? String((err as { code: unknown }).code)
+      : "";
+
+  // PGRST202: PostgREST が関数を見つけられない
+  // 42883:    PostgreSQL の function does not exist
+  if (code === "PGRST202" || code === "42883") {
+    return "スーパーいいねの保存先がまだありません。Supabase の SQL Editor で supabase/super_like.sql を実行してください。";
+  }
+
+  const message =
+    typeof err === "object" && err !== null && "message" in err
+      ? String((err as { message: unknown }).message)
+      : "";
+
+  return message || "スーパーいいねを送れませんでした。";
+}
+
 export default function DiscoverPage() {
   const { currentUser, mode } = useSession();
   // 演出の見た目だけモードで変える（仕事は★、恋愛は♥）
@@ -48,6 +90,14 @@ export default function DiscoverPage() {
   const [showFilter, setShowFilter] = useState(false);
   const [showDetailProfile, setShowDetailProfile] = useState(false);
   const [testMode, setTestMode] = useState(false); // テストモード（初期値OFF、必要時はコードで変更）
+  /** 自分にスーパーいいねを送ってきた人。カードのバッジに使う */
+  const [superLikedByIds, setSuperLikedByIds] = useState<Set<string>>(
+    () => new Set(),
+  );
+  /** スーパーいいねの所持数。0 のときは切り替えられない */
+  const [superLikeStock, setSuperLikeStock] = useState(0);
+  /** 「スーパーいいねを使う」がONか。ONの間だけ、いいねがスーパーいいねになる */
+  const [useSuperLike, setUseSuperLike] = useState(false);
   const [reactionFeedback, setReactionFeedback] =
     useState<ReactionFeedback | null>(null);
   const [heartBurst, setHeartBurst] = useState<HeartBurst | null>(null);
@@ -110,6 +160,44 @@ export default function DiscoverPage() {
       .finally(() => setLoading(false));
   }, [currentUser, mode, filter]);
 
+  // 自分に届いているスーパーいいね。カードのバッジに使う
+  useEffect(() => {
+    if (!currentUser) return;
+    let alive = true;
+
+    getIncomingSuperLikeIds(currentUser.id, mode)
+      .then((ids) => {
+        if (alive) setSuperLikedByIds(ids);
+      })
+      .catch(() => {
+        // supabase/super_like.sql を流していない環境ではここに来る。
+        // バッジが出ないだけで探す画面は成立するので、空にして続ける
+        if (alive) setSuperLikedByIds(new Set());
+      });
+
+    return () => {
+      alive = false;
+    };
+  }, [currentUser, mode]);
+
+  // 自分の在庫。0 ならスーパーいいねに切り替えられない
+  useEffect(() => {
+    if (!currentUser) return;
+    let alive = true;
+
+    getUserItems(currentUser.id)
+      .then((items) => {
+        if (alive) setSuperLikeStock(items.super_like ?? 0);
+      })
+      .catch(() => {
+        if (alive) setSuperLikeStock(0);
+      });
+
+    return () => {
+      alive = false;
+    };
+  }, [currentUser]);
+
   useEffect(() => {
     return () => {
       if (reactionFeedbackTimer.current !== null) {
@@ -134,6 +222,7 @@ export default function DiscoverPage() {
   const showReactionFeedback = (
     reaction: "like" | "pass",
     reactionModeVersion: number,
+    isSuper = false,
   ): boolean => {
     // 操作を始めたときからモードが変わっていたら、演出を出さない。
     // 戻り値で呼び出し側にも「この先へ進むな」と伝える
@@ -171,10 +260,13 @@ export default function DiscoverPage() {
     setReactionFeedback((previous) => ({
       id: (previous?.id ?? 0) + 1,
       reaction,
+      isSuper,
       message:
-        reaction === "like"
-          ? "いいねを押しました"
-          : "見送るを押しました",
+        reaction === "pass"
+          ? "見送るを押しました"
+          : isSuper
+            ? "スーパーいいねを送りました"
+            : "いいねを押しました",
     }));
     reactionFeedbackTimer.current = window.setTimeout(() => {
       setReactionFeedback(null);
@@ -221,8 +313,25 @@ export default function DiscoverPage() {
       return;
     }
 
+    // ONのときだけスーパーいいねになる。在庫が無ければONにできないので、
+    // ここに来る時点で1つは持っている
+    const asSuper = useSuperLike && superLikeStock > 0;
+
     try {
-      const match = await likeUser(currentUser.id, targetUser.id, mode);
+      const match = asSuper
+        ? await superLikeUser(currentUser.id, targetUser.id, mode)
+        : await likeUser(currentUser.id, targetUser.id, mode);
+
+      if (asSuper) {
+        // 使ったぶんを手元でも減らす。取り直しを待つと、連続で押したときに
+        // 在庫があるように見えたままになる
+        setSuperLikeStock((prev) => {
+          const left = Math.max(0, prev - 1);
+          // 使い切ったら勝手にOFFへ戻す。ONのままだと押すたびに失敗する
+          if (left === 0) setUseSuperLike(false);
+          return left;
+        });
+      }
 
       // 演出は書き込みが成功してから出す。await より前に出すと、
       // 通信や権限のエラーで失敗したときに「いいねを押しました」の
@@ -231,7 +340,7 @@ export default function DiscoverPage() {
       // 待っている間にモードが変わっていたら、ここで打ち切る。
       // 演出も、マッチのモーダルも、次の人への送りも、すべて古いモードの
       // 操作に対するものなので、新しい画面に持ち込まない。
-      if (!showReactionFeedback("like", reactionModeVersion)) return;
+      if (!showReactionFeedback("like", reactionModeVersion, asSuper)) return;
 
       // マッチ成立の確認
       if (match) {
@@ -248,7 +357,12 @@ export default function DiscoverPage() {
       // 失敗の通知も、もう別の画面を見ているなら出さない
       if (reactionModeVersion !== reactionModeVersionRef.current) return;
       console.error("いいね送信エラー:", error);
-      alert("いいねの送信に失敗しました");
+      // 在庫切れなど、DB 側が理由を返してくることがあるので拾って出す
+      alert(
+        asSuper
+          ? superLikeErrorMessage(error)
+          : "いいねの送信に失敗しました",
+      );
     }
   };
 
@@ -382,6 +496,32 @@ export default function DiscoverPage() {
               gap: "20px",
               flexShrink: 0,
             }}>
+              {/*
+                スーパーいいねが届いていることを、この人のカードで知らせる。
+                普通のいいねは相互になるまで伏せたままだが、これは送った側が
+                自分で選んで明かしているので出してよい
+              */}
+              {superLikedByIds.has(currentUser_displayed.id) && (
+                <div
+                  // 虹は塗りつぶしではなく枠。中を地の色のままにしないと
+                  // 文字が読めない
+                  className={styles.superOutline}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "8px",
+                    padding: "10px 16px",
+                    borderRadius: "14px",
+                    color: "var(--foreground)",
+                    fontSize: "14px",
+                    fontWeight: "bold",
+                  }}
+                >
+                  <span aria-hidden="true">⭐</span>
+                  この人からスーパーいいねが届いています
+                </div>
+              )}
+
               {/* 名前 */}
               <h1 style={{
                 margin: 0,
@@ -483,6 +623,57 @@ export default function DiscoverPage() {
             </div>
           </div>
 
+          {/*
+            スーパーいいねの切り替え。
+            ONの間だけ、右のボタンがスーパーいいねになる。在庫が無いときは
+            押せないようにして、ポイント画面で交換できることを伝える
+          */}
+          <div style={{
+            display: "flex",
+            justifyContent: "center",
+            marginBottom: "16px",
+          }}>
+            <button
+              type="button"
+              onClick={() => setUseSuperLike((prev) => !prev)}
+              disabled={superLikeStock === 0}
+              aria-pressed={useSuperLike}
+              title={
+                superLikeStock === 0
+                  ? "ポイント画面で交換すると使えます"
+                  : undefined
+              }
+              // ONの間だけ縁が虹色に光る。押した結果が一目で分かるようにする
+              className={useSuperLike ? styles.superOutline : undefined}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "8px",
+                padding: "8px 18px",
+                borderRadius: "20px",
+                fontSize: "14px",
+                fontWeight: "bold",
+                color: "var(--foreground)",
+                cursor: superLikeStock === 0 ? "not-allowed" : "pointer",
+                opacity: superLikeStock === 0 ? 0.5 : 1,
+                // ONのときは背景と枠をCSS側に任せる。ここで指定すると
+                // インラインが勝ち、枠が消えて虹が出ない
+                ...(useSuperLike
+                  ? {}
+                  : {
+                      border: "1px solid var(--line)",
+                      backgroundColor: "var(--surface)",
+                    }),
+              }}
+            >
+              <span aria-hidden="true">⭐</span>
+              スーパーいいねを使う！！
+              <span style={{ fontWeight: "normal" }}>
+                （残り {superLikeStock}）
+              </span>
+            </button>
+          </div>
+
           {/* ボタン */}
           <div style={{
             display: "flex",
@@ -506,23 +697,31 @@ export default function DiscoverPage() {
             >
               ✕ 見送る
             </button>
+            {/* ONのときは見た目もスーパーいいねに変える。押す前に分かるように */}
             <button
               ref={likeButtonRef}
               onClick={() => handleLike(currentUser_displayed)}
+              className={useSuperLike ? styles.superOutline : undefined}
               style={{
                 width: "200px",
                 height: "56px",
-                background: "var(--action-gradient)",
-                color: "#FFFFFF",
-                border: "none",
                 borderRadius: "28px",
                 cursor: "pointer",
                 fontSize: "16px",
-                fontWeight: "500",
-                boxShadow: "var(--action-shadow)",
+                fontWeight: useSuperLike ? "bold" : "500",
+                // ONのときは背景・枠・影をCSS側に任せる。ここで指定すると
+                // インラインが勝ち、特に border: none だと枠が消えて虹が出ない
+                ...(useSuperLike
+                  ? { color: "var(--foreground)" }
+                  : {
+                      border: "none",
+                      background: "var(--action-gradient)",
+                      color: "#FFFFFF",
+                      boxShadow: "var(--action-shadow)",
+                    }),
               }}
             >
-              ♡ いいね
+              {useSuperLike ? "⭐ スーパーいいね" : "♡ いいね"}
             </button>
           </div>
         </div>
@@ -950,12 +1149,21 @@ export default function DiscoverPage() {
       {reactionFeedback && (
         <div
           key={`toast-${reactionFeedback.id}`}
-          className={styles.reactionToast}
+          // スーパーいいねのときだけ縁を虹色にする。
+          // こちらは流さない（3秒で消えるので、動かすと落ち着かない）
+          className={[
+            styles.reactionToast,
+            reactionFeedback.isSuper ? styles.superToast : "",
+          ].join(" ")}
           role="status"
           aria-live="polite"
         >
           <span className={styles.toastHeart} aria-hidden="true">
-            {reactionFeedback.reaction === "like" ? (isWork ? "★" : "♥") : "✓"}
+            {reactionFeedback.reaction === "pass"
+              ? "✓"
+              : reactionFeedback.isSuper || isWork
+                ? "★"
+                : "♥"}
           </span>
           {reactionFeedback.message}
         </div>
