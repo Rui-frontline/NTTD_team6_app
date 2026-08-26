@@ -14,6 +14,7 @@ import { profileCompletion } from "@/lib/profile-completion";
 import { PageHeading } from "@/components/PageHeading";
 import { PointBalance } from "@/components/PointBalance";
 import { ProfileCompletion } from "./ProfileCompletion";
+import { PasswordChange } from "./PasswordChange";
 import type { Mode, Profile, User } from "@/lib/types";
 import { MODE_LABEL, TAG_OPTIONS } from "@/lib/types";
 import type { ProfileField } from "@/lib/profile-fields";
@@ -484,6 +485,12 @@ export function MyPage() {
                 OFFにすると{MODE_LABEL[mode]}モードの一覧に自分が出なくなります
               </p>
             </div>
+
+            {/*
+              パスワードの変更。プロフィールの中身ではなくアカウントの設定
+              なので、右の節ではなく左の札に置いている（参加スイッチと同じ）。
+            */}
+            <PasswordChange />
           </aside>
 
           {/* ── 右：プロフィールの記入 ───────────────────── */}

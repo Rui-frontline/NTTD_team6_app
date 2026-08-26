@@ -77,6 +77,7 @@ Vercel では **project レベル**に設定します（従量課金のキーを
 | ポイント | `/points` | [app/points/page.tsx](app/points/page.tsx) ＋ [components/points/](components/points/) |
 | マイページ | `/me` | [components/profile/MyPage.tsx](components/profile/MyPage.tsx) |
 | ログイン / 登録 | `/login` `/signup` | [LoginForm.tsx](components/LoginForm.tsx) / [SignUpForm.tsx](components/SignUpForm.tsx) |
+| パスワード再設定 | `/forgot-password` `/reset-password` | [ForgotPasswordForm.tsx](components/ForgotPasswordForm.tsx) / [ResetPasswordForm.tsx](components/ResetPasswordForm.tsx) |
 
 全画面の外枠は [components/AppShell.tsx](components/AppShell.tsx)（サイドバー＋ヘッダー）です。
 
@@ -145,6 +146,20 @@ Vercel では **project レベル**に設定します（従量課金のキーを
 - **Claude を呼ぶのはサーバー側だけ**です。[app/api/ai-talk/route.ts](app/api/ai-talk/route.ts)（会話）と [evaluate/route.ts](app/api/ai-talk/evaluate/route.ts)（10ターン後の評価）
 - **シチュエーションごとの役作り**は `route.ts` の `SITUATION_PROMPTS`。会話履歴は毎回まるごと送り直します（API 側に記憶は無いため）
 - **どちらのルートも認証が必要**です（[lib/api-auth.ts](lib/api-auth.ts)）。公開URLなので、これが無いと第三者に `ANTHROPIC_API_KEY` を使われます
+
+### パスワード再設定
+
+入口は2つあります。どちらも [lib/session.tsx](lib/session.tsx) に処理があります。
+
+- **忘れた人** → ログイン画面の「パスワードをお忘れですか？」→ メールのリンク → `/reset-password`
+- **覚えている人** → マイページ左の「パスワードを変更」（メール不要。**現在のパスワードの確認あり**）
+
+**⚠️ 遷移先URLを Supabase に登録しないとリンクが弾かれます。** Authentication → URL Configuration に、`http://localhost:3000/reset-password` と本番の同じパスを入れてください。
+
+**⚠️ 既定のメール送信には回数制限があります。** デモで複数人が試すと止まります。止まったときは、マイページ側の変更で見せてください。
+
+- `/reset-password` と `/forgot-password` は [components/AppShell.tsx](components/AppShell.tsx) の `PASSWORD_PATHS` に入れてあります。**`PUBLIC_PATHS` に入れてはいけません。** 再設定のリンクを踏むとログイン状態になるため、`/discover` へ飛ばされて設定画面にたどり着けなくなります
+- メールアドレスが登録済みかどうかで文面を変えていません。変えると、誰でもアドレスの登録有無を試せてしまいます
 
 ### 募集掲示板
 

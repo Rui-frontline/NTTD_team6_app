@@ -7,12 +7,24 @@ import { RomanceDecor } from "@/components/RomanceDecor";
 import { Sidebar } from "@/components/Sidebar";
 import { useSession } from "@/lib/session";
 
-/** ヘッダーとサイドバーを出さない画面 */
+/** ヘッダーとサイドバーを出さず、ログイン済みなら /discover へ送る画面 */
 const PUBLIC_PATHS = ["/login", "/signup"];
 
 /**
+ * パスワード再設定の画面。
+ *
+ * 枠を出さないのは PUBLIC_PATHS と同じだが、こちらは
+ * ログイン済みでも追い出さない。
+ *
+ * 再設定のリンクを踏むと、その時点でログイン状態になる。PUBLIC_PATHS に
+ * 入れてしまうと /discover へ飛ばされ、新しいパスワードを設定する画面に
+ * たどり着けない。
+ */
+const PASSWORD_PATHS = ["/forgot-password", "/reset-password"];
+
+/**
  * 画面全体の骨組み。
- * ログイン・新規登録以外の画面は、未ログインなら /login に飛ばす。
+ * ログイン・新規登録・パスワード再設定以外は、未ログインなら /login に飛ばす。
  */
 export function AppShell({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, loading } = useSession();
@@ -20,12 +32,17 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const router = useRouter();
 
   const isPublic = PUBLIC_PATHS.includes(pathname);
+  const isPasswordPath = PASSWORD_PATHS.includes(pathname);
+  /** 枠（サイドバー・ヘッダー）を出さない画面 */
+  const isBare = isPublic || isPasswordPath;
 
   useEffect(() => {
     if (loading) return;
+    // 再設定の画面はログインの有無で振り分けない
+    if (isPasswordPath) return;
     if (!isAuthenticated && !isPublic) router.replace("/login");
     if (isAuthenticated && isPublic) router.replace("/discover");
-  }, [loading, isAuthenticated, isPublic, router]);
+  }, [loading, isAuthenticated, isPublic, isPasswordPath, router]);
 
   if (loading) {
     return (
@@ -35,7 +52,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     );
   }
 
-  if (isPublic) {
+  if (isBare) {
     return <main className="mx-auto w-full max-w-md px-4 py-16">{children}</main>;
   }
 

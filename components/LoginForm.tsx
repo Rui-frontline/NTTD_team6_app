@@ -72,6 +72,15 @@ export function LoginForm() {
       </form>
 
       <p className="mt-6 text-sm text-muted">
+        <Link
+          href="/forgot-password"
+          className="font-bold text-accent underline"
+        >
+          パスワードをお忘れですか？
+        </Link>
+      </p>
+
+      <p className="mt-3 text-sm text-muted">
         はじめての方は{" "}
         <Link href="/signup" className="font-bold text-accent underline">
           新規登録
