@@ -126,12 +126,21 @@
   gap: 10px;
   min-width: 248px;
   padding: 14px 24px;
-  border: 1px solid color-mix(in srgb, var(--romance-salmon) 42%, transparent);
+  /*
+    romance トークンには既定値を添える。
+
+    --romance-* は :root[data-mode="romance"] にしか定義が無い。仕事モードでは
+    var() が解決できず、それを含む宣言が丸ごと無効になるため、背景も枠も付かず
+    文字と影だけが浮いていた（演出を両モードに広げたときの取りこぼし）。
+    既定値を書いておけば、恋愛モードの見た目はそのままで仕事モードでも成立する。
+  */
+  border: 1px solid
+    color-mix(in srgb, var(--romance-salmon, #ff6f91) 42%, transparent);
   border-radius: 999px;
   background: linear-gradient(
     135deg,
-    color-mix(in srgb, var(--romance-ivory) 98%, transparent),
-    color-mix(in srgb, var(--romance-milk) 98%, transparent)
+    color-mix(in srgb, var(--romance-ivory, #fffaf1) 98%, transparent),
+    color-mix(in srgb, var(--romance-milk, #fff3f5) 98%, transparent)
   );
   box-shadow:
     0 16px 40px rgba(177, 68, 96, 0.2),
@@ -144,11 +153,12 @@
   animation: toast-life 3s ease both;
 }
 
+/* トーストは両モードで出るので、こちらも既定値を添える（上と同じ理由） */
 .toastHeart {
-  color: var(--romance-coral);
+  color: var(--romance-coral, #ff4f7b);
   font-size: 19px;
   filter: drop-shadow(
-    0 3px 4px color-mix(in srgb, var(--romance-coral) 22%, transparent)
+    0 3px 4px color-mix(in srgb, var(--romance-coral, #ff4f7b) 22%, transparent)
   );
 }
 
@@ -530,6 +540,113 @@
   }
 
   .matchSparkles span {
+    animation: none;
+  }
+}
+
+/* ───────────────────────── スーパーいいね ─────────────────────────
+
+  普通のいいねと明確に区別が付くよう、虹色を流して光らせる。
+
+  ★色を変えたいときは、下の --rainbow-1 〜 6 だけ差し替えてください。
+    枠と光がまとめて変わります。
+
+  色は CSS 変数（globals.css）を使わずここに直接書いている。モードで
+  変わってほしくない（仕事でも恋愛でも「特別ないいね」は同じ見た目）ため。
+
+  塗りつぶしではなく枠だけを虹にしている。塗りつぶすと、明るい色
+  （#ffff00 など）の上で文字が読めなくなるため。
+*/
+
+.superOutline,
+.superToast {
+  --rainbow-1: #ff00ff; /* マゼンタ */
+  --rainbow-2: #ffa500; /* オレンジ */
+  --rainbow-3: #ffff00; /* イエロー */
+  --rainbow-4: #7fff00; /* シャルトリューズ */
+  --rainbow-5: #00bfff; /* ディープスカイブルー */
+  --rainbow-6: #ba55d3; /* ミディアムオーキッド */
+
+  /* 端をつなげて、流したときに切れ目が出ないようにする */
+  --rainbow: linear-gradient(
+    90deg,
+    var(--rainbow-1),
+    var(--rainbow-2),
+    var(--rainbow-3),
+    var(--rainbow-4),
+    var(--rainbow-5),
+    var(--rainbow-6),
+    var(--rainbow-1)
+  );
+}
+
+/*
+  流して光らせるのはボタンだけ。
+
+  トースト（.superToast）には animation を書かない。書くと
+  .reactionToast の toast-life を上書きしてしまい、出入りのフェードが
+  消える。トーストは3秒で消えるので、動かす必要もない。
+*/
+.superOutline {
+  animation:
+    rainbow-flow 3s linear infinite,
+    rainbow-glow 2.4s ease-in-out infinite;
+}
+
+/* 虹を横に流す。background-size を広く取って位置だけ動かす */
+@keyframes rainbow-flow {
+  from {
+    background-position: 0% 50%;
+  }
+
+  to {
+    background-position: 300% 50%;
+  }
+}
+
+/*
+  明滅する光。流れる虹と周期をずらして、単調にならないようにする。
+  色は上の変数から作るので、差し替えれば光も追随する。
+*/
+@keyframes rainbow-glow {
+  0%,
+  100% {
+    box-shadow:
+      0 0 10px color-mix(in srgb, var(--rainbow-1) 42%, transparent),
+      0 0 20px color-mix(in srgb, var(--rainbow-5) 30%, transparent);
+  }
+
+  50% {
+    box-shadow:
+      0 0 16px color-mix(in srgb, var(--rainbow-3) 46%, transparent),
+      0 0 30px color-mix(in srgb, var(--rainbow-6) 34%, transparent);
+  }
+}
+
+/*
+  枠を虹にする描き方。
+
+  背景を2枚重ね、内側を surface で塗りつぶし、border を transparent に
+  することで枠だけを虹にしている。
+
+  使う側は border を上書きしないこと。border: none を当てると padding-box と
+  border-box が一致し、内側の surface が全面を覆って虹が消える。
+*/
+.superOutline,
+.superToast {
+  background-image: linear-gradient(var(--surface), var(--surface)),
+    var(--rainbow);
+  background-origin: border-box;
+  background-clip: padding-box, border-box;
+  background-size:
+    auto,
+    300% 100%;
+  border: 2px solid transparent;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  /* 虹は残して、流れと明滅だけ止める */
+  .superOutline {
     animation: none;
   }
 }

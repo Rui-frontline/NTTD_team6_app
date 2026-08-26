@@ -55,8 +55,9 @@ Vercel では **project レベル**に設定します（従量課金のキーを
 | `point_rewards.sql` | 受け取り箱・デイリーミッション・アイテム交換 | ポイント画面が動かない |
 | `profile_milestones.sql` | プロフィール充実度の達成ポイント | 50/80/100% のポイントが届かない |
 | `reviews.sql` | 口コミ（`reviews` / `submit_review` / `get_user_rating`） | 星が出ず、評価も求められない |
+| `super_like.sql` | スーパーいいね（`reactions.is_super` / `use_super_like`） | スーパーいいねが送れない（普通のいいねは動く） |
 
-`reviews.sql` は `point_rewards`（`point_rewards.sql`）に書き込むので、**先にポイント側を流しておいてください。**
+`reviews.sql` と `super_like.sql` は `point_rewards.sql` が作るテーブルを使うので、**先にポイント側を流しておいてください。**
 
 `fix_profile_values.sql` と `points_manual.sql` と `cleanup_message_images.sql` は**手順書**です。必要なときだけ実行します。
 
@@ -92,6 +93,16 @@ Vercel では **project レベル**に設定します（従量課金のキーを
 - **押したときの演出**は同じファイル。♥/★が3つ舞う `likeBurst`、画面下のトースト `reactionFeedback`、マッチ成立の `matchCelebration`。CSS は [app/discover/discover.module.css](app/discover/discover.module.css)
 - 演出は**書き込みが成功してから**出します。通信が失敗したときに「いいねを押しました」だけ残らないようにするためです
 - 通信待ちの間にモードを切り替えたら、`reactionModeVersionRef` で**その結果を捨てます**
+
+### スーパーいいね
+
+**送った時点で相手の探す画面に「この人からスーパーいいねが届いています」と出る**いいねです。普通のいいねが相互になるまで伏せられているのと違い、**送った側が自分で選んで明かします。**
+
+- いいねボタンの上のトグルをONにすると、いいねがスーパーいいねに変わります（[app/discover/page.tsx](app/discover/page.tsx)）
+- **100ptで交換したアイテムを1つ消費します。** 在庫0のときはトグルを押せません
+- 消費と記録は `use_super_like()`（[supabase/super_like.sql](supabase/super_like.sql)）が**まとめて**行います。画面から2回に分けて呼ぶと「アイテムだけ減った」が起きるためです
+- 受け取った側の並び順は**スーパーいいね → 普通のいいね → それ以外**（`getUsers()`）
+- マッチの成立条件は普通のいいねと同じです
 
 ### トーク
 
