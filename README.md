@@ -56,6 +56,8 @@ Vercel では **project レベル**に設定します（従量課金のキーを
 | `profile_milestones.sql` | プロフィール充実度の達成ポイント | 50/80/100% のポイントが届かない |
 | `reviews.sql` | 口コミ（`reviews` / `submit_review` / `get_user_rating`） | 星が出ず、評価も求められない |
 
+`reviews.sql` は `point_rewards`（`point_rewards.sql`）に書き込むので、**先にポイント側を流しておいてください。**
+
 `fix_profile_values.sql` と `points_manual.sql` と `cleanup_message_images.sql` は**手順書**です。必要なときだけ実行します。
 
 ---
@@ -113,6 +115,8 @@ Vercel では **project レベル**に設定します（従量課金のキーを
 - **5往復すると評価を求めるモーダル**が出ます（[components/reviews/ReviewPrompt.tsx](components/reviews/ReviewPrompt.tsx)）
 - 「往復」は `least(自分の通数, 相手の通数)`。合計で数えると片方の連投だけで達してしまうためです
 - **しきい値は2箇所にあります。** [lib/reviews.ts](lib/reviews.ts) の `REVIEW_RALLY_THRESHOLD` と [supabase/reviews.sql](supabase/reviews.sql) の `c_threshold`。**片方だけ変えると、画面には出るのに送信が弾かれます**
+- **投稿すると50ポイント**が受け取り箱に届きます。`submit_review()` が `point_rewards` に入れます。**額も2箇所にあります**（`REVIEW_REWARD_POINTS` と `c_reward`）。片方だけ変えると、画面の案内と届く額が食い違います
+- ポイントは**実際に1件記録できたときだけ**配ります。`on conflict do nothing` の後に `row_count` を見ているので、**二重送信や付け直しでは増えません**
 - 平均は [components/reviews/UserRating.tsx](components/reviews/UserRating.tsx) が自前で取得して出します。プロフィール詳細のモーダル2つから使われます
 - **RLS は「自分が付けたぶんだけ読める」。** 誰が何点付けたかは行として引けず、平均だけを `get_user_rating()` 経由で出します
 
@@ -121,6 +125,7 @@ Vercel では **project レベル**に設定します（従量課金のキーを
 - ルール（デイリーミッション・交換アイテム・履歴の上限）は [lib/points.ts](lib/points.ts)
 - 画面は [app/points/page.tsx](app/points/page.tsx) と [components/points/](components/points/)（残高・受け取り箱・履歴・ミッション・アイテム）
 - **プロフィールを 50% / 80% / 100% 埋めると 50 / 80 / 100pt** が受け取り箱に届きます（[supabase/profile_milestones.sql](supabase/profile_milestones.sql)）。一度きりです
+- **口コミを投稿すると 50pt**（[supabase/reviews.sql](supabase/reviews.sql)）。会話1つにつき1回です
 - 加算は必ず `award_points()` を通します。**残高と履歴を1トランザクションで書く**ためで、画面から直接 `users.points` は触りません
 
 ### AI対話

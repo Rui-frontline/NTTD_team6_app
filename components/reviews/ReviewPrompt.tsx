@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { submitReview } from "@/lib/repository";
-import { MAX_RATING } from "@/lib/reviews";
+import { MAX_RATING, REVIEW_REWARD_POINTS } from "@/lib/reviews";
 import { StarIcon } from "@/components/reviews/StarRating";
 
 /**
@@ -94,6 +94,15 @@ export function ReviewPrompt({
         */}
         <p className="mt-2 text-center text-xs leading-relaxed text-[var(--muted)]">
           個別の点数は表示されません。プロフィールに平均だけが出ます。
+        </p>
+
+        {/*
+          もらえることを押す前に見せる。押したあとに知らせても、
+          評価をつける動機にはならない。
+          実際に配るのは DB 側なので、ここは案内でしかない
+        */}
+        <p className="mt-3 text-center text-sm font-bold text-[var(--accent-strong)]">
+          投稿すると {REVIEW_REWARD_POINTS}ポイント
         </p>
 
         <div

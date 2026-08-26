@@ -18,6 +18,15 @@ export const REVIEW_RALLY_THRESHOLD = 5;
 export const MAX_RATING = 5;
 
 /**
+ * 口コミ1件で受け取り箱に届くポイント。
+ *
+ * supabase/reviews.sql の submit_review にある c_reward と同じ値にすること。
+ * 実際に配るのは DB 側で、ここの値は画面に出す案内にしか使わない。
+ * ずれていると「50ポイント」と書いてあるのに違う額が届く。
+ */
+export const REVIEW_REWARD_POINTS = 50;
+
+/**
  * ある人の、あるモードでの評価。
  *
  * まだ1件も付いていないときは average が null になる。

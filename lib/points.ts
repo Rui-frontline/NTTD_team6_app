@@ -121,6 +121,9 @@ export function pointEventLabel(reason: string): string {
     return `プロフィール達成（${mode}モード ${profile[1]}%）`;
   }
 
+  // supabase/reviews.sql の submit_review が入れる
+  if (reason === "review_submitted") return "口コミを投稿";
+
   return reason;
 }
 
