@@ -2,8 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
-import { supabase } from "@/lib/supabase";
+import { useState } from "react";
 import { useSession } from "@/lib/session";
 
 /** パスワードの最低文字数。Supabase 側の既定と合わせている */
@@ -12,48 +11,23 @@ const MIN_PASSWORD_LENGTH = 6;
 /**
  * メールのリンクから来た人が、新しいパスワードを設定する画面。
  *
- * リンクを踏んだ時点で supabase-js が URL からセッションを作るので、
- * 現在のパスワードは要らない（忘れているから来ている）。
+ * ここは現在のパスワードを聞かない唯一の変更経路なので、
+ * 「再設定のリンクから来た」ことを確かめてからでないとフォームを出さない。
  *
- * ただしセッションができるまでに一拍あるため、来た直後は「確認中」を出す。
- * ここで先にフォームを出すと、まだセッションが無い状態で送信できてしまい、
- * 理由の分からないエラーになる。
+ * 判定に使うのは isPasswordRecovery（lib/session.tsx）。
+ * セッションの有無では判定できない。通常のログインでもセッションはあるため、
+ * それを根拠にすると、ログインしたまま席を離れた端末で /reset-password を
+ * 開くだけでパスワードを変えられてしまう。
  */
 export function ResetPasswordForm() {
-  const { completePasswordReset } = useSession();
+  const { isPasswordRecovery, completePasswordReset, loading } = useSession();
   const router = useRouter();
 
-  const [ready, setReady] = useState<boolean | null>(null);
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [done, setDone] = useState(false);
-
-  useEffect(() => {
-    let alive = true;
-
-    supabase.auth
-      .getSession()
-      .then(({ data }) => {
-        if (alive) setReady(data.session !== null);
-      })
-      .catch(() => {
-        if (alive) setReady(false);
-      });
-
-    // リンクの読み取りが後から終わることがあるので、変化も拾う
-    const { data: listener } = supabase.auth.onAuthStateChange(
-      (_event, session) => {
-        if (alive && session) setReady(true);
-      },
-    );
-
-    return () => {
-      alive = false;
-      listener.subscription.unsubscribe();
-    };
-  }, []);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -82,17 +56,27 @@ export function ResetPasswordForm() {
     }
   }
 
-  if (ready === null) {
+  /*
+    起動直後の判定を待つ。
+
+    PASSWORD_RECOVERY はリンクの読み取り中に飛ぶ。読み取りは
+    SessionProvider の getSession() より先に終わるので、loading が false に
+    なった時点では isPasswordRecovery が確定している。
+
+    ここを待たずに出すと、正しく来た人にも一瞬「リンクが使えません」が
+    見えてしまう。
+  */
+  if (loading) {
     return <p className="text-sm text-muted">確認中…</p>;
   }
 
   /*
-    リンクが古いか、直接この URL を開いた場合。
+    リンクが古い、直接この URL を開いた、ページを読み込み直した、のいずれか。
 
-    Supabase の再設定リンクには期限がある。切れていると、踏んでも
-    セッションができない。もう一度送り直してもらう。
+    どれも「再設定のリンクから来た」と確認できていないので、
+    現在のパスワード無しの変更は通さない。送り直してもらう。
   */
-  if (!ready) {
+  if (!isPasswordRecovery) {
     return (
       <div>
         <h1 className="text-2xl font-extrabold">リンクが使えません</h1>
