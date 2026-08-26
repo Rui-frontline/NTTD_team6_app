@@ -12,11 +12,27 @@ import {
   passUser,
   superLikeUser,
 } from "@/lib/repository";
-import type { User } from "@/lib/types";
+import type { Mode, User } from "@/lib/types";
 import type { DiscoverFilter } from "@/lib/repository";
 import { TAG_OPTIONS } from "@/lib/types";
+import { departmentLeaves } from "@/lib/departments";
+import { JOB_TITLE_OPTIONS } from "@/lib/profile-fields";
 import { UserRating } from "@/components/reviews/UserRating";
 import styles from "./discover.module.css";
+
+/**
+ * 部署の選択肢。木をたどるので、描画のたびに作り直さないよう
+ * モジュールの読み込み時に1回だけ組み立てる。
+ */
+const DEPARTMENT_OPTIONS = departmentLeaves();
+
+/** 絞り込みの入力欄の見た目。3つとも同じなのでまとめる */
+const filterControlStyle = {
+  marginTop: "5px",
+  padding: "8px",
+  width: "100%",
+  boxSizing: "border-box" as const,
+};
 
 type ReactionFeedback = {
   id: number;
@@ -86,7 +102,26 @@ export default function DiscoverPage() {
   const [matchedUser, setMatchedUser] = useState<User | null>(null);
   // 成立したマッチの id。「トークを見に行く」でこの会話を直接開くために持つ
   const [matchedMatchId, setMatchedMatchId] = useState<string | null>(null);
-  const [filter, setFilter] = useState<DiscoverFilter>({});
+  /*
+    絞り込みはモードごとに分けて持つ。
+
+    1つの state を共有すると、仕事モードで指定した部署が恋愛モードにも
+    効いてしまう。恋愛モードに部署の入力欄は無いので、絞り込まれている
+    ことに気づけないまま「誰も出てこない」状態になる。
+
+    切り替えて戻ったときに前の指定が残るのは意図した動き。指定し直す
+    手間を省くため。
+  */
+  const [filters, setFilters] = useState<Record<Mode, DiscoverFilter>>({
+    work: {},
+    romance: {},
+  });
+  const filter = filters[mode];
+
+  /** いま見ているモードの絞り込みだけを書き換える */
+  const setFilter = (update: (prev: DiscoverFilter) => DiscoverFilter) => {
+    setFilters((prev) => ({ ...prev, [mode]: update(prev[mode]) }));
+  };
   const [showFilter, setShowFilter] = useState(false);
   const [showDetailProfile, setShowDetailProfile] = useState(false);
   const [testMode, setTestMode] = useState(false); // テストモード（初期値OFF、必要時はコードで変更）
@@ -402,9 +437,16 @@ export default function DiscoverPage() {
     return <div>ログインしてください</div>;
   }
 
-  if (loading) {
-    return <div>読み込み中...</div>;
-  }
+  /*
+    読み込み中でも画面ごと差し替えない。
+
+    以前はここで <div>読み込み中...</div> を返していた。絞り込みを変えると
+    取り直しが走って loading が立ち、そのあいだ絞り込みパネルごと消えて
+    しまう。パネルは作り直されるので、入力していた内容も一緒に消えていた
+    （「指定してもクリアされる」の原因）。
+
+    カードの場所だけ差し替える。パネルは開いたまま残る。
+  */
 
   return (
     <>
@@ -445,7 +487,17 @@ export default function DiscoverPage() {
       padding: "20px 0 60px",
       position: "relative",
     }}>
-      {currentUser_displayed ? (
+      {loading ? (
+        <div style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          minHeight: "500px",
+          color: "var(--muted)",
+        }}>
+          読み込み中...
+        </div>
+      ) : currentUser_displayed ? (
         <div style={{
           display: "flex",
           flexDirection: "column",
@@ -817,39 +869,53 @@ export default function DiscoverPage() {
             {/* 仕事モードのフィルター */}
             {mode === "work" && (
               <>
+                {/*
+                  部署と職種は自由入力ではなく選択式にする。登録のときも
+                  選択式なので、打ち間違えると絶対に一致しなかった。
+                  選択肢は登録画面と同じものを使う（lib/departments.ts /
+                  lib/profile-fields.ts）
+                */}
                 <div style={{ marginBottom: "20px" }}>
                   <label>
                     <strong>部署:</strong>
-                    <input
-                      type="text"
-                      placeholder="例: 開発部"
+                    <select
+                      value={filter.departments?.[0] ?? ""}
                       onChange={(e) => {
-                        const value = e.target.value.trim();
+                        const value = e.target.value;
                         setFilter((prev) => ({
                           ...prev,
                           departments: value ? [value] : undefined,
                         }));
                       }}
-                      style={{ marginTop: "5px", padding: "8px", width: "100%", boxSizing: "border-box" }}
-                    />
+                      style={filterControlStyle}
+                    >
+                      <option value="">すべて</option>
+                      {DEPARTMENT_OPTIONS.map((name) => (
+                        <option key={name} value={name}>{name}</option>
+                      ))}
+                    </select>
                   </label>
                 </div>
 
                 <div style={{ marginBottom: "20px" }}>
                   <label>
                     <strong>職種:</strong>
-                    <input
-                      type="text"
-                      placeholder="例: エンジニア"
+                    <select
+                      value={filter.jobTitles?.[0] ?? ""}
                       onChange={(e) => {
-                        const value = e.target.value.trim();
+                        const value = e.target.value;
                         setFilter((prev) => ({
                           ...prev,
                           jobTitles: value ? [value] : undefined,
                         }));
                       }}
-                      style={{ marginTop: "5px", padding: "8px", width: "100%", boxSizing: "border-box" }}
-                    />
+                      style={filterControlStyle}
+                    >
+                      <option value="">すべて</option>
+                      {JOB_TITLE_OPTIONS.map((title) => (
+                        <option key={title} value={title}>{title}</option>
+                      ))}
+                    </select>
                   </label>
                 </div>
 
@@ -857,6 +923,7 @@ export default function DiscoverPage() {
                   <label>
                     <strong>タグ:</strong>
                     <select
+                      value={filter.tags?.[0] ?? ""}
                       onChange={(e) => {
                         const value = e.target.value;
                         setFilter((prev) => ({
@@ -864,7 +931,7 @@ export default function DiscoverPage() {
                           tags: value ? [value] : undefined,
                         }));
                       }}
-                      style={{ marginTop: "5px", padding: "8px", width: "100%", boxSizing: "border-box" }}
+                      style={filterControlStyle}
                     >
                       <option value="">すべて</option>
                       {TAG_OPTIONS.work.map((tag) => (
@@ -886,6 +953,7 @@ export default function DiscoverPage() {
                       <input
                         type="number"
                         placeholder="最小"
+                        value={filter.minAge ?? ""}
                         onChange={(e) => {
                           const value = e.target.value;
                           setFilter((prev) => ({
@@ -899,6 +967,7 @@ export default function DiscoverPage() {
                       <input
                         type="number"
                         placeholder="最大"
+                        value={filter.maxAge ?? ""}
                         onChange={(e) => {
                           const value = e.target.value;
                           setFilter((prev) => ({
@@ -917,6 +986,7 @@ export default function DiscoverPage() {
                   <label>
                     <strong>タグ:</strong>
                     <select
+                      value={filter.tags?.[0] ?? ""}
                       onChange={(e) => {
                         const value = e.target.value;
                         setFilter((prev) => ({
@@ -924,7 +994,7 @@ export default function DiscoverPage() {
                           tags: value ? [value] : undefined,
                         }));
                       }}
-                      style={{ marginTop: "5px", padding: "8px", width: "100%", boxSizing: "border-box" }}
+                      style={filterControlStyle}
                     >
                       <option value="">すべて</option>
                       {TAG_OPTIONS.romance.map((tag) => (
@@ -938,7 +1008,8 @@ export default function DiscoverPage() {
 
             <button
               onClick={() => {
-                setFilter({});
+                // 消すのは見ているモードのぶんだけ
+                setFilter(() => ({}));
                 setShowFilter(false);
               }}
               style={{
