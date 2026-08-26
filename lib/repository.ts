@@ -215,6 +215,7 @@ export type DiscoverFilter = {
  * - すでに「いいね」した相手は除く
  * - 恋愛モードでは「見送った」相手も除く（仕事モードは保存しないので除かない）
  * - 恋愛モードは相互オプトイン（自分もONでないと誰も表示されない）
+ * - 恋愛モードでは異性のみを表示
  * - 相手からいいねが来ている人を優先表示（それ以外はランダム順）
  */
 export async function getUsers(
@@ -223,16 +224,19 @@ export async function getUsers(
   filter: DiscoverFilter = {},
 ): Promise<User[]> {
   // 恋愛モードの相互オプトイン：自分もONでないと誰も表示しない
+  let currentUserGender: string | null = null;
   if (mode === "romance") {
     const { data: currentUserData } = await supabase
       .from("users")
-      .select("enabled_modes")
+      .select("enabled_modes, gender")
       .eq("id", currentUserId)
       .single();
 
     if (!currentUserData?.enabled_modes?.includes("romance")) {
       return []; // 自分が恋愛モードONでない場合は空配列を返す
     }
+
+    currentUserGender = currentUserData.gender;
   }
 
   const { data, error } = await supabase
@@ -246,7 +250,11 @@ export async function getUsers(
     (u) => u.id !== currentUserId && !excluded.has(u.id),
   );
 
-  const filtered = users.filter((u) => matchesFilter(u, mode, filter));
+  // 恋愛モードでは異性のみを表示
+  let filtered = users.filter((u) => matchesFilter(u, mode, filter));
+  if (mode === "romance" && currentUserGender) {
+    filtered = filtered.filter((u) => u.gender !== currentUserGender);
+  }
 
   // 相手からのいいねを取得。
   // is_super は supabase/super_like.sql を流していない環境には無いので、
