@@ -170,6 +170,30 @@ export function isDepartmentComplete(parts: string[]): boolean {
 }
 
 /**
+ * 選べる部署の一覧。いちばん下の段（子を持たない節）だけを平らに並べる。
+ *
+ * users.department にはいちばん下の名前だけが入るので、絞り込みの選択肢は
+ * これと突き合わせる。途中の段は isDepartmentComplete が弾いて選べないため、
+ * 一覧にも出さない。
+ *
+ * 「監査部」のように複数の会社に同じ名前がある。同じ名前は1つにまとめる
+ * （department が名前だけで持たれている以上、絞り込みでも区別できない）。
+ */
+export function departmentLeaves(): string[] {
+  const leaves = new Set<string>();
+
+  const walk = (nodes: DepartmentNode[]) => {
+    for (const node of nodes) {
+      if (node.children?.length) walk(node.children);
+      else leaves.add(node.label);
+    }
+  };
+
+  walk(DEPARTMENT_TREE);
+  return [...leaves].sort((a, b) => a.localeCompare(b, "ja"));
+}
+
+/**
  * いちばん下の名前から階層を逆引きする。
  *
  * departmentPath を持っていない古いデータを、できる範囲で選択状態に
