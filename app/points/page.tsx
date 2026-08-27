@@ -263,7 +263,9 @@ function TabButton({
       aria-selected={active}
       onClick={onClick}
       className={[
-        "px-4 py-3.5 text-sm font-bold transition-colors",
+        // 狭い画面では左右の余白と文字を詰める。半分の幅に
+        // 「今日のデイリーミッション」が入らず、行が増えて段差になる
+        "px-2 py-3.5 text-xs font-bold transition-colors sm:px-4 sm:text-sm",
         active
           ? "bg-[var(--accent)] text-white"
           : "bg-[var(--accent-soft)] text-[var(--muted)] hover:text-[var(--foreground)]",
