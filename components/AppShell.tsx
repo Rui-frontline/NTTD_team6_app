@@ -2,6 +2,7 @@
 
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect } from "react";
+import { BottomNav } from "@/components/BottomNav";
 import { Header } from "@/components/Header";
 import { RomanceDecor } from "@/components/RomanceDecor";
 import { Sidebar } from "@/components/Sidebar";
@@ -75,8 +76,20 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       <Sidebar />
       <div className="relative z-10 flex min-h-screen min-w-0 flex-1 flex-col">
         <Header />
-        <main className="flex-1 px-6 py-8">{children}</main>
+        {/*
+          狭い画面では左右の余白を詰める。px-6（左右で48px）は
+          375px の画面では大きすぎて、中身に使える幅がその分削られる。
+
+          下の余白は、画面下のタブに隠れないぶん。タブは fixed なので
+          場所を取らず、ここで空けておかないと最後の項目が隠れる。
+        */}
+        <main className="flex-1 px-3 pt-6 pb-24 sm:px-6 sm:pt-8 sm:pb-8">
+          {children}
+        </main>
       </div>
+
+      {/* 狭い画面だけ。サイドバーの代わりに画面下へ置く */}
+      <BottomNav />
     </div>
   );
 }
