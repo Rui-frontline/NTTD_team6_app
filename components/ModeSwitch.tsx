@@ -31,7 +31,8 @@ export function ModeSwitch() {
             aria-selected={active}
             onClick={() => setMode(m)}
             className={[
-              "flex items-center gap-2 rounded-[var(--tab-radius)] px-5 py-1.5 text-sm font-bold transition-all",
+              // 狭い画面では左右の余白を詰める。ヘッダーに収めるため
+              "flex items-center gap-2 rounded-[var(--tab-radius)] px-3 py-1.5 text-sm font-bold transition-all sm:px-5",
               active
                 ? "[background:var(--tab-active-bg)] text-[var(--tab-active-fg)] [box-shadow:var(--soft-shadow)]"
                 : "text-[var(--tab-idle-fg)]",

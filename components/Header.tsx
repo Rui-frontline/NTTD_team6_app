@@ -15,7 +15,13 @@ export function Header() {
 
   return (
     <header className="sticky top-0 z-20 border-b border-[var(--header-border)] bg-[var(--header-bg)]">
-      <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-4 px-6 py-3">
+      {/*
+        狭い画面では左右の余白と間隔を詰める。
+
+        モード切替だけで約260px要る。375px の画面はサイドバーを引くと
+        319px しか無く、px-6（48px）と gap-4（32px）を足すと収まらない。
+      */}
+      <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2 px-3 py-3 sm:gap-4 sm:px-6">
         <div />
 
         <ModeSwitch />

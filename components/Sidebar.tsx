@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
 import { PointBalance, formatPoints } from "@/components/PointBalance";
+import { NAV } from "@/components/nav-items";
 import { useSession } from "@/lib/session";
 
 /**
@@ -17,11 +18,18 @@ export function Sidebar() {
   const pathname = usePathname();
 
   return (
+    /*
+      狭い画面では出さない。横幅を食うので、代わりに画面下のタブ
+      （components/BottomNav.tsx）を使う。
+
+      出し分けは CSS で行う。画面幅を JS で測ると、最初の描画では分からず
+      一瞬ちらつくうえ、サーバー側の描画とも食い違う。
+    */
     <aside
       className={[
-        "sticky top-0 flex h-screen shrink-0 flex-col border-r transition-[width] duration-200",
+        "sticky top-0 hidden h-screen shrink-0 flex-col border-r transition-[width] duration-200 sm:flex",
         "bg-[var(--sidebar-bg)] border-[var(--sidebar-border)] text-[var(--sidebar-fg)]",
-        open ? "w-40" : "w-16",
+        open ? "sm:w-40" : "sm:w-16",
       ].join(" ")}
     >
       <nav className="flex flex-col gap-1 p-3">
@@ -53,7 +61,9 @@ export function Sidebar() {
               ].join(" ")}
             >
               <Icon />
-              {open ? <span className="truncate">{item.label}</span> : null}
+              {open ? (
+                <span className="truncate">{item.label}</span>
+              ) : null}
             </Link>
           );
         })}
@@ -165,100 +175,20 @@ function LogoMark() {
   );
 }
 
-/** ナビのアイコン。線画で揃えるため stroke は currentColor にしている */
-function iconProps() {
-  return {
-    viewBox: "0 0 24 24",
-    "aria-hidden": true,
-    className: "h-5 w-5 shrink-0",
-    fill: "none",
-    stroke: "currentColor",
-    strokeWidth: 1.5,
-    strokeLinecap: "round" as const,
-    strokeLinejoin: "round" as const,
-  };
-}
-
+/** サイドバーを畳むボタンのアイコン。ここでしか使わない */
 function MenuIcon() {
   return (
-    <svg {...iconProps()}>
+    <svg
+      viewBox="0 0 24 24"
+      aria-hidden
+      className="h-5 w-5 shrink-0"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={1.5}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
       <path d="M4 7h16M4 12h16M4 17h16" />
     </svg>
   );
 }
-
-function SearchIcon() {
-  return (
-    <svg {...iconProps()}>
-      <circle cx="11" cy="11" r="6.5" />
-      <path d="m16 16 4 4" />
-    </svg>
-  );
-}
-
-function TalkIcon() {
-  return (
-    <svg {...iconProps()}>
-      <path d="M20 12.5c0 3.9-3.6 7-8 7-1 0-2-.2-2.9-.5L4 20.5l1.6-3.6A6.7 6.7 0 0 1 4 12.5c0-3.9 3.6-7 8-7s8 3.1 8 7Z" />
-    </svg>
-  );
-}
-
-function HistoryIcon() {
-  return (
-    <svg {...iconProps()}>
-      <circle cx="12" cy="12" r="9" />
-      <path d="M12 6v6l4 2" />
-    </svg>
-  );
-}
-
-function BoardIcon() {
-  return (
-    <svg {...iconProps()}>
-      <rect x="3" y="3" width="18" height="18" rx="2" />
-      <path d="M8 7h8M8 12h8M8 17h5" />
-    </svg>
-  );
-}
-
-/** 重ねたコイン。ポイントの残高を思わせる形にしている */
-function PointIcon() {
-  return (
-    <svg {...iconProps()}>
-      <ellipse cx="12" cy="7" rx="7" ry="3" />
-      <path d="M5 7v5c0 1.7 3.1 3 7 3s7-1.3 7-3V7" />
-      <path d="M5 12v5c0 1.7 3.1 3 7 3s7-1.3 7-3v-5" />
-    </svg>
-  );
-}
-
-function PersonIcon() {
-  return (
-    <svg {...iconProps()}>
-      <circle cx="12" cy="8" r="3.5" />
-      <path d="M5 20c0-3.6 3.1-6 7-6s7 2.4 7 6" />
-    </svg>
-  );
-}
-
-function AiIcon() {
-  return (
-    <svg {...iconProps()}>
-      <rect x="4" y="4" width="16" height="16" rx="2" />
-      <circle cx="9" cy="10" r="1" fill="currentColor" />
-      <circle cx="15" cy="10" r="1" fill="currentColor" />
-      <path d="M9 15h6" />
-    </svg>
-  );
-}
-
-const NAV = [
-  { href: "/discover", label: "探す", icon: SearchIcon },
-  { href: "/talk", label: "トーク", icon: TalkIcon },
-  { href: "/board", label: "募集", icon: BoardIcon },
-  { href: "/history", label: "履歴", icon: HistoryIcon },
-  { href: "/ai-talk", label: "AI対話", icon: AiIcon },
-  { href: "/points", label: "ポイント", icon: PointIcon },
-  { href: "/me", label: "マイページ", icon: PersonIcon },
-];

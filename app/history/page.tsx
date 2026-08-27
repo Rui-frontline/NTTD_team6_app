@@ -161,7 +161,9 @@ export default function HistoryPage() {
       ) : (
         <div style={{
           display: "grid",
-          gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))",
+          // min(300px, 100%) にしないと、狭い画面で列が 300px を下回れず
+              // 横にはみ出す
+              gridTemplateColumns: "repeat(auto-fill, minmax(min(300px, 100%), 1fr))",
           gap: "24px",
           marginTop: "32px",
         }}>
@@ -282,7 +284,9 @@ export default function HistoryPage() {
           ) : (
             <div style={{
               display: "grid",
-              gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))",
+              // min(300px, 100%) にしないと、狭い画面で列が 300px を下回れず
+              // 横にはみ出す
+              gridTemplateColumns: "repeat(auto-fill, minmax(min(300px, 100%), 1fr))",
               gap: "24px",
               marginTop: "24px",
             }}>

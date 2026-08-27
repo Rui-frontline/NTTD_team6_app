@@ -62,6 +62,10 @@ export default function BoardPage() {
       <div
         style={{
           display: "flex",
+          // 狭い画面では絞り込みと投稿ボタンを2段にする。
+          // 1段のままだと両方が潰れて文字が読めなくなる
+          flexWrap: "wrap",
+          gap: "12px",
           justifyContent: "space-between",
           alignItems: "center",
           marginTop: "32px",
@@ -69,7 +73,7 @@ export default function BoardPage() {
         }}
       >
         {/* フィルター */}
-        <div style={{ display: "flex", gap: "12px" }}>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: "12px" }}>
           <button
             onClick={() => setShowOnlyActive(true)}
             style={{
@@ -180,7 +184,13 @@ export default function BoardPage() {
         <div
           style={{
             display: "grid",
-            gridTemplateColumns: "repeat(auto-fill, minmax(350px, 1fr))",
+            /*
+              minmax(350px, ...) だと、列の幅が 350px を下回れない。
+              狭い画面では入り切らず、横にはみ出す。
+              min(350px, 100%) にすると、器が 350px より狭いときは
+              器の幅まで縮む。
+            */
+            gridTemplateColumns: "repeat(auto-fill, minmax(min(350px, 100%), 1fr))",
             gap: "24px",
           }}
         >

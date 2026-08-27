@@ -36,7 +36,16 @@ export function DailyMissions({ progress }: { progress: DailyProgress | null }) 
                   : "border-[var(--line)]",
               ].join(" ")}
             >
-              <div className="min-w-0 flex-1">
+              {/*
+                basis を与えるのが要。flex-1（basis 0）だと、折り返しの判定で
+                「幅0でも置ける」と見なされて必ず同じ行に入り、shrink-0 の
+                進捗とポイントに押し潰される。日本語はどこでも改行できるので、
+                潰れると一文字ずつ縦に並ぶ。
+
+                12rem を基準にしておけば、入らない幅では行ごと下に落ちて
+                横幅いっぱいを使える。広い画面では grow で今までどおり。
+              */}
+              <div className="min-w-0 grow basis-48">
                 <p className="text-sm font-medium">{mission.label}</p>
                 {mission.note ? (
                   <p className="text-xs text-[var(--muted)]">{mission.note}</p>

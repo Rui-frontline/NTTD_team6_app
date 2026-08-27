@@ -527,17 +527,32 @@ export default function DiscoverPage() {
           flexDirection: "column",
           gap: "20px",
         }}>
-          {/* 写真とプロフィール */}
+          {/*
+            写真とプロフィール。
+
+            幅は決めず「上限」だけ決める（width ではなく maxWidth）。
+            画面が狭ければそのぶん縮み、広ければデザイン案の大きさで止まる。
+            width で決めると 375px の画面でも 600px のまま描かれ、はみ出す。
+
+            flexWrap で、横に並べきれなくなったら縦に落とす。
+            flexShrink: 0 は付けない。付けると「縮むな」という指示になり、
+            狭い画面でも幅を守ろうとしてはみ出す。
+          */}
           <div style={{
             display: "flex",
+            flexWrap: "wrap",
             alignItems: "center",
             justifyContent: "center",
             gap: "32px",
           }}>
             {/* 左：写真カード */}
             <div style={{
-              width: "300px",
-              height: "500px",
+              // flexBasis で「余裕があれば 300px」を伝える。足りなければ縮む
+              flex: "1 1 300px",
+              maxWidth: "300px",
+              // 高さも上限にしない。狭い画面では横幅に合わせて低くする
+              aspectRatio: "3 / 5",
+              maxHeight: "500px",
               backgroundColor: "var(--surface)",
               borderRadius: "28px",
               boxShadow: "var(--card-shadow)",
@@ -545,7 +560,6 @@ export default function DiscoverPage() {
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
-              flexShrink: 0,
             }}>
               <img
                 src={currentUser_displayed.avatarUrl}
@@ -560,8 +574,12 @@ export default function DiscoverPage() {
 
             {/* 右：プロフィールカード */}
             <div style={{
-              width: "600px",
-              height: "500px",
+              flex: "1 1 600px",
+              maxWidth: "600px",
+              // 高さは固定しない。中身が増えたら伸び、狭い画面でも切れない。
+              // 広い画面では写真と高さを揃えたいので上限だけ置く
+              minHeight: "320px",
+              maxHeight: "500px",
               backgroundColor: "var(--surface)",
               borderRadius: "28px",
               boxShadow: "var(--card-shadow)",
@@ -570,7 +588,6 @@ export default function DiscoverPage() {
               display: "flex",
               flexDirection: "column",
               gap: "20px",
-              flexShrink: 0,
             }}>
               {/*
                 スーパーいいねが届いていることを、この人のカードで知らせる。
@@ -750,7 +767,13 @@ export default function DiscoverPage() {
             </button>
           </div>
 
-          {/* ボタン */}
+          {/*
+            ボタン。狭い画面では2つで横幅を分け合う。
+
+            width: 200px 固定だと、左右の余白と合わせて 440px 必要になり、
+            スマホの幅（375px）に収まらない。flex で分け合わせ、広い画面では
+            maxWidth で 200px に留める。
+          */}
           <div style={{
             display: "flex",
             justifyContent: "center",
@@ -759,7 +782,8 @@ export default function DiscoverPage() {
             <button
               onClick={() => handlePass(currentUser_displayed)}
               style={{
-                width: "200px",
+                flex: "1 1 0",
+                maxWidth: "200px",
                 height: "56px",
                 backgroundColor: "var(--surface)",
                 color: "var(--foreground)",
@@ -779,7 +803,8 @@ export default function DiscoverPage() {
               onClick={() => handleLike(currentUser_displayed)}
               className={useSuperLike ? styles.superOutline : undefined}
               style={{
-                width: "200px",
+                flex: "1 1 0",
+                maxWidth: "200px",
                 height: "56px",
                 borderRadius: "28px",
                 cursor: "pointer",
@@ -864,7 +889,9 @@ export default function DiscoverPage() {
               top: 0,
               right: 0,
               bottom: 0,
-              width: "400px",
+              // 狭い画面では画面幅いっぱいまで。400px 固定だと、375px の
+              // 画面で右にはみ出して閉じるボタンに届かなくなる
+              width: "min(400px, 100%)",
               backgroundColor: "var(--surface)",
               color: "var(--foreground)",
               padding: "20px",
@@ -1072,11 +1099,14 @@ export default function DiscoverPage() {
         >
           <div
             style={{
-              width: "900px",
+              // 画面からはみ出さない範囲で 900px まで。
+              // 左右に 16px ずつ余白を残す
+              width: "min(900px, calc(100% - 32px))",
               maxHeight: "90vh",
               backgroundColor: "var(--surface)",
               borderRadius: "28px",
-              padding: "40px",
+              // 狭い画面では 40px の内側余白が効きすぎる
+              padding: "clamp(20px, 4vw, 40px)",
               overflowY: "auto",
               boxShadow: "var(--card-shadow)",
             }}
@@ -1100,10 +1130,10 @@ export default function DiscoverPage() {
               </button>
             </div>
 
-            {/* 写真とプロフィールを横並び */}
-            <div style={{ display: "flex", gap: "32px" }}>
+            {/* 写真とプロフィール。狭い画面では縦に落とす */}
+            <div style={{ display: "flex", flexWrap: "wrap", gap: "32px" }}>
               {/* 写真 */}
-              <div style={{ width: "300px", flexShrink: 0 }}>
+              <div style={{ flex: "1 1 260px", maxWidth: "300px" }}>
                 <img
                   src={currentUser_displayed.avatarUrl}
                   alt={currentUser_displayed.name}
@@ -1312,9 +1342,13 @@ export default function DiscoverPage() {
           <div
             style={{
               backgroundColor: "var(--surface)",
-              padding: "40px",
+              padding: "clamp(24px, 5vw, 40px)",
               borderRadius: "28px",
-              maxWidth: "650px",
+              // maxWidth だけでは足りない。650px の上限は 375px の画面でも
+              // 650px を許すので、画面幅からも抑える
+              maxWidth: "min(650px, calc(100% - 32px))",
+              maxHeight: "90vh",
+              overflowY: "auto",
               boxShadow: "var(--card-shadow)",
               animation: "scaleIn 0.3s ease-in-out",
             }}
@@ -1343,9 +1377,11 @@ export default function DiscoverPage() {
               </p>
             </div>
 
-            {/* 写真と情報を横並び */}
+            {/* 写真と情報。狭い画面では縦に落とす */}
             <div style={{
               display: "flex",
+              flexWrap: "wrap",
+              justifyContent: "center",
               gap: "28px",
               marginBottom: "36px",
               alignItems: "center"
