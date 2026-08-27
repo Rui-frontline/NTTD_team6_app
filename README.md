@@ -188,6 +188,33 @@ Vercel では **project レベル**に設定します（従量課金のキーを
 
 **存在しない変数名を使うと `border-color` が `currentColor` になり、文字と同じ濃さの線が出ます。** 実際に AI対話ページで起きました。
 
+### 画面の幅
+
+**幅は `width` で決めず、上限だけ決めてください。**
+
+```
+width: "600px"                    375px の画面でも 600px のまま → はみ出す
+maxWidth: "600px"                 狭ければ縮み、広ければ 600px で止まる
+```
+
+同じ形の間違いが3種類あります。**どれも「これくらい欲しい」のつもりが「これ以上でなければならない」になっています。**
+
+| 書き方 | 直し方 |
+|---|---|
+| `flexShrink: 0` | 外す（本当に縮ませたくない所だけ残す） |
+| `minmax(350px, 1fr)` | `minmax(min(350px, 100%), 1fr)` |
+| `maxWidth: "650px"` だけ | `min(650px, calc(100% - 32px))`（画面幅からも抑える） |
+
+**`flex-1`（`flex-basis: 0`）と `shrink-0` を `flex-wrap` の中で混ぜないでください。** 折り返しの判定で `flex-1` 側は「幅0でも置ける」と見なされ、必ず同じ行に入って潰されます。**日本語は潰れると一文字ずつ縦に並びます**（[components/points/DailyMissions.tsx](components/points/DailyMissions.tsx) で実際に起きました）。`basis-48` のように基準の幅を与えれば、入らないときに行ごと落ちます。
+
+### 画面移動の項目
+
+**[components/nav-items.tsx](components/nav-items.tsx) の1箇所**です。広い画面は [Sidebar.tsx](components/Sidebar.tsx)、狭い画面（`sm` 未満）は [BottomNav.tsx](components/BottomNav.tsx) が、どちらもここを回します。
+
+**足すときはここに1行だけ。** 2箇所に持つと、片方にだけ足して「スマホでは開けない画面」ができます。
+
+出し分けは CSS（`sm:hidden` / `hidden sm:flex`）です。**画面幅を JS で測らないでください。** 最初の描画では分からず一瞬ちらつくうえ、サーバー側の描画とも食い違います。
+
 ### React 19 の注意
 
 `react-hooks/set-state-in-effect` が有効です。**effect の中で同期的に `setState` しないでください。** 値の変化に合わせて state を直したいときは、描画中に直前の値と比べて調整します（[app/discover/page.tsx](app/discover/page.tsx) の `renderedMode` が例）。
