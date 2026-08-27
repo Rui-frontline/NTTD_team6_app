@@ -1,7 +1,6 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { PageHeading } from "@/components/PageHeading";
 import { DailyMissions } from "@/components/points/DailyMissions";
 import { ItemShop } from "@/components/points/ItemShop";
 import { PointHistory } from "@/components/points/PointHistory";
@@ -181,11 +180,6 @@ export default function PointsPage() {
 
   return (
     <div className="mx-auto w-full max-w-5xl text-[var(--foreground)]">
-      <PageHeading
-        title="ポイント"
-        description="ポイントを受け取って、出会いをもっと広げよう。"
-      />
-
       {error ? (
         <p className="mb-4 rounded-lg border border-[var(--accent)] bg-[var(--accent-soft)] px-4 py-3 text-sm text-[var(--accent-strong)]">
           {error}

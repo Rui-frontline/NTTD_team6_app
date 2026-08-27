@@ -559,7 +559,8 @@
 */
 
 .superOutline,
-.superToast {
+.superToast,
+.rainbowHeart {
   --rainbow-1: #ff00ff; /* マゼンタ */
   --rainbow-2: #ffa500; /* オレンジ */
   --rainbow-3: #ffff00; /* イエロー */
@@ -567,9 +568,12 @@
   --rainbow-5: #00bfff; /* ディープスカイブルー */
   --rainbow-6: #ba55d3; /* ミディアムオーキッド */
 
-  /* 端をつなげて、流したときに切れ目が出ないようにする */
+  /*
+    端をつなげて、流したときに切れ目が出ないようにする。
+    0deg は「下から上へ」。90deg にすると左右に流れる
+  */
   --rainbow: linear-gradient(
-    90deg,
+    0deg,
     var(--rainbow-1),
     var(--rainbow-2),
     var(--rainbow-3),
@@ -593,14 +597,19 @@
     rainbow-glow 2.4s ease-in-out infinite;
 }
 
-/* 虹を横に流す。background-size を広く取って位置だけ動かす */
+/*
+  虹を下から上へ流す。background-size を縦に広く取って位置だけ動かす。
+
+  縦位置を 0% → 300% と上げると、箱より高いグラデーションが上へずれていき、
+  色が下から湧いて上へ抜けていくように見える。
+*/
 @keyframes rainbow-flow {
   from {
-    background-position: 0% 50%;
+    background-position: 50% 0%;
   }
 
   to {
-    background-position: 300% 50%;
+    background-position: 50% 300%;
   }
 }
 
@@ -640,13 +649,162 @@
   background-clip: padding-box, border-box;
   background-size:
     auto,
-    300% 100%;
+    100% 300%;
   border: 2px solid transparent;
 }
 
 @media (prefers-reduced-motion: reduce) {
   /* 虹は残して、流れと明滅だけ止める */
   .superOutline {
+    animation: none;
+  }
+}
+
+/* ───────────────────── スーパーいいねの切り替えボタン ─────────────────────
+
+  いいねの隣に置く丸ボタン。中にハートがある。
+  ONにすると縁が虹色に光り（.superOutline）、ハートから炎が立ちのぼる。
+
+  炎の色は虹のパレットとは別に持つ。虹に混ぜると色が濁って炎に見えない。
+*/
+
+.superToggle {
+  --flame-x: 0px;
+
+  position: relative;
+  /* 炎はボタンの外まで出るので、はみ出しを切らない */
+  overflow: visible;
+}
+
+/*
+  炎。ハートの上あたりから出して、上へ消えていく。
+
+  bottom を 50% より上にしているのは、ハートの中心ではなく
+  少し上のくぼみから出したいため。
+*/
+.flame {
+  position: absolute;
+  bottom: 58%;
+  left: 50%;
+  width: 7px;
+  height: 11px;
+  /* 下が丸く上が尖った形。炎らしく見せるのに一番効く */
+  border-radius: 50% 50% 50% 50% / 62% 62% 38% 38%;
+  background: linear-gradient(to top, #ffc400, #ff6d00 55%, #ff3d00);
+  filter: blur(0.4px);
+  opacity: 0;
+  pointer-events: none;
+  animation: flame-rise 950ms ease-out infinite;
+}
+
+/*
+  5つの出どころ・大きさ・速さをずらす。揃えると炎ではなく点滅に見える。
+
+  遅延を 150ms 刻みにして、常にどれかが燃えている状態を作る。
+  間隔を空けるとチカチカして「点いたり消えたり」に見える。
+*/
+.flame:nth-child(1) {
+  --flame-x: -8px;
+
+  width: 6px;
+  height: 10px;
+  animation-delay: 0ms;
+}
+
+.flame:nth-child(2) {
+  --flame-x: -3px;
+
+  width: 9px;
+  height: 15px;
+  animation-delay: 150ms;
+}
+
+.flame:nth-child(3) {
+  --flame-x: 2px;
+
+  width: 7px;
+  height: 12px;
+  animation-delay: 300ms;
+}
+
+.flame:nth-child(4) {
+  --flame-x: 8px;
+
+  width: 6px;
+  height: 10px;
+  animation-delay: 450ms;
+}
+
+/* 真ん中から立つ一番大きいもの。炎の芯に見せる */
+.flame:nth-child(5) {
+  --flame-x: 0px;
+
+  width: 10px;
+  height: 17px;
+  animation-delay: 600ms;
+}
+
+@keyframes flame-rise {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, 2px) scale(0.5);
+  }
+
+  25% {
+    opacity: 1;
+  }
+
+  75% {
+    opacity: 0.9;
+  }
+
+  100% {
+    opacity: 0;
+    transform: translate(calc(-50% + var(--flame-x)), -22px) scale(0.2);
+  }
+}
+
+/*
+  ハートを虹色にする。縁（.superOutline）と同じ --rainbow を流し込む。
+
+  文字の形で切り抜くので background-clip: text を使う。塗りを透明にしないと
+  グラデーションが文字の下に隠れる。
+
+  光らせるのは box-shadow ではなく drop-shadow。塗りが透明な文字に
+  box-shadow を掛けても、文字の形ではなく四角い箱が光ってしまう。
+*/
+.rainbowHeart {
+  background-image: var(--rainbow);
+  background-size: 100% 300%;
+  background-clip: text;
+  -webkit-background-clip: text;
+  color: transparent;
+  animation:
+    rainbow-flow 3s linear infinite,
+    rainbow-heart-glow 2.4s ease-in-out infinite;
+}
+
+/* 縁の明滅（rainbow-glow）と同じ周期・同じ色。揃えて一体に見せる */
+@keyframes rainbow-heart-glow {
+  0%,
+  100% {
+    filter: drop-shadow(0 0 3px color-mix(in srgb, var(--rainbow-1) 70%, transparent));
+  }
+
+  50% {
+    filter: drop-shadow(0 0 6px color-mix(in srgb, var(--rainbow-5) 80%, transparent));
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  /* 立ちのぼるのをやめ、その場でともす */
+  .flame {
+    animation: none;
+    opacity: 0.9;
+    transform: translate(calc(-50% + var(--flame-x)), -6px);
+  }
+
+  .rainbowHeart {
     animation: none;
   }
 }

@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { PageHeading } from "@/components/PageHeading";
 import { useSession } from "@/lib/session";
 import {
   getBoards,
@@ -48,16 +47,8 @@ export default function BoardPage() {
   }
 
   return (
-    <div style={{ padding: "24px 32px" }}>
-      <PageHeading
-        title="募集"
-        description={
-          mode === "work"
-            ? "プロジェクトメンバーや協力者を募集できます"
-            : "趣味仲間やイベント参加者を募集できます"
-        }
-      />
-
+    // 上の余白は AppShell が持つ。ここで足すと二重になる
+    <div style={{ padding: "0 32px 24px" }}>
       {/* ヘッダー */}
       <div
         style={{
@@ -68,7 +59,6 @@ export default function BoardPage() {
           gap: "12px",
           justifyContent: "space-between",
           alignItems: "center",
-          marginTop: "32px",
           marginBottom: "24px",
         }}
       >

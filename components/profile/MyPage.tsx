@@ -11,7 +11,6 @@ import {
 import type { ClaimedMilestones } from "@/lib/repository";
 import { fileToAvatarImage } from "@/lib/image";
 import { profileCompletion } from "@/lib/profile-completion";
-import { PageHeading } from "@/components/PageHeading";
 import { PointBalance } from "@/components/PointBalance";
 import { ProfileCompletion } from "./ProfileCompletion";
 import { PasswordChange } from "./PasswordChange";
@@ -394,11 +393,6 @@ export function MyPage() {
         保存後の refreshUser() でその編集が消えていた。
       */}
       <fieldset disabled={saving} className="m-0 border-0 p-0">
-        <PageHeading
-          title="マイページ"
-          description="相手に表示されるプロフィールを編集できます。"
-        />
-
         {/*
           左の札と右のカードの2段組み。
           狭い画面では1列に落として、札が上に来るようにする。

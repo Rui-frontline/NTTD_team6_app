@@ -34,6 +34,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   const isPublic = PUBLIC_PATHS.includes(pathname);
   const isPasswordPath = PASSWORD_PATHS.includes(pathname);
+  /** トークは会話を画面いっぱいに広げるので、本文の余白を付けない */
+  const isTalk = pathname === "/talk";
   /** 枠（サイドバー・ヘッダー）を出さない画面 */
   const isBare = isPublic || isPasswordPath;
 
@@ -82,8 +84,21 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
           下の余白は、画面下のタブに隠れないぶん。タブは fixed なので
           場所を取らず、ここで空けておかないと最後の項目が隠れる。
+
+          トークだけ余白を付けない。会話は画面いっぱいに広げたいので、
+          ここで余白を足すと外周に隙間が残る。下タブぶんの逃げだけは残す。
+
+          下タブぶんは --bottom-nav-h（globals.css）を使う。数字で書くと、
+          ホームインジケーターのある端末で下タブが高くなったときに足りず、
+          中身が隠れる。
         */}
-        <main className="flex-1 px-3 pt-6 pb-24 sm:px-6 sm:pt-8 sm:pb-8">
+        <main
+          className={
+            isTalk
+              ? "flex-1 pb-[var(--bottom-nav-h)] sm:pb-0"
+              : "flex-1 px-3 pt-6 pb-[calc(var(--bottom-nav-h)+2rem)] sm:px-6 sm:pt-8 sm:pb-8"
+          }
+        >
           {children}
         </main>
       </div>

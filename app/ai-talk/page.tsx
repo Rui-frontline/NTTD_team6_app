@@ -2,7 +2,6 @@
 
 import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { PageHeading } from "@/components/PageHeading";
 import { useSession } from "@/lib/session";
 import { supabase } from "@/lib/supabase";
 
@@ -223,16 +222,6 @@ export default function AiTalkPage() {
     return situation?.label || "";
   };
 
-  const getDescription = () => {
-    if (!selectedSituation) {
-      return mode === "romance"
-        ? "シチュエーションを選んで会話練習を始めましょう"
-        : "シチュエーションを選んで会話練習を始めましょう";
-    }
-    const situation = getSituations().find((s) => s.id === selectedSituation);
-    return situation?.description || "";
-  };
-
   /*
     不具合を画面に出す帯。会話画面と評価画面の両方に置く。
 
@@ -271,10 +260,6 @@ export default function AiTalkPage() {
   if (mode === "romance" && !currentUser.enabledModes.includes("romance")) {
     return (
       <div className="mx-auto w-full max-w-5xl text-[var(--foreground)]">
-        <PageHeading
-          title="AI対話練習"
-          description="AIと会話の練習ができます。"
-        />
         <div
           style={{
             display: "flex",
@@ -316,7 +301,6 @@ export default function AiTalkPage() {
   if (!selectedSituation) {
     return (
       <div className="mx-auto w-full max-w-5xl text-[var(--foreground)]">
-        <PageHeading title={getTitle()} description={getDescription()} />
         <h2 className="mb-4 text-sm font-bold text-[var(--muted)]">
           シチュエーションを選択してください
         </h2>
@@ -342,10 +326,6 @@ export default function AiTalkPage() {
   if (showEvaluation) {
     return (
       <div className="mx-auto w-full max-w-3xl text-[var(--foreground)]">
-        <PageHeading
-          title="会話練習完了！"
-          description="今回の会話の評価です。"
-        />
         {noticeBanner}
         <div>
           <div className="space-y-6">
@@ -456,18 +436,22 @@ export default function AiTalkPage() {
   return (
     /*
       トーク画面（components/TalkScreen.tsx）と同じ組み方に揃える。
-      見出しを外に出し、会話そのものは枠の中に収める。
+      会話そのものは枠の中に収める。
     */
-    <div className="flex h-[calc(100dvh-9rem)] flex-col gap-3 text-[var(--foreground)]">
-      <PageHeading title={getTitle()} description={getDescription()} />
-
+    <div className="flex h-[calc(100dvh-9rem)] flex-col text-[var(--foreground)]">
       <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-lg border border-[var(--line)] bg-[var(--surface)]">
         {/*
-          見出しではなく、会話中の操作バー。何ターン目かと、やり直しだけ。
-          モード切替はヘッダーにあるので置かない。
+          会話中の操作バー。いまのシチュエーションと何ターン目か、やり直し。
+
+          シチュエーション名はここに置く。ページ見出しを外したので、
+          ここが無いと「いま何の練習をしているか」が画面から消える。
+          説明文と違って、これは中身の情報なので残す。
         */}
-        <div className="flex shrink-0 items-center justify-between border-b border-[var(--line)] px-4 py-2">
-          <span className="rounded-full bg-[var(--background)] px-3 py-1 text-xs font-bold">
+        <div className="flex shrink-0 items-center gap-3 border-b border-[var(--line)] px-4 py-2">
+          <span className="min-w-0 flex-1 truncate text-sm font-bold">
+            {getTitle()}
+          </span>
+          <span className="shrink-0 rounded-full bg-[var(--background)] px-3 py-1 text-xs font-bold">
             {turnCount}/10
           </span>
           <button
@@ -478,7 +462,7 @@ export default function AiTalkPage() {
               setShowEvaluation(false);
               setEvaluation(null);
             }}
-            className="rounded-lg border border-[var(--line)] px-3 py-1.5 text-xs font-bold transition-colors hover:bg-[var(--background)]"
+            className="shrink-0 rounded-lg border border-[var(--line)] px-3 py-1.5 text-xs font-bold transition-colors hover:bg-[var(--background)]"
           >
             シチュエーションを変更
           </button>

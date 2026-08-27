@@ -2,7 +2,6 @@
 
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { PageHeading } from "@/components/PageHeading";
 import { useSession } from "@/lib/session";
 import {
   getIncomingSuperLikeIds,
@@ -71,6 +70,55 @@ const FEEDBACK_MS = 3000;
  * Supabase のエラーは Error のインスタンスではなくただのオブジェクトなので、
  * instanceof では判定できない。
  */
+/**
+ * スーパーいいねのボタンに入れるハート。
+ *
+ * ONのときは縁と同じ虹色に光らせる。
+ *
+ * SVG ではなく文字のハートを使っている。SVG の塗りに CSS のグラデーションを
+ * 流し込むには <linearGradient> を書くことになり、縁で使っている
+ * --rainbow をそのまま使えない。文字なら background-clip: text で
+ * 同じ変数を共有できて、色を変えたいときも1箇所で済む。
+ *
+ * 炎そのものはボタン側の span が担当する。
+ */
+function HeartMark({ burning }: { burning: boolean }) {
+  return (
+    <span
+      aria-hidden="true"
+      className={burning ? styles.rainbowHeart : undefined}
+      style={{
+        fontSize: "26px",
+        lineHeight: 1,
+        ...(burning ? {} : { color: "var(--muted)" }),
+      }}
+    >
+      ♥
+    </span>
+  );
+}
+
+/** 絞り込みのアイコン。つまみが3本のスライダー */
+function FilterIcon() {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      aria-hidden
+      width={20}
+      height={20}
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={1.8}
+      strokeLinecap="round"
+    >
+      <path d="M4 7h16M4 12h16M4 17h16" />
+      <circle cx="9" cy="7" r="2" fill="var(--surface)" />
+      <circle cx="15" cy="12" r="2" fill="var(--surface)" />
+      <circle cx="8" cy="17" r="2" fill="var(--surface)" />
+    </svg>
+  );
+}
+
 function superLikeErrorMessage(err: unknown): string {
   const code =
     typeof err === "object" && err !== null && "code" in err
@@ -474,41 +522,25 @@ export default function DiscoverPage() {
 
   return (
     <>
-      {/* 見出しはコンテナの外に置く。中に入れるとコンテナの上下 padding のぶん
-          下がってしまい、トーク・マイページと縦位置が揃わないため */}
-      {/* フィルターは見出しの行に並べる。カードの領域に absolute で置くと、
-          画面幅によってカードと重なってしまう */}
-      <div className="flex items-start justify-between gap-4">
-        <PageHeading
-          title="あなたにおすすめ"
-          description="あなたにおすすめの人を紹介します。"
-        />
-        <button
-          onClick={() => setShowFilter(true)}
-          style={{
-            flexShrink: 0,
-            padding: "10px 20px",
-            backgroundColor: "var(--surface)",
-            color: "var(--foreground)",
-            border: "1px solid var(--line)",
-            borderRadius: "20px",
-            cursor: "pointer",
-            fontSize: "14px",
-            fontWeight: "500",
-            boxShadow: "var(--soft-shadow)",
-          }}
-        >
-          フィルター
-        </button>
-      </div>
+      {/*
+        見出しもフィルターの行も置かない。カードに名前も職種も出ているので、
+        その上に「あなたにおすすめ」と重ねても分かることが増えない。
+        1枚ずつ見ていく画面なので、そのぶんカードを上に出す。
 
+        フィルターは下の操作の行に入れた。カードの領域に absolute で置くと
+        画面幅によって重なるし、専用の行を作るとそのぶんカードが下がる。
+      */}
     {/* 背景色は指定しない。モードで切り替わる地の色（globals.css の
         --background）をそのまま使い、他の画面と揃えるため */}
     {/* position: relative は、演出（♥/★）を押した位置に出すための基準 */}
     <div style={{
       display: "flex",
       flexDirection: "column",
-      padding: "20px 0 60px",
+      // 上の余白は詰める。見出しを外したので、ここを空けるとカードが
+      // 中途半端に下がるだけになる
+      // 上は空けない。フィルターの行も見出しも無くなったので、
+      // ここを空けるとカードが理由もなく下がる
+      padding: "0 0 40px",
       position: "relative",
     }}>
       {loading ? (
@@ -717,57 +749,6 @@ export default function DiscoverPage() {
           </div>
 
           {/*
-            スーパーいいねの切り替え。
-            ONの間だけ、右のボタンがスーパーいいねになる。在庫が無いときは
-            押せないようにして、ポイント画面で交換できることを伝える
-          */}
-          <div style={{
-            display: "flex",
-            justifyContent: "center",
-            marginBottom: "16px",
-          }}>
-            <button
-              type="button"
-              onClick={() => setUseSuperLike((prev) => !prev)}
-              disabled={superLikeStock === 0}
-              aria-pressed={useSuperLike}
-              title={
-                superLikeStock === 0
-                  ? "ポイント画面で交換すると使えます"
-                  : undefined
-              }
-              // ONの間だけ縁が虹色に光る。押した結果が一目で分かるようにする
-              className={useSuperLike ? styles.superOutline : undefined}
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: "8px",
-                padding: "8px 18px",
-                borderRadius: "20px",
-                fontSize: "14px",
-                fontWeight: "bold",
-                color: "var(--foreground)",
-                cursor: superLikeStock === 0 ? "not-allowed" : "pointer",
-                opacity: superLikeStock === 0 ? 0.5 : 1,
-                // ONのときは背景と枠をCSS側に任せる。ここで指定すると
-                // インラインが勝ち、枠が消えて虹が出ない
-                ...(useSuperLike
-                  ? {}
-                  : {
-                      border: "1px solid var(--line)",
-                      backgroundColor: "var(--surface)",
-                    }),
-              }}
-            >
-              <span aria-hidden="true">⭐</span>
-              スーパーいいねを使う！！
-              <span style={{ fontWeight: "normal" }}>
-                （残り {superLikeStock}）
-              </span>
-            </button>
-          </div>
-
-          {/*
             ボタン。狭い画面では2つで横幅を分け合う。
 
             width: 200px 固定だと、左右の余白と合わせて 440px 必要になり、
@@ -776,9 +757,37 @@ export default function DiscoverPage() {
           */}
           <div style={{
             display: "flex",
+            flexWrap: "wrap",
+            alignItems: "center",
             justifyContent: "center",
             gap: "20px",
           }}>
+            {/*
+              フィルターはこの行の左端。見送る・いいねから離して置く。
+              並べて同じ大きさにすると、押し間違えて相手を飛ばしかねない
+            */}
+            <button
+              onClick={() => setShowFilter(true)}
+              aria-label="絞り込み"
+              title="絞り込み"
+              style={{
+                flexShrink: 0,
+                width: "44px",
+                height: "44px",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                backgroundColor: "var(--surface)",
+                color: "var(--foreground)",
+                border: "1px solid var(--line)",
+                borderRadius: "50%",
+                cursor: "pointer",
+                boxShadow: "var(--soft-shadow)",
+              }}
+            >
+              <FilterIcon />
+            </button>
+
             <button
               onClick={() => handlePass(currentUser_displayed)}
               style={{
@@ -822,7 +831,94 @@ export default function DiscoverPage() {
                     }),
               }}
             >
-              {useSuperLike ? "⭐ スーパーいいね" : "♡ いいね"}
+              {useSuperLike ? "スーパーいいね" : "♡ いいね"}
+            </button>
+
+            {/*
+              スーパーいいねの切り替え。いいねの隣に置く。
+
+              ONにすると縁が虹色に光り（.superOutline）、中のハートから炎が
+              立ちのぼる。押した結果が一目で分かるようにするため。
+              在庫が無いときは押せないようにして、交換できることを伝える。
+            */}
+            <button
+              type="button"
+              onClick={() => setUseSuperLike((prev) => !prev)}
+              disabled={superLikeStock === 0}
+              aria-pressed={useSuperLike}
+              aria-label={`スーパーいいねを使う（残り ${superLikeStock}）`}
+              title={
+                superLikeStock === 0
+                  ? "スーパーいいねがありません。ポイント画面で交換できます"
+                  : `スーパーいいねを使う（残り ${superLikeStock}）`
+              }
+              className={[
+                styles.superToggle,
+                useSuperLike ? styles.superOutline : "",
+              ].join(" ")}
+              style={{
+                flexShrink: 0,
+                width: "56px",
+                height: "56px",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                borderRadius: "50%",
+                cursor: superLikeStock === 0 ? "not-allowed" : "pointer",
+                opacity: superLikeStock === 0 ? 0.45 : 1,
+                // ONのときは背景と枠をCSS側に任せる。ここで指定すると
+                // インラインが勝ち、枠が消えて虹が出ない
+                ...(useSuperLike
+                  ? {}
+                  : {
+                      border: "1px solid var(--line)",
+                      backgroundColor: "var(--surface)",
+                      boxShadow: "var(--soft-shadow)",
+                    }),
+              }}
+            >
+              {/*
+                炎はONのときだけ。5つの出どころ・大きさ・速さをずらしてある
+                （CSS 側の .flame:nth-child で1つずつ指定）。
+                数を減らすと、間が空いてチカチカして見える。
+              */}
+              {useSuperLike ? (
+                <>
+                  <span className={styles.flame} aria-hidden="true" />
+                  <span className={styles.flame} aria-hidden="true" />
+                  <span className={styles.flame} aria-hidden="true" />
+                  <span className={styles.flame} aria-hidden="true" />
+                  <span className={styles.flame} aria-hidden="true" />
+                </>
+              ) : null}
+
+              <HeartMark burning={useSuperLike} />
+
+              {/* 残り数。丸の中に文字は入らないので、右上に小さく出す */}
+              {superLikeStock > 0 ? (
+                <span
+                  aria-hidden="true"
+                  style={{
+                    position: "absolute",
+                    top: "-2px",
+                    right: "-2px",
+                    minWidth: "18px",
+                    height: "18px",
+                    padding: "0 4px",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    borderRadius: "999px",
+                    backgroundColor: "var(--badge-bg)",
+                    color: "var(--badge-fg)",
+                    fontSize: "10px",
+                    fontWeight: "bold",
+                    lineHeight: 1,
+                  }}
+                >
+                  {superLikeStock}
+                </span>
+              ) : null}
             </button>
           </div>
         </div>

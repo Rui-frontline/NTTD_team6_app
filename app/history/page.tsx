@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { PageHeading } from "@/components/PageHeading";
 import { ProfileDetailModal } from "@/components/profile/ProfileDetailModal";
 import { useSession } from "@/lib/session";
 import {
@@ -140,13 +139,9 @@ export default function HistoryPage() {
   }
 
   return (
-    <div style={{ padding: "24px 32px" }}>
-      <PageHeading
-        title="履歴"
-        description="あなたがいいね・見送りした人の一覧です"
-      />
-
-      <h2 style={{ margin: "32px 0 0 0", fontSize: "18px", fontWeight: "bold", color: "#1E1B4B" }}>
+    // 上の余白は AppShell が持つ。ここで足すと二重になる
+    <div style={{ padding: "0 32px 24px" }}>
+      <h2 style={{ margin: 0, fontSize: "18px", fontWeight: "bold", color: "#1E1B4B" }}>
         いいね・見送りした人
       </h2>
 
