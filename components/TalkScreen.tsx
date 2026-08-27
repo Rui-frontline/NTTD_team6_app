@@ -2,7 +2,6 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { MatchList } from "@/components/MatchList";
-import { PageHeading } from "@/components/PageHeading";
 import { TalkPanel } from "@/components/TalkPanel";
 import { getMatches, markMatchRead } from "@/lib/repository";
 import { useSession } from "@/lib/session";
@@ -202,16 +201,17 @@ export function TalkScreen({
   }
 
   return (
-    <div className="flex h-[calc(100dvh-9rem)] flex-col gap-3">
-      <PageHeading
-        title="トーク"
-        description="マッチした人との会話を確認できます。"
-      />
+    /*
+      本文の領域いっぱいに広げる。
 
+      引く 4rem はヘッダーの高さ。狭い画面では下タブぶん（3.5rem）も引く。
+      AppShell 側でトークだけ余白を外しているので、ここで引くのはこの2つだけ。
+
+      枠も角丸も付けない。画面の端まで会話にするため。
+    */
+    <div className="flex h-[calc(100dvh-4rem-3.5rem)] flex-col sm:h-[calc(100dvh-4rem)]">
       {error ? (
-        <p className="rounded-lg bg-accent-soft px-3 py-2 text-sm text-accent">
-          {error}
-        </p>
+        <p className="bg-accent-soft px-3 py-2 text-sm text-accent">{error}</p>
       ) : null}
 
       {/*
@@ -220,7 +220,7 @@ export function TalkScreen({
         relative は、狭い画面でパネルを absolute で重ねるときの基準。
         md 未満では一覧が幅いっぱいを占めるので、横に並べる場所が無い。
       */}
-      <div className="relative flex flex-1 overflow-hidden rounded-lg border border-line bg-surface">
+      <div className="relative flex min-h-0 flex-1 overflow-hidden bg-surface">
         {/*
           狭い画面では一覧を幅いっぱいにする。w-72 shrink-0 のままだと、
           サイドバーと余白を引いた残りが18remを下回ったとき、一覧が幅を
