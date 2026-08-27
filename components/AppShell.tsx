@@ -87,12 +87,16 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
           トークだけ余白を付けない。会話は画面いっぱいに広げたいので、
           ここで余白を足すと外周に隙間が残る。下タブぶんの逃げだけは残す。
+
+          下タブぶんは --bottom-nav-h（globals.css）を使う。数字で書くと、
+          ホームインジケーターのある端末で下タブが高くなったときに足りず、
+          中身が隠れる。
         */}
         <main
           className={
             isTalk
-              ? "flex-1 pb-14 sm:pb-0"
-              : "flex-1 px-3 pt-6 pb-24 sm:px-6 sm:pt-8 sm:pb-8"
+              ? "flex-1 pb-[var(--bottom-nav-h)] sm:pb-0"
+              : "flex-1 px-3 pt-6 pb-[calc(var(--bottom-nav-h)+2rem)] sm:px-6 sm:pt-8 sm:pb-8"
           }
         >
           {children}

@@ -25,8 +25,17 @@ export function BottomNav() {
       className={[
         "fixed inset-x-0 bottom-0 z-30 flex sm:hidden",
         "border-t border-[var(--sidebar-active-border)] bg-[var(--sidebar-bg)]",
-        // 端末の下端（ホームバーなど）に隠れないよう、その分だけ下に足す
-        "pb-[env(safe-area-inset-bottom)]",
+        /*
+          高さを --bottom-nav-h（globals.css）に合わせる。
+
+          本文側はこの変数のぶんだけ下に余白を空けている。中身の高さ任せに
+          すると、アイコンや文字を変えたときに本文の余白とずれ、下タブが
+          中身に重なる。
+
+          pb は端末の下端（ホームバー）ぶんの逃げ。--bottom-nav-h にも
+          同じ env() が入っているので、両者は必ず一致する。
+        */
+        "min-h-[var(--bottom-nav-h)] pb-[env(safe-area-inset-bottom)]",
       ].join(" ")}
     >
       {NAV.map((item) => {

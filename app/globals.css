@@ -11,6 +11,21 @@
 */
 
 :root {
+  /*
+    枠の高さ。トークの高さ計算や、下タブに隠れないための余白がこれを引く。
+
+    ★ここが唯一の置き場所です。使う側で数字を書かないでください。
+      3箇所に散らすと、片方だけ直したときに中身が枠に隠れます。
+
+    --bottom-nav-h には env(safe-area-inset-bottom) を含める。iPhone の
+    ホームインジケーターがある端末では、下タブ自身がそのぶん高くなる。
+    含めないと、その差（34px 前後）だけ会話の入力欄に重なる。
+
+    モードでは変わらないので、色と違って :root にだけ置く。
+  */
+  --header-h: 4rem;
+  --bottom-nav-h: calc(3.5rem + env(safe-area-inset-bottom));
+
   /* 既定は仕事モードの色 */
   --background: #f6f3ed;
   --surface: #ffffff;

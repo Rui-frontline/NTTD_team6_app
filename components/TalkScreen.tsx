@@ -204,12 +204,14 @@ export function TalkScreen({
     /*
       本文の領域いっぱいに広げる。
 
-      引く 4rem はヘッダーの高さ。狭い画面では下タブぶん（3.5rem）も引く。
-      AppShell 側でトークだけ余白を外しているので、ここで引くのはこの2つだけ。
+      引くのはヘッダーと、狭い画面での下タブ。どちらも globals.css の変数を
+      使う。ここに数字を書くと、下タブが端末の下端ぶん高くなったときに
+      引き足りず、入力欄が下タブに隠れる。
 
+      AppShell 側でトークだけ余白を外しているので、引くのはこの2つだけ。
       枠も角丸も付けない。画面の端まで会話にするため。
     */
-    <div className="flex h-[calc(100dvh-4rem-3.5rem)] flex-col sm:h-[calc(100dvh-4rem)]">
+    <div className="flex h-[calc(100dvh-var(--header-h)-var(--bottom-nav-h))] flex-col sm:h-[calc(100dvh-var(--header-h))]">
       {error ? (
         <p className="bg-accent-soft px-3 py-2 text-sm text-accent">{error}</p>
       ) : null}
