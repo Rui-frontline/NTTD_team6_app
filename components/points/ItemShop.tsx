@@ -44,9 +44,22 @@ export function ItemShop({
               className="flex flex-col rounded-xl border border-[var(--line)] p-4"
             >
               <div className="flex items-start gap-3">
-                <span className="text-2xl" aria-hidden>
-                  {item.emoji}
-                </span>
+                {/*
+                  スーパーいいねだけ絵文字ではなく虹色のハートにする。
+                  探す画面で光るものと同じ印を、買う場所にも出すため。
+
+                  rainbow-heart は app/globals.css の全体クラス。
+                  絵文字は色を変えられないので、文字の ♥ に差し替えている。
+                */}
+                {item.id === "super_like" ? (
+                  <span className="rainbow-heart text-2xl leading-none" aria-hidden>
+                    ♥
+                  </span>
+                ) : (
+                  <span className="text-2xl" aria-hidden>
+                    {item.emoji}
+                  </span>
+                )}
                 <div className="min-w-0 flex-1">
                   <p className="text-sm font-bold">{item.label}</p>
                   <p className="mt-0.5 text-xs text-[var(--muted)]">
