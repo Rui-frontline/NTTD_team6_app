@@ -237,3 +237,159 @@ body {
   background: var(--romance-baby);
   color: var(--foreground);
 }
+
+/* ───────────────────────── スーパーいいねの虹 ─────────────────────────
+
+  「特別ないいね」の印。探す画面の縁とハート、ポイント画面の交換カードで
+  共有する。
+
+  ★色を変えたいときは、下の --rainbow-1 〜 6 だけ差し替えてください。
+    縁・光・ハートがまとめて変わります。
+
+  モードでは変えない（仕事でも恋愛でも「特別ないいね」は同じ見た目）ので、
+  [data-mode] の中には書かず :root に置く。
+
+  discover.module.css ではなくここに置いているのは、CSS Modules の
+  @keyframes は名前が書き換えられ、別のファイルから参照できないため。
+  あちらに置いたままだと、ポイント画面から同じ虹を使えない。
+*/
+
+:root {
+  --rainbow-1: #ff00ff; /* マゼンタ */
+  --rainbow-2: #ffa500; /* オレンジ */
+  --rainbow-3: #ffff00; /* イエロー */
+  --rainbow-4: #7fff00; /* シャルトリューズ */
+  --rainbow-5: #00bfff; /* ディープスカイブルー */
+  --rainbow-6: #ba55d3; /* ミディアムオーキッド */
+
+  /*
+    端をつなげて、流したときに切れ目が出ないようにする。
+    0deg は「下から上へ」。90deg にすると左右に流れる
+  */
+  --rainbow: linear-gradient(
+    0deg,
+    var(--rainbow-1),
+    var(--rainbow-2),
+    var(--rainbow-3),
+    var(--rainbow-4),
+    var(--rainbow-5),
+    var(--rainbow-6),
+    var(--rainbow-1)
+  );
+}
+
+/*
+  虹を下から上へ流す。background-size を縦に広く取って位置だけ動かす。
+
+  縦位置を 0% → 300% と上げると、箱より高いグラデーションが上へずれていき、
+  色が下から湧いて上へ抜けていくように見える。
+*/
+@keyframes rainbow-flow {
+  from {
+    background-position: 50% 0%;
+  }
+
+  to {
+    background-position: 50% 300%;
+  }
+}
+
+/*
+  明滅する光。流れる虹と周期をずらして、単調にならないようにする。
+  色は上の変数から作るので、差し替えれば光も追随する。
+*/
+@keyframes rainbow-glow {
+  0%,
+  100% {
+    box-shadow:
+      0 0 10px color-mix(in srgb, var(--rainbow-1) 42%, transparent),
+      0 0 20px color-mix(in srgb, var(--rainbow-5) 30%, transparent);
+  }
+
+  50% {
+    box-shadow:
+      0 0 16px color-mix(in srgb, var(--rainbow-3) 46%, transparent),
+      0 0 30px color-mix(in srgb, var(--rainbow-6) 34%, transparent);
+  }
+}
+
+/*
+  枠を虹にする描き方。
+
+  背景を2枚重ね、内側を surface で塗りつぶし、border を transparent に
+  することで枠だけを虹にしている。
+
+  使う側は border を上書きしないこと。border: none を当てると padding-box と
+  border-box が一致し、内側の surface が全面を覆って虹が消える。
+
+  .super-toast だけクラスを2つ重ねて書いている。相手の .reactionToast
+  （discover.module.css）も border と background を持ち、クラス1つぶんの
+  強さで並ぶ。同じ強さだと後から読まれたほうが勝つので、ファイルが分かれた
+  いまは読み込み順まかせになってしまう。重ねて強くしておけば順番によらない。
+*/
+.super-outline,
+.super-toast.super-toast {
+  background-image: linear-gradient(var(--surface), var(--surface)),
+    var(--rainbow);
+  background-origin: border-box;
+  background-clip: padding-box, border-box;
+  background-size:
+    auto,
+    100% 300%;
+  border: 2px solid transparent;
+}
+
+/*
+  流して光らせるのはボタンだけ。
+
+  トースト（.super-toast）には animation を書かない。書くと
+  .reactionToast の toast-life を上書きしてしまい、出入りのフェードが
+  消える。トーストは3秒で消えるので、動かす必要もない。
+*/
+.super-outline {
+  animation:
+    rainbow-flow 3s linear infinite,
+    rainbow-glow 2.4s ease-in-out infinite;
+}
+
+/*
+  虹色のハート。
+
+  文字の形で切り抜くので background-clip: text を使う。塗りを透明に
+  しないとグラデーションが文字の下に隠れる。
+
+  光らせるのは box-shadow ではなく drop-shadow。塗りが透明な文字に
+  box-shadow を掛けても、文字の形ではなく四角い箱が光ってしまう。
+
+  大きさは指定しない。置く側で font-size を決める。
+*/
+.rainbow-heart {
+  background-image: var(--rainbow);
+  background-size: 100% 300%;
+  background-clip: text;
+  -webkit-background-clip: text;
+  color: transparent;
+  animation:
+    rainbow-flow 3s linear infinite,
+    rainbow-heart-glow 2.4s ease-in-out infinite;
+}
+
+/* 縁の明滅（discover.module.css の rainbow-glow）と同じ周期・同じ色 */
+@keyframes rainbow-heart-glow {
+  0%,
+  100% {
+    filter: drop-shadow(0 0 3px color-mix(in srgb, var(--rainbow-1) 70%, transparent));
+  }
+
+  50% {
+    filter: drop-shadow(0 0 6px color-mix(in srgb, var(--rainbow-5) 80%, transparent));
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  /* 虹は残して、流れと明滅だけ止める */
+  .super-outline,
+  .rainbow-heart {
+    animation: none;
+  }
+}

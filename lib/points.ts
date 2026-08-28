@@ -59,7 +59,12 @@ export type Item = {
   description: string;
   /** 交換に必要なポイント */
   cost: number;
-  /** カードに出す絵文字。線画アイコンを1つずつ描くより差し替えやすい */
+  /**
+   * カードに出す絵文字。線画アイコンを1つずつ描くより差し替えやすい。
+   *
+   * スーパーいいねだけは、絵文字ではなく虹色のハートを出している
+   * （components/points/ItemShop.tsx）。絵文字は色を変えられないため。
+   */
   emoji: string;
 };
 
@@ -70,7 +75,8 @@ export const ITEMS: Item[] = [
     description:
       "探す画面で使うと、相手にいいねしたことが伝わります。1回につき1つ消費します。",
     cost: 100,
-    emoji: "⭐",
+    // 使われない。ItemShop が虹色のハートに差し替えている
+    emoji: "♥",
   },
   {
     id: "coffee_ticket",

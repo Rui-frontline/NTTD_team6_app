@@ -80,13 +80,16 @@ const FEEDBACK_MS = 3000;
  * --rainbow をそのまま使えない。文字なら background-clip: text で
  * 同じ変数を共有できて、色を変えたいときも1箇所で済む。
  *
+ * rainbow-heart は app/globals.css の全体クラス。ポイント画面の交換カードと
+ * 同じものを使うため、CSS Modules ではなくあちらに置いている。
+ *
  * 炎そのものはボタン側の span が担当する。
  */
 function HeartMark({ burning }: { burning: boolean }) {
   return (
     <span
       aria-hidden="true"
-      className={burning ? styles.rainbowHeart : undefined}
+      className={burning ? "rainbow-heart" : undefined}
       style={{
         fontSize: "26px",
         lineHeight: 1,
@@ -608,15 +611,22 @@ export default function DiscoverPage() {
             <div style={{
               flex: "1 1 600px",
               maxWidth: "600px",
-              // 高さは固定しない。中身が増えたら伸び、狭い画面でも切れない。
-              // 広い画面では写真と高さを揃えたいので上限だけ置く
+              /*
+                高さの上限を置かず、中に閉じたスクロールも作らない。
+
+                以前は maxHeight: 500px と overflowY: auto で写真と高さを
+                揃えていたが、いちばん下の「詳細プロフィールを見る」が
+                カードの中に隠れ、開くたびにこの中をスクロールする必要があった。
+
+                上限を外せば中身のぶんだけ伸びるので、ボタンは常に見えている。
+                写真より少し高くなることがあるが、届かないよりはよい。
+                下限だけは残す。中身が少ない人でカードが潰れないようにするため。
+              */
               minHeight: "320px",
-              maxHeight: "500px",
               backgroundColor: "var(--surface)",
               borderRadius: "28px",
               boxShadow: "var(--card-shadow)",
               padding: "32px",
-              overflowY: "auto",
               display: "flex",
               flexDirection: "column",
               gap: "20px",
@@ -630,7 +640,7 @@ export default function DiscoverPage() {
                 <div
                   // 虹は塗りつぶしではなく枠。中を地の色のままにしないと
                   // 文字が読めない
-                  className={styles.superOutline}
+                  className="super-outline"
                   style={{
                     display: "flex",
                     alignItems: "center",
@@ -642,12 +652,16 @@ export default function DiscoverPage() {
                     fontWeight: "bold",
                   }}
                 >
-                  <span aria-hidden="true">⭐</span>
                   この人からスーパーいいねが届いています
                 </div>
               )}
 
-              {/* 名前 */}
+              {/*
+                名前。恋愛モードでは年齢も添える。
+
+                以前は「年齢」という項目を1つ立てていたが、数字ひとつのために
+                見出しと1行を使うぶん、下のボタンが押し出されていた。
+              */}
               <h1 style={{
                 margin: 0,
                 fontSize: "28px",
@@ -655,6 +669,7 @@ export default function DiscoverPage() {
                 color: "var(--foreground)",
               }}>
                 {currentUser_displayed.name}
+                {mode === "romance" && `（${currentUser_displayed.age}）`}
               </h1>
 
               {/* 基本情報 */}
@@ -671,18 +686,6 @@ export default function DiscoverPage() {
 
               {/* 区切り線 */}
               <div style={{ height: "1px", backgroundColor: "var(--line)" }} />
-
-              {/* 年齢（恋愛モードのみ） */}
-              {mode === "romance" && (
-                <div>
-                  <p style={{ margin: "0 0 8px 0", fontSize: "14px", fontWeight: "bold", color: "var(--foreground)" }}>
-                    年齢
-                  </p>
-                  <p style={{ margin: 0, fontSize: "16px", color: "var(--foreground)" }}>
-                    {currentUser_displayed.age}歳
-                  </p>
-                </div>
-              )}
 
               {/* タグ */}
               <div>
@@ -810,7 +813,7 @@ export default function DiscoverPage() {
             <button
               ref={likeButtonRef}
               onClick={() => handleLike(currentUser_displayed)}
-              className={useSuperLike ? styles.superOutline : undefined}
+              className={useSuperLike ? "super-outline" : undefined}
               style={{
                 flex: "1 1 0",
                 maxWidth: "200px",
@@ -854,7 +857,7 @@ export default function DiscoverPage() {
               }
               className={[
                 styles.superToggle,
-                useSuperLike ? styles.superOutline : "",
+                useSuperLike ? "super-outline" : "",
               ].join(" ")}
               style={{
                 flexShrink: 0,
@@ -1227,7 +1230,7 @@ export default function DiscoverPage() {
           // こちらは流さない（3秒で消えるので、動かすと落ち着かない）
           className={[
             styles.reactionToast,
-            reactionFeedback.isSuper ? styles.superToast : "",
+            reactionFeedback.isSuper ? "super-toast" : "",
           ].join(" ")}
           role="status"
           aria-live="polite"
