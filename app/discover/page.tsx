@@ -16,7 +16,7 @@ import type { DiscoverFilter } from "@/lib/repository";
 import { TAG_OPTIONS } from "@/lib/types";
 import { departmentLeaves } from "@/lib/departments";
 import { JOB_TITLE_OPTIONS } from "@/lib/profile-fields";
-import { UserRating } from "@/components/reviews/UserRating";
+import { ProfileDetailModal } from "@/components/profile/ProfileDetailModal";
 import styles from "./discover.module.css";
 
 /**
@@ -1176,166 +1176,19 @@ export default function DiscoverPage() {
         </div>
       )}
 
-      {/* 詳細プロフィールモーダル */}
+      {/*
+        詳細プロフィール。トーク・履歴と同じ部品を使う。
+
+        以前はこの画面だけ別実装で、基本情報・タグ・自己紹介しか出していなかった。
+        マイページで入れた項目（身長・体型・仕事の実績など）が出ないので、
+        同じ相手でも開く場所によって見えるものが変わっていた。
+      */}
       {showDetailProfile && currentUser_displayed && (
-        <div
-          style={{
-            position: "fixed",
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            backgroundColor: "rgba(0, 0, 0, 0.6)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            zIndex: 2000,
-          }}
-          onClick={() => setShowDetailProfile(false)}
-        >
-          <div
-            style={{
-              // 画面からはみ出さない範囲で 900px まで。
-              // 左右に 16px ずつ余白を残す
-              width: "min(900px, calc(100% - 32px))",
-              maxHeight: "90vh",
-              backgroundColor: "var(--surface)",
-              borderRadius: "28px",
-              // 狭い画面では 40px の内側余白が効きすぎる
-              padding: "clamp(20px, 4vw, 40px)",
-              overflowY: "auto",
-              boxShadow: "var(--card-shadow)",
-            }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            {/* 閉じるボタン */}
-            <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: "20px" }}>
-              <button
-                onClick={() => setShowDetailProfile(false)}
-                style={{
-                  padding: "8px 20px",
-                  backgroundColor: "var(--accent-soft)",
-                  color: "var(--accent-strong)",
-                  border: "none",
-                  borderRadius: "20px",
-                  cursor: "pointer",
-                  fontSize: "14px",
-                }}
-              >
-                閉じる
-              </button>
-            </div>
-
-            {/* 写真とプロフィール。狭い画面では縦に落とす */}
-            <div style={{ display: "flex", flexWrap: "wrap", gap: "32px" }}>
-              {/* 写真 */}
-              <div style={{ flex: "1 1 260px", maxWidth: "300px" }}>
-                <img
-                  src={currentUser_displayed.avatarUrl}
-                  alt={currentUser_displayed.name}
-                  style={{
-                    width: "100%",
-                    aspectRatio: "3/4",
-                    objectFit: "cover",
-                    borderRadius: "20px",
-                  }}
-                />
-              </div>
-
-              {/* 詳細情報 */}
-              <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: "24px" }}>
-                {/* 名前と口コミの平均。評価が0件なら星は出ない */}
-                <div style={{
-                  display: "flex",
-                  flexWrap: "wrap",
-                  alignItems: "center",
-                  columnGap: "14px",
-                  rowGap: "4px",
-                }}>
-                  <h1 style={{
-                    margin: 0,
-                    fontSize: "32px",
-                    fontWeight: "bold",
-                    color: "var(--foreground)",
-                  }}>
-                    {currentUser_displayed.name}
-                  </h1>
-                  <UserRating
-                    userId={currentUser_displayed.id}
-                    mode={mode}
-                    size={18}
-                  />
-                </div>
-
-                {/* 基本情報 */}
-                <div>
-                  <p style={{ margin: "0 0 8px 0", fontSize: "14px", fontWeight: "bold", color: "var(--foreground)" }}>
-                    基本情報
-                  </p>
-                  {/* 恋愛モードで部署を隠す設定を確認 */}
-                  {!(mode === "romance" && !currentUser_displayed.romance.showDepartment) && (
-                    <p style={{ margin: "0 0 4px 0", fontSize: "16px", color: "var(--foreground)" }}>
-                      部署: {currentUser_displayed.department}
-                    </p>
-                  )}
-                  <p style={{ margin: "0 0 4px 0", fontSize: "16px", color: "var(--foreground)" }}>
-                    職種: {currentUser_displayed.jobTitle}
-                  </p>
-                  {mode === "romance" && (
-                    <p style={{ margin: "0 0 4px 0", fontSize: "16px", color: "var(--foreground)" }}>
-                      年齢: {currentUser_displayed.age}歳
-                    </p>
-                  )}
-                </div>
-
-                {/* 区切り線 */}
-                <div style={{ height: "1px", backgroundColor: "var(--line)" }} />
-
-                {/* タグ */}
-                <div>
-                  <p style={{ margin: "0 0 12px 0", fontSize: "14px", fontWeight: "bold", color: "var(--foreground)" }}>
-                    タグ
-                  </p>
-                  <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
-                    {(mode === "work" ? currentUser_displayed.work.tags : currentUser_displayed.romance.tags).map((tag) => (
-                      <span
-                        key={tag}
-                        style={{
-                          padding: "8px 20px",
-                          backgroundColor: "var(--accent-soft)",
-                          color: "var(--accent-strong)",
-                          borderRadius: "20px",
-                          fontSize: "15px",
-                        }}
-                      >
-                        {tag}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-
-                {/* 区切り線 */}
-                <div style={{ height: "1px", backgroundColor: "var(--line)" }} />
-
-                {/* 自己紹介 */}
-                <div>
-                  <p style={{ margin: "0 0 12px 0", fontSize: "14px", fontWeight: "bold", color: "var(--foreground)" }}>
-                    自己紹介
-                  </p>
-                  <p style={{
-                    margin: 0,
-                    fontSize: "16px",
-                    color: "var(--foreground)",
-                    lineHeight: "1.8",
-                    whiteSpace: "pre-wrap",
-                  }}>
-                    {mode === "work" ? currentUser_displayed.work.bio : currentUser_displayed.romance.bio}
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
+        <ProfileDetailModal
+          user={currentUser_displayed}
+          mode={mode}
+          onClose={() => setShowDetailProfile(false)}
+        />
       )}
 
       {/*

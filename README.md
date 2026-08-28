@@ -118,8 +118,8 @@ Vercel では **project レベル**に設定します（従量課金のキーを
 ### プロフィール
 
 - 入力は [components/profile/MyPage.tsx](components/profile/MyPage.tsx)。**項目の定義は [lib/profile-fields.ts](lib/profile-fields.ts) の1箇所**で、ここに1行足せば入力欄・詳細表示・充実度の分母がすべて増えます
-- 相手のプロフィールは [components/profile/ProfileDetailModal.tsx](components/profile/ProfileDetailModal.tsx)。**トーク・履歴の名前を押すと開きます**
-- **探す画面にはもう1つ別実装のモーダルがあります**（`app/discover/page.tsx` 内）。共通部品への差し替えは未着手です
+- 相手のプロフィールは [components/profile/ProfileDetailModal.tsx](components/profile/ProfileDetailModal.tsx)。**トーク・履歴の名前**と、**探す画面の「詳細プロフィールを見る」**から開きます
+- **相手のプロフィールを出すのはこの部品だけです。** 以前は探す画面に別実装があり、詳しいプロフィールが出ていませんでした。増やすと同じ相手でも開く場所で内容が変わります
 - 充実度の計算は [lib/profile-completion.ts](lib/profile-completion.ts)。**モードごとに数えます**（仕事13項目 / 恋愛22項目）
 
 ### 口コミ（星5評価）
