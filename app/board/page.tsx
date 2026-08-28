@@ -68,8 +68,10 @@ export default function BoardPage() {
             onClick={() => setShowOnlyActive(true)}
             style={{
               padding: "8px 16px",
-              backgroundColor: showOnlyActive ? "#3B82F6" : "#F3F4F6",
-              color: showOnlyActive ? "#FFFFFF" : "#6B7280",
+              backgroundColor: showOnlyActive
+                ? "var(--accent)"
+                : "var(--accent-soft)",
+              color: showOnlyActive ? "#FFFFFF" : "var(--muted)",
               border: "none",
               borderRadius: "8px",
               cursor: "pointer",
@@ -83,8 +85,10 @@ export default function BoardPage() {
             onClick={() => setShowOnlyActive(false)}
             style={{
               padding: "8px 16px",
-              backgroundColor: !showOnlyActive ? "#3B82F6" : "#F3F4F6",
-              color: !showOnlyActive ? "#FFFFFF" : "#6B7280",
+              backgroundColor: !showOnlyActive
+                ? "var(--accent)"
+                : "var(--accent-soft)",
+              color: !showOnlyActive ? "#FFFFFF" : "var(--muted)",
               border: "none",
               borderRadius: "8px",
               cursor: "pointer",
@@ -101,14 +105,14 @@ export default function BoardPage() {
           onClick={() => setShowCreateModal(true)}
           style={{
             padding: "12px 24px",
-            background: "linear-gradient(to right, #3B82F6, #8B5CF6)",
+            background: "var(--accent)",
             color: "#FFFFFF",
             border: "none",
             borderRadius: "12px",
             cursor: "pointer",
             fontSize: "16px",
             fontWeight: "600",
-            boxShadow: "0 4px 12px rgba(59, 130, 246, 0.3)",
+            boxShadow: "var(--soft-shadow)",
           }}
         >
           + 新規投稿
@@ -151,14 +155,14 @@ export default function BoardPage() {
                 onClick={() => router.push("/me")}
                 style={{
                   padding: "12px 32px",
-                  background: "linear-gradient(to right, #3B82F6, #8B5CF6)",
+                  background: "var(--accent)",
                   color: "#FFFFFF",
                   border: "none",
                   borderRadius: "28px",
                   cursor: "pointer",
                   fontSize: "16px",
                   fontWeight: "500",
-                  boxShadow: "0 4px 12px rgba(59, 130, 246, 0.3)",
+                  boxShadow: "var(--soft-shadow)",
                 }}
               >
                 マイページで設定する
@@ -288,8 +292,11 @@ function BoardCard({
             fontSize: "12px",
             fontWeight: "500",
             backgroundColor:
-              board.status === "募集中" ? "#DBEAFE" : "#F3F4F6",
-            color: board.status === "募集中" ? "#1E40AF" : "#6B7280",
+              board.status === "募集中" ? "var(--accent-soft)" : "var(--line)",
+            color:
+              board.status === "募集中"
+                ? "var(--accent-strong)"
+                : "var(--muted)",
           }}
         >
           {board.status}
@@ -316,7 +323,7 @@ function BoardCard({
           margin: 0,
           fontSize: "20px",
           fontWeight: "bold",
-          color: "#1E1B4B",
+          color: "var(--foreground)",
           overflow: "hidden",
           textOverflow: "ellipsis",
           display: "-webkit-box",
@@ -575,7 +582,7 @@ function CreateBoardModal({
               disabled={submitting}
               style={{
                 padding: "12px 24px",
-                background: "linear-gradient(to right, #3B82F6, #8B5CF6)",
+                background: "var(--accent)",
                 color: "#FFFFFF",
                 border: "none",
                 borderRadius: "8px",
@@ -759,8 +766,11 @@ function BoardDetailModal({
                   fontSize: "12px",
                   fontWeight: "500",
                   backgroundColor:
-                    board.status === "募集中" ? "#DBEAFE" : "#F3F4F6",
-                  color: board.status === "募集中" ? "#1E40AF" : "#6B7280",
+                    board.status === "募集中" ? "var(--accent-soft)" : "var(--line)",
+                  color:
+                    board.status === "募集中"
+                      ? "var(--accent-strong)"
+                      : "var(--muted)",
                 }}
               >
                 {board.status}
@@ -882,7 +892,7 @@ function BoardDetailModal({
                   onClick={handleJoin}
                   style={{
                     padding: "12px 32px",
-                    background: "linear-gradient(to right, #3B82F6, #8B5CF6)",
+                    background: "var(--accent)",
                     color: "#FFFFFF",
                     border: "none",
                     borderRadius: "12px",
@@ -961,10 +971,14 @@ function BoardDetailModal({
                           <div
                             style={{
                               padding: "10px 14px",
-                              backgroundColor: isMine ? "#EEF2FF" : "#F3F4F6",
+                              // 自分はアクセント寄り、相手はトークと同じ色。
+                              // 灰色を直に書くと、恋愛モードで地の色から浮く
+                              backgroundColor: isMine
+                                ? "var(--accent-soft)"
+                                : "var(--bubble-other-bg)",
                               borderRadius: "12px",
                               fontSize: "14px",
-                              color: "#374151",
+                              color: "var(--foreground)",
                               whiteSpace: "pre-wrap",
                             }}
                           >
@@ -1005,7 +1019,7 @@ function BoardDetailModal({
                   disabled={!newMessage.trim()}
                   style={{
                     padding: "12px 24px",
-                    background: "linear-gradient(to right, #3B82F6, #8B5CF6)",
+                    background: "var(--accent)",
                     color: "#FFFFFF",
                     border: "none",
                     borderRadius: "8px",
