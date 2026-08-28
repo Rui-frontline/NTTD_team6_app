@@ -808,7 +808,18 @@ function BoardDetailModal({
           padding: "0",
           maxWidth: "900px",
           width: "95%",
-          maxHeight: "90vh",
+          /*
+            maxHeight ではなく height。
+
+            flex: 1 は「余った高さを配る」指定なので、高さが中身任せだと
+            そもそも余りが生まれず、会話の領域は自分の中身のぶんしか
+            伸びない。高さを決めておくと、ヘッダーと入力欄を引いた残りが
+            すべて会話に回る。
+
+            dvh なのは、スマホでアドレスバーが出入りしても高さが飛ばない
+            ようにするため。vh はバーが隠れている前提の値を返す。
+          */
+          height: "90dvh",
           display: "flex",
           flexDirection: "column",
           overflow: "hidden",
