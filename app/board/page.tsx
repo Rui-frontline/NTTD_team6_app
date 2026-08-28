@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useSession } from "@/lib/session";
 import {
@@ -16,6 +16,36 @@ import {
   getUser,
 } from "@/lib/repository";
 import type { Board, BoardMessage, User } from "@/lib/types";
+
+/*
+  「募集中」の札の見た目。状態と、その隣に並ぶ操作（募集終了・削除・退出する）で
+  共有する。大きさや字の太さがそろっていないと、同じ行に並べたときに
+  操作だけが浮いて見える。
+*/
+const pillStyle = {
+  padding: "4px 12px",
+  borderRadius: "12px",
+  fontSize: "12px",
+  fontWeight: "500",
+} as const;
+
+/*
+  上の札を押せるようにするぶん。
+
+  fontFamily を継がせるのが要点で、button はブラウザ既定のUIフォントになる。
+  指定しないと、隣の span と字面が変わって「同じ見た目」にならない。
+*/
+const pillButtonStyle = {
+  border: "none",
+  cursor: "pointer",
+  fontFamily: "inherit",
+  lineHeight: "inherit",
+} as const;
+
+/*
+  詳細モーダルで説明を出す行数。ここを超えたら「詳細…」で畳む。
+*/
+const DESCRIPTION_LINES = 1;
 
 export default function BoardPage() {
   const { currentUser, mode } = useSession();
@@ -621,8 +651,45 @@ function BoardDetailModal({
   const [newMessage, setNewMessage] = useState("");
   const [isParticipant, setIsParticipant] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [showParticipants, setShowParticipants] = useState(false);
+  const [showDescription, setShowDescription] = useState(false);
 
   const isOwner = board.userId === currentUser.id;
+
+  /*
+    説明が1行に収まりきらないか。収まるなら「詳細…」は出さない
+    （押しても何も変わらないボタンになるため）。
+
+    字数では測れない。同じ文でも、モーダルの幅や端末の文字サイズで
+    折り返す位置が変わる。実際に描いた高さを見るしかない。
+  */
+  const descriptionRef = useRef<HTMLParagraphElement>(null);
+  const [isLongDescription, setIsLongDescription] = useState(false);
+
+  useEffect(() => {
+    const el = descriptionRef.current;
+    if (!el) return;
+
+    /*
+      ResizeObserver のコールバックで測る。監視を始めた直後に1回呼ばれるので、
+      初回もこれで足りる。効果の中で直接 setState すると
+      react-hooks/set-state-in-effect に引っかかる。
+
+      比べる相手は clientHeight ではなく「1行ぶんの高さ」。
+      clientHeight だと、開いて clamp が外れている間は必ず同じ高さになり、
+      「閉じる」が消えてしまう。scrollHeight は overflow: hidden でも
+      中身の全高を返すので、開閉のどちらでも同じ値になる。
+    */
+    const observer = new ResizeObserver(() => {
+      const lineHeight = parseFloat(getComputedStyle(el).lineHeight);
+      if (Number.isNaN(lineHeight)) return;
+      setIsLongDescription(
+        el.scrollHeight > lineHeight * (DESCRIPTION_LINES + 0.5),
+      );
+    });
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [board.description]);
 
   // 参加者とメッセージを取得
   useEffect(() => {
@@ -741,13 +808,44 @@ function BoardDetailModal({
           padding: "0",
           maxWidth: "900px",
           width: "95%",
-          maxHeight: "90vh",
+          /*
+            maxHeight ではなく height。
+
+            flex: 1 は「余った高さを配る」指定なので、高さが中身任せだと
+            そもそも余りが生まれず、会話の領域は自分の中身のぶんしか
+            伸びない。高さを決めておくと、ヘッダーと入力欄を引いた残りが
+            すべて会話に回る。
+
+            dvh なのは、スマホでアドレスバーが出入りしても高さが飛ばない
+            ようにするため。vh はバーが隠れている前提の値を返す。
+          */
+          height: "90dvh",
           display: "flex",
           flexDirection: "column",
           overflow: "hidden",
+          // 上の膜を絶対配置する基準。これが無いと画面全体に広がる
+          position: "relative",
         }}
       >
-        {/* ヘッダー */}
+        {/*
+          参加者一覧を開いているときだけ出る、透明な膜。
+          一覧の外を押したら閉じるためのもの。これが無いと、
+          会話に重ねたまま消せない。
+        */}
+        {showParticipants && (
+          <div
+            onClick={() => setShowParticipants(false)}
+            style={{ position: "absolute", inset: 0, zIndex: 5 }}
+          />
+        )}
+
+        {/*
+          ヘッダー。状態・操作・参加者をこの1行にまとめる。
+
+          以前は参加者一覧が下に、退出・募集終了・削除がフッターにあり、
+          上下から挟まれた真ん中のメッセージ一覧に1件ぶんの高さしか
+          残らなかった。どちらもここへ畳んで、空いた高さを会話に回す。
+        */}
         <div
           style={{
             padding: "24px 32px",
@@ -755,16 +853,25 @@ function BoardDetailModal({
             display: "flex",
             justifyContent: "space-between",
             alignItems: "start",
+            gap: "12px",
           }}
         >
-          <div style={{ flex: 1 }}>
-            <div style={{ display: "flex", gap: "8px", marginBottom: "12px" }}>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            {/*
+              状態と操作。pillStyle を共有しているので、大きさも字の太さも
+              「募集中」とそろう。狭い画面では折り返す。
+            */}
+            <div
+              style={{
+                display: "flex",
+                flexWrap: "wrap",
+                gap: "8px",
+                marginBottom: "12px",
+              }}
+            >
               <span
                 style={{
-                  padding: "4px 12px",
-                  borderRadius: "12px",
-                  fontSize: "12px",
-                  fontWeight: "500",
+                  ...pillStyle,
                   backgroundColor:
                     board.status === "募集中" ? "var(--accent-soft)" : "var(--line)",
                   color:
@@ -775,79 +882,212 @@ function BoardDetailModal({
               >
                 {board.status}
               </span>
+
+              {isOwner ? (
+                <>
+                  {board.status === "募集中" && (
+                    <button
+                      onClick={handleCloseRecruitment}
+                      style={{
+                        ...pillStyle,
+                        ...pillButtonStyle,
+                        backgroundColor: "#FEF3C7",
+                        color: "#92400E",
+                      }}
+                    >
+                      募集終了
+                    </button>
+                  )}
+                  <button
+                    onClick={handleDelete}
+                    style={{
+                      ...pillStyle,
+                      ...pillButtonStyle,
+                      backgroundColor: "#FEE2E2",
+                      color: "#991B1B",
+                    }}
+                  >
+                    削除
+                  </button>
+                </>
+              ) : (
+                isParticipant && (
+                  <button
+                    onClick={handleLeave}
+                    style={{
+                      ...pillStyle,
+                      ...pillButtonStyle,
+                      backgroundColor: "var(--line)",
+                      color: "var(--muted)",
+                    }}
+                  >
+                    退出する
+                  </button>
+                )
+              )}
             </div>
+
             <h2 style={{ margin: 0, fontSize: "24px", fontWeight: "bold" }}>
               {board.title}
             </h2>
-            <p
-              style={{
-                margin: "12px 0 0 0",
-                fontSize: "14px",
-                color: "#6B7280",
-                lineHeight: "1.6",
-                whiteSpace: "pre-wrap",
-              }}
-            >
-              {board.description}
-            </p>
-          </div>
-          <button
-            onClick={onClose}
-            style={{
-              padding: "8px",
-              backgroundColor: "transparent",
-              border: "none",
-              cursor: "pointer",
-              fontSize: "24px",
-              color: "#6B7280",
-            }}
-          >
-            ×
-          </button>
-        </div>
+            {/*
+              説明。2行目に届いたら畳み、押したときだけ全部出す。
+              十数行の募集もあり、そのぶん下の会話が押し出されるため。
 
-        {/* 参加者一覧 */}
-        <div style={{ padding: "20px 32px", borderBottom: "1px solid #E5E7EB" }}>
-          <div
-            style={{
-              fontSize: "14px",
-              fontWeight: "500",
-              color: "#374151",
-              marginBottom: "12px",
-            }}
-          >
-            参加者 ({participants.length}
-            {board.maxParticipants && ` / ${board.maxParticipants}`}人)
-          </div>
-          <div style={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>
-            {participants.map((p) => (
-              <div
-                key={p.id}
+              畳む指定は「長いかどうか」で切り替えない。切り替えると、
+              測っている高さが変わって判定が揺れる。開いているときだけ外す。
+            */}
+            <div style={{ marginTop: "12px" }}>
+              <p
+                ref={descriptionRef}
                 style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "8px",
-                  padding: "6px 12px",
-                  backgroundColor: "#F3F4F6",
-                  borderRadius: "12px",
+                  margin: 0,
+                  fontSize: "14px",
+                  color: "#6B7280",
+                  lineHeight: "1.6",
+                  whiteSpace: "pre-wrap",
+                  ...(showDescription
+                    ? {}
+                    : {
+                        overflow: "hidden",
+                        display: "-webkit-box",
+                        WebkitLineClamp: DESCRIPTION_LINES,
+                        WebkitBoxOrient: "vertical",
+                      }),
                 }}
               >
-                <img
-                  src={p.avatarUrl}
-                  alt=""
+                {board.description}
+              </p>
+
+              {isLongDescription && (
+                <button
+                  onClick={() => setShowDescription((prev) => !prev)}
+                  aria-expanded={showDescription}
                   style={{
-                    width: "24px",
-                    height: "24px",
-                    borderRadius: "50%",
-                    objectFit: "cover",
+                    marginTop: "4px",
+                    padding: 0,
+                    background: "none",
+                    border: "none",
+                    cursor: "pointer",
+                    // button は既定のUIフォントになるので、本文に合わせる
+                    fontFamily: "inherit",
+                    fontSize: "13px",
+                    fontWeight: "500",
+                    color: "var(--accent)",
                   }}
-                />
-                <span style={{ fontSize: "14px", color: "#374151" }}>
-                  {p.name}
-                  {p.id === board.userId && " (投稿者)"}
-                </span>
-              </div>
-            ))}
+                >
+                  {showDescription ? "閉じる" : "詳細…"}
+                </button>
+              )}
+            </div>
+          </div>
+
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "4px",
+              flexShrink: 0,
+            }}
+          >
+            {/*
+              参加者。人数だけ出して、押したときに名前を出す。
+
+              zIndex は下の膜より上。ここが膜に隠れると、開いたあとに
+              同じボタンで閉じられなくなる。
+            */}
+            <div style={{ position: "relative", zIndex: 6 }}>
+              <button
+                onClick={() => setShowParticipants((prev) => !prev)}
+                aria-expanded={showParticipants}
+                style={{
+                  ...pillStyle,
+                  ...pillButtonStyle,
+                  backgroundColor: "var(--accent-soft)",
+                  color: "var(--accent-strong)",
+                }}
+              >
+                参加者 ({participants.length}
+                {board.maxParticipants ? `/${board.maxParticipants}` : ""})
+              </button>
+
+              {showParticipants && (
+                <div
+                  style={{
+                    position: "absolute",
+                    top: "calc(100% + 8px)",
+                    right: 0,
+                    minWidth: "200px",
+                    // 人数が多いときは、この中だけスクロールさせる。
+                    // 伸ばすと会話を覆い尽くしてしまう
+                    maxHeight: "240px",
+                    overflowY: "auto",
+                    padding: "8px",
+                    backgroundColor: "var(--surface)",
+                    border: "1px solid var(--line)",
+                    borderRadius: "12px",
+                    boxShadow: "var(--card-shadow)",
+                  }}
+                >
+                  {participants.length === 0 ? (
+                    <p
+                      style={{
+                        margin: 0,
+                        padding: "6px 8px",
+                        fontSize: "13px",
+                        color: "var(--muted)",
+                      }}
+                    >
+                      まだ参加者がいません
+                    </p>
+                  ) : (
+                    participants.map((p) => (
+                      <div
+                        key={p.id}
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: "8px",
+                          padding: "6px 8px",
+                          whiteSpace: "nowrap",
+                        }}
+                      >
+                        <img
+                          src={p.avatarUrl}
+                          alt=""
+                          style={{
+                            width: "24px",
+                            height: "24px",
+                            borderRadius: "50%",
+                            objectFit: "cover",
+                          }}
+                        />
+                        <span
+                          style={{ fontSize: "14px", color: "var(--foreground)" }}
+                        >
+                          {p.name}
+                          {p.id === board.userId && " (投稿者)"}
+                        </span>
+                      </div>
+                    ))
+                  )}
+                </div>
+              )}
+            </div>
+
+            <button
+              onClick={onClose}
+              style={{
+                padding: "8px",
+                backgroundColor: "transparent",
+                border: "none",
+                cursor: "pointer",
+                fontSize: "24px",
+                color: "#6B7280",
+              }}
+            >
+              ×
+            </button>
           </div>
         </div>
 
@@ -939,6 +1179,9 @@ function BoardDetailModal({
                           display: "flex",
                           gap: "12px",
                           alignItems: "start",
+                          // 自分の発言は右から。トーク画面と同じ向きにする。
+                          // 行ごと反転させるので、アイコンも右側に来る
+                          flexDirection: isMine ? "row-reverse" : "row",
                         }}
                       >
                         <img
@@ -949,9 +1192,19 @@ function BoardDetailModal({
                             height: "32px",
                             borderRadius: "50%",
                             objectFit: "cover",
+                            flexShrink: 0,
                           }}
                         />
-                        <div style={{ flex: 1 }}>
+                        <div
+                          style={{
+                            display: "flex",
+                            flexDirection: "column",
+                            alignItems: isMine ? "flex-end" : "flex-start",
+                            // 幅いっぱいには伸ばさない。反対側を空けておかないと、
+                            // どちらから来た発言か見分けがつかない
+                            maxWidth: "70%",
+                          }}
+                        >
                           <div
                             style={{
                               fontSize: "12px",
@@ -971,15 +1224,18 @@ function BoardDetailModal({
                           <div
                             style={{
                               padding: "10px 14px",
-                              // 自分はアクセント寄り、相手はトークと同じ色。
+                              // 自分は面で塗り、相手はトークと同じ色。
                               // 灰色を直に書くと、恋愛モードで地の色から浮く
                               backgroundColor: isMine
-                                ? "var(--accent-soft)"
+                                ? "var(--accent)"
                                 : "var(--bubble-other-bg)",
+                              border: isMine ? "none" : "1px solid var(--line)",
                               borderRadius: "12px",
                               fontSize: "14px",
-                              color: "var(--foreground)",
+                              color: isMine ? "#FFFFFF" : "var(--foreground)",
                               whiteSpace: "pre-wrap",
+                              // 長いURLや区切りの無い1語で横に伸びないようにする
+                              overflowWrap: "anywhere",
                             }}
                           >
                             {msg.body}
@@ -1033,74 +1289,6 @@ function BoardDetailModal({
                 </button>
               </div>
             </>
-          )}
-        </div>
-
-        {/* フッター（アクション） */}
-        <div
-          style={{
-            padding: "16px 32px",
-            borderTop: "1px solid #E5E7EB",
-            display: "flex",
-            gap: "12px",
-            justifyContent: isOwner ? "space-between" : "flex-end",
-          }}
-        >
-          {isOwner ? (
-            <>
-              <div style={{ display: "flex", gap: "8px" }}>
-                {board.status === "募集中" && (
-                  <button
-                    onClick={handleCloseRecruitment}
-                    style={{
-                      padding: "10px 20px",
-                      backgroundColor: "#FEF3C7",
-                      color: "#92400E",
-                      border: "none",
-                      borderRadius: "8px",
-                      cursor: "pointer",
-                      fontSize: "14px",
-                      fontWeight: "500",
-                    }}
-                  >
-                    募集終了
-                  </button>
-                )}
-                <button
-                  onClick={handleDelete}
-                  style={{
-                    padding: "10px 20px",
-                    backgroundColor: "#FEE2E2",
-                    color: "#991B1B",
-                    border: "none",
-                    borderRadius: "8px",
-                    cursor: "pointer",
-                    fontSize: "14px",
-                    fontWeight: "500",
-                  }}
-                >
-                  削除
-                </button>
-              </div>
-            </>
-          ) : (
-            isParticipant && (
-              <button
-                onClick={handleLeave}
-                style={{
-                  padding: "10px 20px",
-                  backgroundColor: "#F3F4F6",
-                  color: "#374151",
-                  border: "none",
-                  borderRadius: "8px",
-                  cursor: "pointer",
-                  fontSize: "14px",
-                  fontWeight: "500",
-                }}
-              >
-                退出する
-              </button>
-            )
           )}
         </div>
       </div>
